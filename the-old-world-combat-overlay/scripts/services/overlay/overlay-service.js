@@ -1,20 +1,33 @@
-const clearDisplayObject = globalThis.towCombatOverlayClearDisplayObject;
-const ensureTokenOverlayInteractivity = globalThis.towCombatOverlayEnsureTokenOverlayInteractivity;
-const updateTokenOverlayHitArea = globalThis.towCombatOverlayUpdateTokenOverlayHitArea;
-const restoreTokenOverlayInteractivity = globalThis.towCombatOverlayRestoreTokenOverlayInteractivity;
-const updateCustomLayoutBorderVisibility = globalThis.towCombatOverlayUpdateCustomLayoutBorderVisibility;
-const clearCustomLayoutBorder = globalThis.towCombatOverlayClearCustomLayoutBorder;
-const clearDeadVisual = globalThis.towCombatOverlayClearDeadVisual;
-const primeDeadPresence = globalThis.towCombatOverlayPrimeDeadPresence;
-const queueWoundSyncFromDeadState = globalThis.towCombatOverlayQueueWoundSyncFromDeadState;
-const getActorTypeLabel = globalThis.towCombatOverlayGetActorTypeLabel;
-const getMaxWoundLimit = globalThis.towCombatOverlayGetMaxWoundLimit;
-const updateWoundControlUI = globalThis.towCombatOverlayUpdateWoundControlUI;
-const clearAllWoundControls = globalThis.towCombatOverlayClearAllWoundControls;
-const updateNameLabel = globalThis.towCombatOverlayUpdateNameLabel;
-const clearAllNameLabels = globalThis.towCombatOverlayClearAllNameLabels;
-const updateResilienceLabel = globalThis.towCombatOverlayUpdateResilienceLabel;
-const clearAllResilienceLabels = globalThis.towCombatOverlayClearAllResilienceLabels;
+const overlayServiceClearDisplayObjectRef = globalThis.towCombatOverlayClearDisplayObject;
+const overlayServiceCanEditActorRef = globalThis.towCombatOverlayCanEditActor;
+const overlayServiceWarnNoPermissionRef = globalThis.towCombatOverlayWarnNoPermission;
+const overlayServiceGetActorFromTokenRef = globalThis.towCombatOverlayGetActorFromToken;
+const overlayServiceForEachSceneTokenRef = globalThis.towCombatOverlayForEachSceneToken;
+const overlayServiceGetActorTokenObjectsRef = globalThis.towCombatOverlayGetActorTokenObjects;
+const overlayServiceGetTokenOverlayScaleRef = globalThis.towCombatOverlayGetTokenOverlayScale;
+const overlayServiceGetOverlayEdgePadPxRef = globalThis.towCombatOverlayGetOverlayEdgePadPx;
+const overlayServicePreventPointerDefaultRef = globalThis.towCombatOverlayPreventPointerDefault;
+const overlayServiceGetMouseButtonRef = globalThis.towCombatOverlayGetMouseButton;
+const overlayServiceBindTooltipHandlersRef = globalThis.towCombatOverlayBindTooltipHandlers;
+const overlayServiceEnsureTokenOverlayInteractivityRef = globalThis.towCombatOverlayEnsureTokenOverlayInteractivity;
+const overlayServiceUpdateTokenOverlayHitAreaRef = globalThis.towCombatOverlayUpdateTokenOverlayHitArea;
+const overlayServiceRestoreTokenOverlayInteractivityRef = globalThis.towCombatOverlayRestoreTokenOverlayInteractivity;
+const overlayServiceAddActorConditionRef = globalThis.towCombatOverlayAddActorCondition;
+const overlayServiceRemoveActorConditionRef = globalThis.towCombatOverlayRemoveActorCondition;
+const overlayServiceUpdateCustomLayoutBorderVisibilityRef = globalThis.towCombatOverlayUpdateCustomLayoutBorderVisibility;
+const overlayServiceClearCustomLayoutBorderRef = globalThis.towCombatOverlayClearCustomLayoutBorder;
+const overlayServiceClearDeadVisualRef = globalThis.towCombatOverlayClearDeadVisual;
+const overlayServiceEnsureDeadVisualRef = globalThis.towCombatOverlayEnsureDeadVisual;
+const overlayServicePrimeDeadPresenceRef = globalThis.towCombatOverlayPrimeDeadPresence;
+const overlayServiceQueueWoundSyncFromDeadStateRef = globalThis.towCombatOverlayQueueWoundSyncFromDeadState;
+const overlayServiceGetActorTypeLabelRef = globalThis.towCombatOverlayGetActorTypeLabel;
+const overlayServiceGetMaxWoundLimitRef = globalThis.towCombatOverlayGetMaxWoundLimit;
+const overlayServiceUpdateWoundControlUIRef = globalThis.towCombatOverlayUpdateWoundControlUI;
+const overlayServiceClearAllWoundControlsRef = globalThis.towCombatOverlayClearAllWoundControls;
+const overlayServiceUpdateNameLabelRef = globalThis.towCombatOverlayUpdateNameLabel;
+const overlayServiceClearAllNameLabelsRef = globalThis.towCombatOverlayClearAllNameLabels;
+const overlayServiceUpdateResilienceLabelRef = globalThis.towCombatOverlayUpdateResilienceLabel;
+const overlayServiceClearAllResilienceLabelsRef = globalThis.towCombatOverlayClearAllResilienceLabels;
 
 function getIconSrc(displayObject) {
   return (
@@ -83,8 +96,8 @@ async function setActorConditionState(actor, conditionId, active) {
     }
   }
 
-  if (active) await addActorCondition(actor, id);
-  else await removeActorCondition(actor, id);
+  if (active) await overlayServiceAddActorConditionRef(actor, id);
+  else await overlayServiceRemoveActorConditionRef(actor, id);
 }
 
 function getActorStatusSet(actor) {
@@ -138,13 +151,13 @@ function getTypeTooltipData(actor) {
   const fallbackType = String(actor?.type ?? "actor").trim().toLowerCase();
   const typeKey = systemType || fallbackType;
   const npcTypeLabelKey = game.oldworld?.config?.npcType?.[typeKey] ?? null;
-  const typeLabel = npcTypeLabelKey ? game.i18n.localize(npcTypeLabelKey) : getActorTypeLabel(actor);
+  const typeLabel = npcTypeLabelKey ? game.i18n.localize(npcTypeLabelKey) : overlayServiceGetActorTypeLabelRef(actor);
 
   if (typeKey === "minion") {
     return { title: typeLabel, description: "Minions are defeated at 1 wound." };
   }
   if (["brute", "champion", "monstrosity"].includes(typeKey)) {
-    const cap = getMaxWoundLimit(actor);
+    const cap = overlayServiceGetMaxWoundLimitRef(actor);
     const capText = Number.isFinite(cap) ? ` Defeated at ${cap} wounds.` : "";
     return { title: typeLabel, description: `Threshold-based NPC type.${capText}` };
   }
@@ -267,10 +280,10 @@ function resolveEffectFromIcon(actor, sprite) {
 }
 
 async function removeStatusIconEffect(tokenObject, sprite) {
-  const actor = getActorFromToken(tokenObject);
+  const actor = overlayServiceGetActorFromTokenRef(tokenObject);
   if (!actor) return;
-  if (!canEditActor(actor)) {
-    warnNoPermission(actor);
+  if (!overlayServiceCanEditActorRef(actor)) {
+    overlayServiceWarnNoPermissionRef(actor);
     return;
   }
 
@@ -417,8 +430,8 @@ function restoreCoreTokenHoverVisuals(tokenObject) {
 
 async function toggleConditionFromPalette(actor, conditionId) {
   if (!actor || !conditionId) return;
-  if (!canEditActor(actor)) {
-    warnNoPermission(actor);
+  if (!overlayServiceCanEditActorRef(actor)) {
+    overlayServiceWarnNoPermissionRef(actor);
     return;
   }
   const id = String(conditionId);
@@ -594,7 +607,7 @@ function drawStatusPaletteBackdrop(layer, { iconSize, totalWidth, totalHeight })
 
 function setupStatusPalette(tokenObject) {
   if (!tokenObject || tokenObject.destroyed) return;
-  const actor = getActorFromToken(tokenObject);
+  const actor = overlayServiceGetActorFromTokenRef(tokenObject);
   if (!actor) return;
 
   const conditions = getAllConditionEntries();
@@ -604,7 +617,7 @@ function setupStatusPalette(tokenObject) {
   }
 
   const expectedCount = conditions.length;
-  const overlayScale = getTokenOverlayScale(tokenObject);
+  const overlayScale = overlayServiceGetTokenOverlayScaleRef(tokenObject);
   const iconSize = Math.max(6, Math.round((OVERLAY_FONT_SIZE + 2) * overlayScale));
   const iconGap = Math.max(1, Math.round(STATUS_PALETTE_ICON_GAP * (iconSize / STATUS_PALETTE_ICON_SIZE)));
   let layer = tokenObject[KEYS.statusPaletteLayer];
@@ -637,7 +650,7 @@ function setupStatusPalette(tokenObject) {
       sprite.height = iconSize;
       sprite.eventMode = "static";
       sprite.interactive = true;
-      sprite.cursor = canEditActor(actor) ? "pointer" : "default";
+      sprite.cursor = overlayServiceCanEditActorRef(actor) ? "pointer" : "default";
       sprite._towConditionId = condition.id;
       sprite._towConditionImg = condition.img;
       sprite._towIconSize = iconSize;
@@ -650,13 +663,13 @@ function setupStatusPalette(tokenObject) {
       );
 
       const onDown = async (event) => {
-        preventPointerDefault(event);
-        if (getMouseButton(event) !== 0) return;
+        overlayServicePreventPointerDefaultRef(event);
+        if (overlayServiceGetMouseButtonRef(event) !== 0) return;
         await toggleConditionFromPalette(actor, condition.id);
       };
       sprite.on("pointerdown", onDown);
       sprite[KEYS.statusIconHandler] = onDown;
-      bindTooltipHandlers(
+      overlayServiceBindTooltipHandlersRef(
         sprite,
         () => getConditionTooltipData(condition.id),
         {
@@ -676,7 +689,7 @@ function setupStatusPalette(tokenObject) {
   const totalWidth = (columns * iconSize) + ((columns - 1) * iconGap);
   const totalHeight = (totalRows * iconSize) + ((totalRows - 1) * iconGap);
   const posX = Math.round((tokenObject.w - totalWidth) / 2);
-  const edgePad = getOverlayEdgePadPx(tokenObject);
+  const edgePad = overlayServiceGetOverlayEdgePadPxRef(tokenObject);
   const posY = Math.round(tokenObject.h + edgePad);
   layer.position.set(posX, posY);
   drawStatusPaletteBackdrop(layer, { iconSize, totalWidth, totalHeight });
@@ -685,49 +698,49 @@ function setupStatusPalette(tokenObject) {
   const activeStatuses = getActorStatusSet(actor);
 
   for (const sprite of layer.children?.filter((child) => child?._towConditionId) ?? []) {
-    sprite.cursor = canEditActor(actor) ? "pointer" : "default";
+    sprite.cursor = overlayServiceCanEditActorRef(actor) ? "pointer" : "default";
     stylePaletteSprite(sprite, actor, sprite._towConditionId, activeStatuses);
   }
 }
 
 function clearAllStatusOverlays() {
   hideStatusTooltip();
-  forEachSceneToken((token) => {
+  overlayServiceForEachSceneTokenRef((token) => {
     for (const sprite of token.effects?.children ?? []) clearStatusIconHandler(sprite);
     clearStatusPalette(token);
     restoreDefaultStatusPanel(token);
     restoreCoreTokenHoverVisuals(token);
-    clearDeadVisual(token);
-    restoreTokenOverlayInteractivity(token);
-    clearCustomLayoutBorder(token);
+    overlayServiceClearDeadVisualRef(token);
+    overlayServiceRestoreTokenOverlayInteractivityRef(token);
+    overlayServiceClearCustomLayoutBorderRef(token);
   });
 
   const orphaned = [];
   for (const child of canvas.tokens.children ?? []) {
     if (child?.[KEYS.statusPaletteMarker] === true) orphaned.push(child);
   }
-  for (const layer of orphaned) clearDisplayObject(layer);
+  for (const layer of orphaned) overlayServiceClearDisplayObjectRef(layer);
   clearStatusTooltip();
 }
 
 function refreshTokenOverlay(tokenObject) {
-  primeDeadPresence(getActorFromToken(tokenObject));
-  ensureTokenOverlayInteractivity(tokenObject);
+  overlayServicePrimeDeadPresenceRef(overlayServiceGetActorFromTokenRef(tokenObject));
+  overlayServiceEnsureTokenOverlayInteractivityRef(tokenObject);
   hideDefaultStatusPanel(tokenObject);
   hideCoreTokenHoverVisuals(tokenObject);
   setupStatusPalette(tokenObject);
-  updateWoundControlUI(tokenObject);
-  updateNameLabel(tokenObject);
-  updateResilienceLabel(tokenObject);
-  updateTokenOverlayHitArea(tokenObject);
-  updateCustomLayoutBorderVisibility(tokenObject);
-  ensureDeadVisual(tokenObject);
+  overlayServiceUpdateWoundControlUIRef(tokenObject);
+  overlayServiceUpdateNameLabelRef(tokenObject);
+  overlayServiceUpdateResilienceLabelRef(tokenObject);
+  overlayServiceUpdateTokenOverlayHitAreaRef(tokenObject);
+  overlayServiceUpdateCustomLayoutBorderVisibilityRef(tokenObject);
+  overlayServiceEnsureDeadVisualRef(tokenObject);
 }
 
 function refreshActorOverlays(actor) {
-  primeDeadPresence(actor);
-  queueWoundSyncFromDeadState(actor);
-  for (const tokenObject of getActorTokenObjects(actor)) {
+  overlayServicePrimeDeadPresenceRef(actor);
+  overlayServiceQueueWoundSyncFromDeadStateRef(actor);
+  for (const tokenObject of overlayServiceGetActorTokenObjectsRef(actor)) {
     refreshTokenOverlay(tokenObject);
   }
 }
@@ -753,7 +766,7 @@ function queueActorOverlayResync(actor) {
 }
 
 function refreshAllOverlays() {
-  forEachSceneToken((token) => {
+  overlayServiceForEachSceneTokenRef((token) => {
     refreshTokenOverlay(token);
   });
 }
@@ -826,9 +839,9 @@ function disableOverlay() {
   }
   delete game[MODULE_KEY];
 
-  clearAllWoundControls();
-  clearAllNameLabels();
-  clearAllResilienceLabels();
+  overlayServiceClearAllWoundControlsRef();
+  overlayServiceClearAllNameLabelsRef();
+  overlayServiceClearAllResilienceLabelsRef();
   clearAllStatusOverlays();
   ui.notifications.info("Overlay disabled.");
   return true;
@@ -871,5 +884,12 @@ function registerTowOverlayApi(apiOverrides = {}) {
 
 const TOW_OVERLAY_API_KEY = "towOverlay";
 const TOW_OVERLAY_VERSION = "1.0.0";
+
+globalThis.towCombatOverlayRefreshAllOverlays = refreshAllOverlays;
+globalThis.towCombatOverlayRefreshActorOverlays = refreshActorOverlays;
+globalThis.towCombatOverlayRefreshTokenOverlay = refreshTokenOverlay;
+globalThis.towCombatOverlayHideCoreTokenHoverVisuals = hideCoreTokenHoverVisuals;
+globalThis.towCombatOverlayQueueActorOverlayResync = queueActorOverlayResync;
+globalThis.registerTowOverlayApi = registerTowOverlayApi;
 
 registerTowOverlayApi();

@@ -3,7 +3,7 @@ function registerTowCombatOverlayPublicApis({
   overlayApi = null
 } = {}) {
   const { moduleId } = getTowCombatOverlayModuleConstants();
-  const moduleState = game.modules.get(moduleId);
+  const moduleState = game?.modules?.get?.(moduleId) ?? null;
   if (moduleState) {
     moduleState.api = {
       ...(moduleState.api ?? {}),
@@ -13,6 +13,7 @@ function registerTowCombatOverlayPublicApis({
   }
 
   if (actionsApi) {
+    // TODO: Think about renaming towActions to something more specific
     game.towActions = {
       ...(game.towActions ?? {}),
       ...actionsApi
@@ -29,7 +30,7 @@ function registerTowCombatOverlayPublicApis({
 
 function getTowCombatOverlayModuleApi() {
   const { moduleId } = getTowCombatOverlayModuleConstants();
-  return game.modules.get(moduleId)?.api ?? null;
+  return game?.modules?.get?.(moduleId)?.api ?? null;
 }
 
 function getTowCombatOverlayPublicApi(apiKey) {

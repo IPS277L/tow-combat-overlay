@@ -29,9 +29,41 @@ function syncTowCombatOverlayEnabledSetting() {
 function registerTowCombatOverlayModuleHooks() {
   Hooks.once("init", () => {
     registerTowCombatOverlaySettings();
+    if (typeof globalThis.registerTowActionsApi === "function") {
+      const services = typeof globalThis.getTowCombatOverlayActionServices === "function"
+        ? globalThis.getTowCombatOverlayActionServices()
+        : {};
+      globalThis.registerTowActionsApi({
+        attackActor: services.attackActor,
+        castActor: services.castActor,
+        defenceActor: services.defenceActor,
+        runAttackForControlled: services.runAttackForControlled,
+        runCastingForControlled: services.runCastingForControlled,
+        runDefenceForControlled: services.runDefenceForControlled
+      });
+    }
+    if (typeof globalThis.registerTowOverlayApi === "function") {
+      globalThis.registerTowOverlayApi();
+    }
   });
 
   Hooks.once("ready", () => {
+    if (typeof globalThis.registerTowActionsApi === "function") {
+      const services = typeof globalThis.getTowCombatOverlayActionServices === "function"
+        ? globalThis.getTowCombatOverlayActionServices()
+        : {};
+      globalThis.registerTowActionsApi({
+        attackActor: services.attackActor,
+        castActor: services.castActor,
+        defenceActor: services.defenceActor,
+        runAttackForControlled: services.runAttackForControlled,
+        runCastingForControlled: services.runCastingForControlled,
+        runDefenceForControlled: services.runDefenceForControlled
+      });
+    }
+    if (typeof globalThis.registerTowOverlayApi === "function") {
+      globalThis.registerTowOverlayApi();
+    }
     if (typeof globalThis.syncTowCombatOverlayPublicApisFromGlobals === "function") {
       globalThis.syncTowCombatOverlayPublicApisFromGlobals();
     }

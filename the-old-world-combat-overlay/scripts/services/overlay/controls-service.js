@@ -1,3 +1,128 @@
+const overlayControlsGetActorFromTokenRef = globalThis.towCombatOverlayGetActorFromToken;
+const overlayControlsGetTokenOverlayScaleRef = globalThis.towCombatOverlayGetTokenOverlayScale;
+const overlayControlsGetOverlayEdgePadPxRef = globalThis.towCombatOverlayGetOverlayEdgePadPx;
+const overlayControlsPreventPointerDefaultRef = globalThis.towCombatOverlayPreventPointerDefault;
+const overlayControlsGetMouseButtonRef = globalThis.towCombatOverlayGetMouseButton;
+const overlayControlsIsShiftModifierRef = globalThis.towCombatOverlayIsShiftModifier;
+const overlayControlsGetWorldPointRef = globalThis.towCombatOverlayGetWorldPoint;
+const overlayControlsGetScreenPointRef = globalThis.towCombatOverlayGetScreenPoint;
+const overlayControlsBindTooltipHandlersRef = globalThis.towCombatOverlayBindTooltipHandlers;
+const overlayControlsTokenAtPointRef = globalThis.towCombatOverlayTokenAtPoint;
+const overlayControlsCanEditActorRef = globalThis.towCombatOverlayCanEditActor;
+const overlayControlsClearDisplayObjectRef = globalThis.towCombatOverlayClearDisplayObject;
+const overlayControlsAddWoundRef = globalThis.towCombatOverlayAddWound;
+const overlayControlsRemoveWoundRef = globalThis.towCombatOverlayRemoveWound;
+function overlayControlsArmDefaultStaggerChoiceWoundRef(durationMs) {
+  return globalThis.towCombatOverlayArmDefaultStaggerChoiceWound(durationMs);
+}
+
+function overlayControlsArmAutoDefenceForOpposedRef(sourceToken, targetToken, options) {
+  return globalThis.towCombatOverlayArmAutoDefenceForOpposed(sourceToken, targetToken, options);
+}
+
+function overlayControlsSnapshotActorStateRef(actor) {
+  return globalThis.towCombatOverlaySnapshotActorState(actor);
+}
+
+function getDragLineStyle(sourceToken) {
+  const overlayScale = overlayControlsGetTokenOverlayScaleRef(sourceToken);
+  const scaleFactor = Math.max(0.26, Math.min(1.75, Math.pow(Math.max(overlayScale, 0.001), DRAG_STYLE_SCALE_EXP)));
+  return {
+    outerWidth: Math.round(Math.max(1.6, Math.min(DRAG_LINE_OUTER_WIDTH, DRAG_LINE_OUTER_WIDTH * scaleFactor)) * 100) / 100,
+    innerWidth: Math.round(Math.max(0.9, Math.min(DRAG_LINE_INNER_WIDTH, DRAG_LINE_INNER_WIDTH * scaleFactor)) * 100) / 100,
+    arrowSize: Math.round(Math.max(4.5, Math.min(DRAG_ARROW_SIZE, DRAG_ARROW_SIZE * scaleFactor)) * 100) / 100,
+    endpointRadius: Math.round(Math.max(2.4, Math.min(DRAG_ENDPOINT_OUTER_RADIUS, DRAG_ENDPOINT_OUTER_RADIUS * scaleFactor)) * 100) / 100,
+    endpointRingWidth: Math.round(Math.max(0.9, Math.min(DRAG_ENDPOINT_RING_WIDTH, DRAG_ENDPOINT_RING_WIDTH * scaleFactor)) * 100) / 100
+  };
+}
+
+function createDragLine() {
+  const graphics = new PIXI.Graphics();
+  graphics.eventMode = "none";
+  canvas.tokens.addChild(graphics);
+  return graphics;
+}
+
+function clearDragLine(graphics) {
+  if (!graphics) return;
+  graphics.parent?.removeChild(graphics);
+  graphics.destroy();
+}
+
+function drawDragLine(graphics, origin, point, style) {
+  if (!graphics || !origin || !point || !style) return;
+  graphics.clear();
+
+  const dx = point.x - origin.x;
+  const dy = point.y - origin.y;
+  const angle = Math.atan2(dy, dx);
+  const leftAngle = angle + ((Math.PI * 5) / 6);
+  const rightAngle = angle - ((Math.PI * 5) / 6);
+  const leftX = point.x + (Math.cos(leftAngle) * style.arrowSize);
+  const leftY = point.y + (Math.sin(leftAngle) * style.arrowSize);
+  const rightX = point.x + (Math.cos(rightAngle) * style.arrowSize);
+  const rightY = point.y + (Math.sin(rightAngle) * style.arrowSize);
+
+  graphics.lineStyle({
+    width: style.outerWidth,
+    color: DRAG_LINE_OUTER_COLOR,
+    alpha: DRAG_LINE_OUTER_ALPHA,
+    cap: "round",
+    join: "round"
+  });
+  graphics.moveTo(origin.x, origin.y);
+  graphics.lineTo(point.x, point.y);
+  graphics.moveTo(point.x, point.y);
+  graphics.lineTo(leftX, leftY);
+  graphics.moveTo(point.x, point.y);
+  graphics.lineTo(rightX, rightY);
+
+  graphics.lineStyle({
+    width: style.innerWidth,
+    color: DRAG_LINE_INNER_COLOR,
+    alpha: DRAG_LINE_INNER_ALPHA,
+    cap: "round",
+    join: "round"
+  });
+  graphics.moveTo(origin.x, origin.y);
+  graphics.lineTo(point.x, point.y);
+  graphics.moveTo(point.x, point.y);
+  graphics.lineTo(leftX, leftY);
+  graphics.moveTo(point.x, point.y);
+  graphics.lineTo(rightX, rightY);
+
+  graphics.lineStyle({
+    width: style.endpointRingWidth + 1,
+    color: DRAG_LINE_OUTER_COLOR,
+    alpha: DRAG_LINE_OUTER_ALPHA
+  });
+  graphics.beginFill(DRAG_LINE_INNER_COLOR, DRAG_LINE_INNER_ALPHA);
+  graphics.drawCircle(origin.x, origin.y, style.endpointRadius);
+  graphics.endFill();
+}
+
+function shouldRunDragAttack(sourceToken, targetToken) {
+  return !!sourceToken && !!targetToken && sourceToken.id !== targetToken.id;
+}
+
+async function setSingleTarget(targetToken) {
+  if (!targetToken?.id) return;
+  if (typeof game.user?.updateTokenTargets === "function") {
+    game.user.updateTokenTargets([targetToken.id]);
+    return;
+  }
+
+  const tokenObjects = canvas?.tokens?.placeables ?? [];
+  for (const tokenObject of tokenObjects) {
+    if (typeof tokenObject?.setTarget !== "function") continue;
+    tokenObject.setTarget(tokenObject.id === targetToken.id, {
+      releaseOthers: true,
+      groupSelection: false,
+      user: game.user
+    });
+  }
+}
+
 function towCombatOverlayGetControlStyle() {
   const style = CONFIG.canvasTextStyle?.clone?.() ?? new PIXI.TextStyle();
   style.fontFamily = "CaslonPro";
@@ -113,7 +238,7 @@ function towCombatOverlayDrawHitBoxRect(graphics, x, y, width, height) {
 function towCombatOverlayCreateWoundControlUI(tokenObject) {
   for (const child of canvas.tokens.children ?? []) {
     if (child?.[KEYS.woundUiMarker] === true && child?.[KEYS.woundUiTokenId] === tokenObject.id) {
-      towCombatOverlayClearDisplayObject(child);
+      overlayControlsClearDisplayObjectRef(child);
     }
   }
 
@@ -151,39 +276,39 @@ function towCombatOverlayCreateWoundControlUI(tokenObject) {
   defenceHitBox.cursor = "pointer";
 
   countHitBox.on("pointerdown", async (event) => {
-    preventPointerDefault(event);
-    const actor = getActorFromToken(tokenObject);
+    overlayControlsPreventPointerDefaultRef(event);
+    const actor = overlayControlsGetActorFromTokenRef(tokenObject);
     if (!actor) return;
-    if (getMouseButton(event) !== 0) return;
-    await addWound(actor);
+    if (overlayControlsGetMouseButtonRef(event) !== 0) return;
+    await overlayControlsAddWoundRef(actor);
   });
   countHitBox.on("rightdown", async (event) => {
-    preventPointerDefault(event);
-    const actor = getActorFromToken(tokenObject);
+    overlayControlsPreventPointerDefaultRef(event);
+    const actor = overlayControlsGetActorFromTokenRef(tokenObject);
     if (!actor) return;
-    await removeWound(actor);
+    await overlayControlsRemoveWoundRef(actor);
   });
-  countHitBox.on("contextmenu", preventPointerDefault);
-  bindTooltipHandlers(countHitBox, () => ({
+  countHitBox.on("contextmenu", overlayControlsPreventPointerDefaultRef);
+  overlayControlsBindTooltipHandlersRef(countHitBox, () => ({
     title: "Wounds",
     description: "Left-click adds 1 wound. Right-click removes 1 wound."
   }));
 
   attackHitBox.on("pointerdown", async (event) => {
-    preventPointerDefault(event);
-    if (getMouseButton(event) !== 0) return;
+    overlayControlsPreventPointerDefaultRef(event);
+    if (overlayControlsGetMouseButtonRef(event) !== 0) return;
 
     const sourceToken = tokenObject;
-    const sourceActor = getActorFromToken(sourceToken);
+    const sourceActor = overlayControlsGetActorFromTokenRef(sourceToken);
     if (!sourceActor) return;
     if (!(await ensureTowActions())) return;
 
-    const pointerDownShift = isShiftModifier(event);
+    const pointerDownShift = overlayControlsIsShiftModifierRef(event);
     const origin = {
       x: sourceToken.x + (sourceToken.w / 2),
       y: sourceToken.y + (sourceToken.h / 2)
     };
-    const startScreenPoint = getScreenPoint(event) ?? getWorldPoint(event) ?? origin;
+    const startScreenPoint = overlayControlsGetScreenPointRef(event) ?? overlayControlsGetWorldPointRef(event) ?? origin;
     let dragStarted = false;
     let dragFinished = false;
     let dragLine = null;
@@ -200,9 +325,9 @@ function towCombatOverlayCreateWoundControlUI(tokenObject) {
     };
 
     const onDragMove = (moveEvent) => {
-      const point = getWorldPoint(moveEvent);
+      const point = overlayControlsGetWorldPointRef(moveEvent);
       if (!point) return;
-      const screenPoint = getScreenPoint(moveEvent) ?? point;
+      const screenPoint = overlayControlsGetScreenPointRef(moveEvent) ?? point;
       const dx = screenPoint.x - startScreenPoint.x;
       const dy = screenPoint.y - startScreenPoint.y;
       if (!dragStarted) {
@@ -218,22 +343,22 @@ function towCombatOverlayCreateWoundControlUI(tokenObject) {
       dragFinished = true;
       cleanupDrag();
 
-      const shiftManual = pointerDownShift || isShiftModifier(upEvent);
+      const shiftManual = pointerDownShift || overlayControlsIsShiftModifierRef(upEvent);
       if (!dragStarted) {
         await game.towActions.attackActor(sourceActor, { manual: shiftManual });
         return;
       }
 
-      const point = getWorldPoint(upEvent);
-      const target = tokenAtPoint(point, { excludeTokenId: sourceToken.id });
+      const point = overlayControlsGetWorldPointRef(upEvent);
+      const target = overlayControlsTokenAtPointRef(point, { excludeTokenId: sourceToken.id });
       if (!target) return;
       if (!shouldRunDragAttack(sourceToken, target)) return;
 
       await setSingleTarget(target);
       const armAutoOpposedFlow = () => {
-        const sourceBeforeState = snapshotActorState(sourceActor);
-        const restoreStaggerPrompt = armDefaultStaggerChoiceWound(AUTO_STAGGER_PATCH_MS);
-        armAutoDefenceForOpposed(sourceToken, target, { sourceBeforeState });
+        const sourceBeforeState = overlayControlsSnapshotActorStateRef(sourceActor);
+        const restoreStaggerPrompt = overlayControlsArmDefaultStaggerChoiceWoundRef(AUTO_STAGGER_PATCH_MS);
+        overlayControlsArmAutoDefenceForOpposedRef(sourceToken, target, { sourceBeforeState });
         return () => setTimeout(() => restoreStaggerPrompt(), AUTO_APPLY_WAIT_MS);
       };
       if (shiftManual) {
@@ -258,22 +383,22 @@ function towCombatOverlayCreateWoundControlUI(tokenObject) {
     canvas.stage.on("pointerup", finishDrag);
     canvas.stage.on("pointerupoutside", finishDrag);
   });
-  attackHitBox.on("contextmenu", preventPointerDefault);
-  bindTooltipHandlers(attackHitBox, () => ({
+  attackHitBox.on("contextmenu", overlayControlsPreventPointerDefaultRef);
+  overlayControlsBindTooltipHandlersRef(attackHitBox, () => ({
     title: "Attack",
     description: "Attack roll. Left-click attacks. Drag to a target for quick targeting. Hold Shift for manual mode."
   }));
 
   defenceHitBox.on("pointerdown", async (event) => {
-    preventPointerDefault(event);
-    if (getMouseButton(event) !== 0) return;
-    const actor = getActorFromToken(tokenObject);
+    overlayControlsPreventPointerDefaultRef(event);
+    if (overlayControlsGetMouseButtonRef(event) !== 0) return;
+    const actor = overlayControlsGetActorFromTokenRef(tokenObject);
     if (!actor) return;
     if (!(await ensureTowActions())) return;
     await game.towActions.defenceActor(actor, { manual: game.towActions.isShiftHeld() });
   });
-  defenceHitBox.on("contextmenu", preventPointerDefault);
-  bindTooltipHandlers(defenceHitBox, () => ({
+  defenceHitBox.on("contextmenu", overlayControlsPreventPointerDefaultRef);
+  overlayControlsBindTooltipHandlersRef(defenceHitBox, () => ({
     title: "Defence",
     description: "Defence roll. Left-click defends. Hold Shift for manual mode."
   }));
@@ -340,9 +465,9 @@ function towCombatOverlayUpdateWoundControlUI(tokenObject) {
   const ui = (!tokenObject[KEYS.woundUI] || tokenObject[KEYS.woundUI].destroyed)
     ? towCombatOverlayCreateWoundControlUI(tokenObject)
     : tokenObject[KEYS.woundUI];
-  const actor = getActorFromToken(tokenObject);
-  const overlayScale = getTokenOverlayScale(tokenObject);
-  const edgePad = getOverlayEdgePadPx(tokenObject);
+  const actor = overlayControlsGetActorFromTokenRef(tokenObject);
+  const overlayScale = overlayControlsGetTokenOverlayScaleRef(tokenObject);
+  const edgePad = overlayControlsGetOverlayEdgePadPxRef(tokenObject);
   const inverseScale = (overlayScale > 0) ? (1 / overlayScale) : 1;
   ui.scale.set(overlayScale);
 
@@ -424,7 +549,7 @@ function towCombatOverlayUpdateWoundControlUI(tokenObject) {
     defenceIcon.height + (padY * 2)
   );
 
-  const editable = canEditActor(actor);
+  const editable = overlayControlsCanEditActorRef(actor);
   countText.alpha = editable ? 1 : 0.45;
   countIcon.alpha = editable ? 1 : 0.45;
   attackIcon.alpha = 1;
@@ -502,24 +627,23 @@ function towCombatOverlayUpdateNameLabel(tokenObject) {
   towCombatOverlayTuneOverlayText(nameText);
   towCombatOverlayTuneOverlayText(typeText);
   if (!labelContainer._towTypeTooltipBound) {
-    labelContainer._towTypeTooltipBound = bindTooltipHandlers(labelContainer, () => getTypeTooltipData(actor));
+    labelContainer._towTypeTooltipBound = overlayControlsBindTooltipHandlersRef(labelContainer, () => getTypeTooltipData(actor));
   }
   nameText.text = tokenName;
   typeText.text = `<${typeLabel}>`;
-  const labelScale = getTokenOverlayScale(tokenObject);
-  const edgePad = getOverlayEdgePadPx(tokenObject);
+  const labelScale = overlayControlsGetTokenOverlayScaleRef(tokenObject);
+  const edgePad = overlayControlsGetOverlayEdgePadPxRef(tokenObject);
   const inverseScale = (labelScale > 0) ? (1 / labelScale) : 1;
   const tokenEdgePad = edgePad * inverseScale;
   const tokenOffset = NAME_TYPE_TO_TOKEN_OFFSET_PX * inverseScale * (edgePad / TOKEN_CONTROL_PAD);
-  const lineGap = 0;
   const typeBounds = typeText.getLocalBounds();
-  const typeBottom = typeBounds.y + typeBounds.height;
   const typeTop = typeBounds.y;
+  const typeBottom = typeBounds.y + typeBounds.height;
   typeText.position.set(0, Math.round(-(tokenEdgePad + typeBottom) + tokenOffset));
 
   const nameBounds = nameText.getLocalBounds();
   const nameBottom = nameBounds.y + nameBounds.height;
-  nameText.position.set(0, Math.round((typeText.y + typeTop) + NAME_TYPE_STACK_OVERLAP_PX - lineGap - nameBottom));
+  nameText.position.set(0, Math.round((typeText.y + typeTop) + NAME_TYPE_STACK_OVERLAP_PX - nameBottom));
   const combinedMinX = Math.min(nameBounds.x, typeBounds.x);
   const combinedMinY = Math.min(nameText.y + nameBounds.y, typeText.y + typeBounds.y);
   const combinedMaxX = Math.max(nameBounds.x + nameBounds.width, typeBounds.x + typeBounds.width);
@@ -592,7 +716,7 @@ function towCombatOverlayUpdateResilienceLabel(tokenObject) {
     tokenObject.addChild(label);
     tokenObject[KEYS.resilienceLabel] = label;
 
-    bindTooltipHandlers(hitBox, () => ({
+    overlayControlsBindTooltipHandlersRef(hitBox, () => ({
       title: "Resilience",
       description: "Resilience value used for durability and damage resolution thresholds."
     }));
@@ -624,8 +748,8 @@ function towCombatOverlayUpdateResilienceLabel(tokenObject) {
     Math.round(blockHeight + (padY * 2))
   );
 
-  const overlayScale = getTokenOverlayScale(tokenObject);
-  const edgePad = getOverlayEdgePadPx(tokenObject);
+  const overlayScale = overlayControlsGetTokenOverlayScaleRef(tokenObject);
+  const edgePad = overlayControlsGetOverlayEdgePadPxRef(tokenObject);
   const rowGap = Math.max(18, Math.max(icon.height, valueText.height) + 4);
   const rightTopY = (tokenObject.h / 2) - ((rowGap * overlayScale) / 2);
   label.position.set(Math.round(tokenObject.w + edgePad), Math.round(rightTopY));

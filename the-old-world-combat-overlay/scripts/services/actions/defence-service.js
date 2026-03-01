@@ -1,3 +1,6 @@
+const defenceServiceEscapeHtmlRef = globalThis.towCombatOverlayEscapeHtml;
+const defenceServiceRenderSelectorRowButtonRef = globalThis.towCombatOverlayRenderSelectorRowButton;
+
 function towCombatOverlayGetSkillLabel(skill) {
   return game.oldworld?.config?.skills?.[skill] ?? skill;
 }
@@ -108,11 +111,11 @@ async function towCombatOverlayRollCharacteristic(actor, characteristic) {
 function towCombatOverlayRenderDefenceSelector(actor, entries) {
   const emphasizedSkills = new Set(["defence", "athletics", "endurance"]);
   const renderEntryButton = (entry) => {
-    const id = escapeHtml(entry.id);
-    const type = escapeHtml(entry.type);
+    const id = defenceServiceEscapeHtmlRef(entry.id);
+    const type = defenceServiceEscapeHtmlRef(entry.type);
     const value = Number(entry.target ?? 0);
     const shouldEmphasize = entry.type === "skill" && emphasizedSkills.has(String(entry.id).toLowerCase());
-    return renderSelectorRowButton({
+    return defenceServiceRenderSelectorRowButtonRef({
       rowClass: "skill-btn",
       dataAttrs: `data-type="${type}" data-id="${id}"`,
       label: entry.label,

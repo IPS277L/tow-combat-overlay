@@ -1,3 +1,8 @@
+const isShiftHeld = globalThis.towCombatOverlayIsShiftHeld;
+const escapeHtml = globalThis.towCombatOverlayEscapeHtml;
+const toElement = globalThis.towCombatOverlayToElement;
+const scheduleSoon = globalThis.towCombatOverlayScheduleSoon;
+
 function createTowActionsApi(overrides = {}) {
   return {
     version: TOW_ACTIONS_VERSION,
@@ -5,7 +10,7 @@ function createTowActionsApi(overrides = {}) {
     escapeHtml,
     toElement,
     scheduleSoon,
-    systemAdapter: towCombatOverlaySystemAdapter,
+    systemAdapter: globalThis.getTowCombatOverlaySystemAdapter?.() ?? null,
     ...overrides
   };
 }
@@ -26,6 +31,8 @@ function registerTowActionsApi(apiOverrides = {}) {
 
   return game[TOW_ACTIONS_KEY];
 }
+
+globalThis.registerTowActionsApi = registerTowActionsApi;
 
 const towCombatOverlayActionServices = getTowCombatOverlayActionServices();
 

@@ -1,3 +1,5 @@
+// TODO: Think about renaming variables values like MODULE_KEY to be more specific to the module
+// and combat overlay related, like TOW_COMBAT_OVERLAY_MODULE_KEY or similar
 const MODULE_KEY = "towMacroToggleOverlay";
 const PreciseTextClass = foundry.canvas.containers.PreciseText;
 
@@ -36,7 +38,7 @@ const STATUS_PALETTE_ICON_SIZE = 20;
 const STATUS_PALETTE_ICON_GAP = 2;
 const STATUS_PALETTE_ROWS = 2;
 const TOKEN_CONTROL_PAD = 6;
-const NAME_TYPE_STACK_OVERLAP_PX = 13;
+const NAME_TYPE_STACK_OVERLAP_PX = 9;
 const NAME_TYPE_TO_TOKEN_OFFSET_PX = 6;
 const STATUS_PALETTE_TOKEN_PAD = TOKEN_CONTROL_PAD;
 const STATUS_PALETTE_INACTIVE_TINT = 0x565656;
@@ -122,59 +124,70 @@ const ICON_SRC_ATK = "icons/svg/sword.svg";
 const ICON_SRC_DEF = "icons/svg/shield.svg";
 const ICON_SRC_WOUND = "icons/svg/blood.svg";
 const ICON_SRC_RES = "icons/svg/statue.svg";
+function overlayRuntimeGetTokenOverlayScaleRef(tokenObject) {
+  return globalThis.towCombatOverlayGetTokenOverlayScale(tokenObject);
+}
+
+function overlayRuntimeClampNumberRef(value, min, max) {
+  return globalThis.towCombatOverlayClampNumber(value, min, max);
+}
+
+function overlayRuntimeRoundToRef(value, digits) {
+  return globalThis.towCombatOverlayRoundTo(value, digits);
+}
 
 function getLayoutBorderStyle(tokenObject) {
-  const overlayScale = getTokenOverlayScale(tokenObject);
-  const width = clampNumber(LAYOUT_BORDER_WIDTH * Math.pow(overlayScale, LAYOUT_BORDER_SCALE_EXP), 0.68, 2.1);
-  const radius = clampNumber(LAYOUT_BORDER_RADIUS * Math.pow(overlayScale, LAYOUT_BORDER_RADIUS_SCALE_EXP), 2.8, 8.5);
-  const alpha = clampNumber(LAYOUT_BORDER_ALPHA * (0.78 + (overlayScale * 0.22)), 0.68, 1);
+  const overlayScale = overlayRuntimeGetTokenOverlayScaleRef(tokenObject);
+  const width = overlayRuntimeClampNumberRef(LAYOUT_BORDER_WIDTH * Math.pow(overlayScale, LAYOUT_BORDER_SCALE_EXP), 0.68, 2.1);
+  const radius = overlayRuntimeClampNumberRef(LAYOUT_BORDER_RADIUS * Math.pow(overlayScale, LAYOUT_BORDER_RADIUS_SCALE_EXP), 2.8, 8.5);
+  const alpha = overlayRuntimeClampNumberRef(LAYOUT_BORDER_ALPHA * (0.78 + (overlayScale * 0.22)), 0.68, 1);
   return {
-    width: roundTo(width),
-    radius: roundTo(radius),
-    alpha: roundTo(alpha)
+    width: overlayRuntimeRoundToRef(width),
+    radius: overlayRuntimeRoundToRef(radius),
+    alpha: overlayRuntimeRoundToRef(alpha)
   };
 }
 
 function getStatusSpecialBgStyle(iconSize, baseFillAlpha) {
   const size = Number(iconSize);
   const sizeSafe = Number.isFinite(size) && size > 0 ? size : STATUS_PALETTE_ICON_SIZE;
-  const iconScale = clampNumber(sizeSafe / STATUS_PALETTE_ICON_SIZE, STATUS_SPECIAL_BG_ICON_SCALE_MIN, STATUS_SPECIAL_BG_ICON_SCALE_MAX);
-  const pad = clampNumber(STATUS_PALETTE_SPECIAL_BG_PAD * Math.pow(iconScale, STATUS_SPECIAL_BG_RADIUS_SCALE_EXP), 0.45, 2.4);
-  const outlineWidth = clampNumber(
+  const iconScale = overlayRuntimeClampNumberRef(sizeSafe / STATUS_PALETTE_ICON_SIZE, STATUS_SPECIAL_BG_ICON_SCALE_MIN, STATUS_SPECIAL_BG_ICON_SCALE_MAX);
+  const pad = overlayRuntimeClampNumberRef(STATUS_PALETTE_SPECIAL_BG_PAD * Math.pow(iconScale, STATUS_SPECIAL_BG_RADIUS_SCALE_EXP), 0.45, 2.4);
+  const outlineWidth = overlayRuntimeClampNumberRef(
     STATUS_PALETTE_SPECIAL_BG_OUTLINE_WIDTH * Math.pow(iconScale, STATUS_SPECIAL_BG_OUTLINE_SCALE_EXP),
     0.28,
     2.2
   );
-  const radius = clampNumber(
+  const radius = overlayRuntimeClampNumberRef(
     STATUS_PALETTE_SPECIAL_BG_RADIUS * Math.pow(iconScale, STATUS_SPECIAL_BG_RADIUS_SCALE_EXP),
     1.25,
     6
   );
-  const outlineAlpha = clampNumber(
+  const outlineAlpha = overlayRuntimeClampNumberRef(
     STATUS_PALETTE_SPECIAL_BG_OUTLINE_ALPHA * (0.72 + (iconScale * 0.28)),
     0.26,
     0.9
   );
-  const fillAlpha = clampNumber(Number(baseFillAlpha) * (0.76 + (iconScale * 0.24)), 0.16, 0.9);
+  const fillAlpha = overlayRuntimeClampNumberRef(Number(baseFillAlpha) * (0.76 + (iconScale * 0.24)), 0.16, 0.9);
   return {
-    pad: roundTo(pad),
-    outlineWidth: roundTo(outlineWidth),
-    radius: roundTo(radius),
-    outlineAlpha: roundTo(outlineAlpha),
-    fillAlpha: roundTo(fillAlpha)
+    pad: overlayRuntimeRoundToRef(pad),
+    outlineWidth: overlayRuntimeRoundToRef(outlineWidth),
+    radius: overlayRuntimeRoundToRef(radius),
+    outlineAlpha: overlayRuntimeRoundToRef(outlineAlpha),
+    fillAlpha: overlayRuntimeRoundToRef(fillAlpha)
   };
 }
 
 function getStatusPaletteBackdropStyle(iconSize) {
   const size = Number(iconSize);
   const sizeSafe = Number.isFinite(size) && size > 0 ? size : STATUS_PALETTE_ICON_SIZE;
-  const iconScale = clampNumber(sizeSafe / STATUS_PALETTE_ICON_SIZE, STATUS_SPECIAL_BG_ICON_SCALE_MIN, 1.3);
+  const iconScale = overlayRuntimeClampNumberRef(sizeSafe / STATUS_PALETTE_ICON_SIZE, STATUS_SPECIAL_BG_ICON_SCALE_MIN, 1.3);
   return {
-    padX: roundTo(clampNumber(STATUS_PALETTE_BACKDROP_PAD_X * Math.pow(iconScale, 0.95), 2.2, 9)),
-    padY: roundTo(clampNumber(STATUS_PALETTE_BACKDROP_PAD_Y * Math.pow(iconScale, 0.95), 1.8, 7)),
-    borderWidth: roundTo(clampNumber(STATUS_PALETTE_BACKDROP_BORDER_WIDTH * Math.pow(iconScale, 1.05), 0.45, 1.8)),
-    radius: roundTo(clampNumber(STATUS_PALETTE_BACKDROP_RADIUS * Math.pow(iconScale, 0.98), 2.8, 10)),
-    fillAlpha: roundTo(clampNumber(STATUS_PALETTE_BACKDROP_FILL_ALPHA * (0.84 + (iconScale * 0.16)), 0.14, 0.34)),
-    borderAlpha: roundTo(clampNumber(STATUS_PALETTE_BACKDROP_BORDER_ALPHA * (0.9 + (iconScale * 0.1)), 0.32, 0.62))
+    padX: overlayRuntimeRoundToRef(overlayRuntimeClampNumberRef(STATUS_PALETTE_BACKDROP_PAD_X * Math.pow(iconScale, 0.95), 2.2, 9)),
+    padY: overlayRuntimeRoundToRef(overlayRuntimeClampNumberRef(STATUS_PALETTE_BACKDROP_PAD_Y * Math.pow(iconScale, 0.95), 1.8, 7)),
+    borderWidth: overlayRuntimeRoundToRef(overlayRuntimeClampNumberRef(STATUS_PALETTE_BACKDROP_BORDER_WIDTH * Math.pow(iconScale, 1.05), 0.45, 1.8)),
+    radius: overlayRuntimeRoundToRef(overlayRuntimeClampNumberRef(STATUS_PALETTE_BACKDROP_RADIUS * Math.pow(iconScale, 0.98), 2.8, 10)),
+    fillAlpha: overlayRuntimeRoundToRef(overlayRuntimeClampNumberRef(STATUS_PALETTE_BACKDROP_FILL_ALPHA * (0.84 + (iconScale * 0.16)), 0.14, 0.34)),
+    borderAlpha: overlayRuntimeRoundToRef(overlayRuntimeClampNumberRef(STATUS_PALETTE_BACKDROP_BORDER_ALPHA * (0.9 + (iconScale * 0.1)), 0.32, 0.62))
   };
 }

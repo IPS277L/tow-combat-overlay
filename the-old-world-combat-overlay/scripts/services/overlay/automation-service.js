@@ -1,3 +1,5 @@
+// TODO: Think about renaming thing like ensureTowActions to something more specific to the module
+// and combat overlay related, like ensureTowCombatOverlayActions or similar
 const ensureTowActionsRuntime = typeof globalThis.towCombatOverlayEnsureTowActionsRuntime === "function"
   ? globalThis.towCombatOverlayEnsureTowActionsRuntime
   : async function fallbackEnsureTowActionsRuntime() {
@@ -469,3 +471,7 @@ async function postFlowSeparatorCard(opposed, { sourceStatusHints = [], targetSt
     speaker: { alias: "Combat Flow" }
   });
 }
+
+globalThis.towCombatOverlayArmDefaultStaggerChoiceWound = armDefaultStaggerChoiceWound;
+globalThis.towCombatOverlayArmAutoDefenceForOpposed = armAutoDefenceForOpposed;
+globalThis.towCombatOverlaySnapshotActorState = snapshotActorState;

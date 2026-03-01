@@ -4,6 +4,7 @@ function getTowCombatOverlayModuleConstants() {
     state.constants = Object.freeze({
       moduleId: "the-old-world-combat-overlay",
       moduleName: "The Old World Combat Overlay",
+      // TODO: Think about settings options for the module and add them here as constants
       settings: Object.freeze({
         enableOverlay: "enableOverlay",
         enableAutoDefence: "enableAutoDefence",

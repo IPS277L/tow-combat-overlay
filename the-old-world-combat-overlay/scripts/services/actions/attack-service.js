@@ -1,3 +1,14 @@
+const attackServiceToElementRef = globalThis.towCombatOverlayToElement;
+const attackServiceScheduleSoonRef = globalThis.towCombatOverlayScheduleSoon;
+const attackServiceEscapeHtmlRef = globalThis.towCombatOverlayEscapeHtml;
+const attackServiceGetSortedWeaponAttacksRef = globalThis.towCombatOverlayGetSortedWeaponAttacks;
+const attackServiceGetAttackMetaRef = globalThis.towCombatOverlayGetAttackMeta;
+const attackServiceRenderSelectorRowButtonRef = globalThis.towCombatOverlayRenderSelectorRowButton;
+const attackServiceWaitForChatMessageRef = globalThis.towCombatOverlayWaitForChatMessage;
+const attackServiceRenderDamageDisplayRef = globalThis.towCombatOverlayRenderDamageDisplay;
+const attackServiceShouldExecuteAttackRef = globalThis.towCombatOverlayShouldExecuteAttack;
+
+// TODO: Think about removing -service from the file name and just have it be attack.js or similar
 function towCombatOverlayArmDamageAppend(actor, ability) {
   let timeoutId = null;
 
@@ -17,7 +28,7 @@ function towCombatOverlayArmDamageAppend(actor, ability) {
 
     cleanup(hookId);
     const flatDamage = test?.testData?.damage ?? ability.system.damage?.value ?? 0;
-    await renderDamageDisplay(message, { damage: flatDamage });
+    await attackServiceRenderDamageDisplayRef(message, { damage: flatDamage });
   });
 
   timeoutId = setTimeout(() => cleanup(hookId), 30000);
@@ -32,13 +43,13 @@ function towCombatOverlayArmAutoSubmitDialog({ hookName, matches, submitErrorMes
   Hooks.once(hookName, (app) => {
     if (!matches(app)) return;
 
-    const element = toElement(app?.element);
+    const element = attackServiceToElementRef(app?.element);
     if (element) {
       element.style.visibility = "hidden";
       element.style.pointerEvents = "none";
     }
 
-    scheduleSoon(async () => {
+    attackServiceScheduleSoonRef(async () => {
       if (typeof app?.submit !== "function") {
         console.error(`[the-old-world-combat-overlay] ${submitErrorMessage}`);
         if (element) {
@@ -75,20 +86,20 @@ async function towCombatOverlaySetupAbilityTestWithDamage(actor, ability, { auto
   if (!testRef) return null;
 
   const flatDamage = testRef.testData?.damage ?? ability.system.damage?.value ?? 0;
-  const message = await waitForChatMessage(testRef.context?.messageId);
-  await renderDamageDisplay(message, { damage: flatDamage });
+  const message = await attackServiceWaitForChatMessageRef(testRef.context?.messageId);
+  await attackServiceRenderDamageDisplayRef(message, { damage: flatDamage });
   return testRef;
 }
 
 function towCombatOverlayRenderAttackSelector(actor, attacks, { onFastAuto } = {}) {
   const buttonMarkup = attacks
     .map((attack, index) => {
-      const itemId = escapeHtml(attack.id);
-      return renderSelectorRowButton({
+      const itemId = attackServiceEscapeHtmlRef(attack.id);
+      return attackServiceRenderSelectorRowButtonRef({
         rowClass: "attack-btn",
         dataAttrs: `data-id="${itemId}"`,
         label: attack.name,
-        subLabel: getAttackMeta(attack),
+        subLabel: attackServiceGetAttackMetaRef(attack),
         valueLabel: "",
         highlighted: index === 0,
         compact: false
@@ -133,8 +144,8 @@ function towCombatOverlayRenderAttackSelector(actor, attacks, { onFastAuto } = {
 
 async function towCombatOverlayAttackActor(actor, { manual = false, onFastAuto = null } = {}) {
   if (!actor) return;
-  if (!shouldExecuteAttack(actor, { manual })) return;
-  const attacks = getSortedWeaponAttacks(actor);
+  if (!attackServiceShouldExecuteAttackRef(actor, { manual })) return;
+  const attacks = attackServiceGetSortedWeaponAttacksRef(actor);
   if (attacks.length === 0) return;
 
   if (manual) {

@@ -1,3 +1,13 @@
+function layoutStateGetLayoutBorderStyleRef(tokenObject) {
+  return getLayoutBorderStyle(tokenObject);
+}
+
+const layoutStateCanEditActorRef = globalThis.towCombatOverlayCanEditActor;
+const layoutStateWarnNoPermissionRef = globalThis.towCombatOverlayWarnNoPermission;
+const layoutStateAddActorConditionRef = globalThis.towCombatOverlayAddActorCondition;
+const layoutStateRemoveActorConditionRef = globalThis.towCombatOverlayRemoveActorCondition;
+const layoutStateAddActorWoundRef = globalThis.towCombatOverlayAddActorWound;
+
 function towCombatOverlayClearDisplayObject(displayObject) {
   if (!displayObject) return;
   displayObject.parent?.removeChild(displayObject);
@@ -65,7 +75,7 @@ function towCombatOverlayUpdateTokenOverlayHitArea(tokenObject) {
   };
   tokenObject.hitArea = new PIXI.Rectangle(hitBounds.x, hitBounds.y, hitBounds.width, hitBounds.height);
   tokenObject[KEYS.layoutBounds] = { ...hitBounds };
-  drawCustomLayoutBorder(tokenObject);
+  towCombatOverlayDrawCustomLayoutBorder(tokenObject);
 }
 
 function towCombatOverlayRestoreTokenOverlayInteractivity(tokenObject) {
@@ -100,7 +110,7 @@ function towCombatOverlayDrawCustomLayoutBorder(tokenObject) {
   const bounds = tokenObject[KEYS.layoutBounds];
   border.clear();
   if (!bounds) return;
-  const borderStyle = getLayoutBorderStyle(tokenObject);
+  const borderStyle = layoutStateGetLayoutBorderStyleRef(tokenObject);
   border.lineStyle({
     width: borderStyle.width,
     color: LAYOUT_BORDER_COLOR,
@@ -243,7 +253,7 @@ function towCombatOverlayIsAtWoundCap(actor) {
 }
 
 async function towCombatOverlaySyncNpcDeadFromWounds(actor) {
-  if (!actor || actor.type !== "npc" || !canEditActor(actor)) return;
+  if (!actor || actor.type !== "npc" || !layoutStateCanEditActorRef(actor)) return;
   if (actor.system?.type === "minion") return;
   if (!actor.system?.hasThresholds || typeof actor.system?.thresholdAtWounds !== "function") return;
   const state = game[MODULE_KEY];
@@ -264,12 +274,12 @@ async function towCombatOverlaySyncNpcDeadFromWounds(actor) {
     if (shouldBeDead) {
       await runActorOpLock(actor, "condition:dead", async () => {
         if (actor.hasCondition?.("dead")) return;
-        await addActorCondition(actor, "dead");
+        await layoutStateAddActorConditionRef(actor, "dead");
       });
     } else {
       await runActorOpLock(actor, "condition:dead", async () => {
         if (!actor.hasCondition?.("dead")) return;
-        await removeActorCondition(actor, "dead");
+        await layoutStateRemoveActorConditionRef(actor, "dead");
       });
     }
   } finally {
@@ -299,7 +309,7 @@ function towCombatOverlayQueueDeadSyncFromWounds(actor) {
 }
 
 async function towCombatOverlaySyncWoundsFromDeadState(actor) {
-  if (!actor || !canEditActor(actor)) return;
+  if (!actor || !layoutStateCanEditActorRef(actor)) return;
   const state = game[MODULE_KEY];
   if (!state) return;
   if (!state.deadPresenceByActor) state.deadPresenceByActor = new Map();
@@ -378,21 +388,21 @@ function towCombatOverlayGetResilienceValue(tokenDocument) {
 }
 
 async function towCombatOverlayAddWound(actor) {
-  if (!canEditActor(actor)) {
-    warnNoPermission(actor);
+  if (!layoutStateCanEditActorRef(actor)) {
+    layoutStateWarnNoPermissionRef(actor);
     return;
   }
   if (towCombatOverlayIsAtWoundCap(actor)) return;
   if (typeof actor.system?.addWound === "function") {
-    await addActorWound(actor, { roll: false });
+    await layoutStateAddActorWoundRef(actor, { roll: false });
   } else {
     await actor.createEmbeddedDocuments("Item", [{ type: WOUND_ITEM_TYPE, name: "Wound" }]);
   }
 }
 
 async function towCombatOverlayRemoveWound(actor) {
-  if (!canEditActor(actor)) {
-    warnNoPermission(actor);
+  if (!layoutStateCanEditActorRef(actor)) {
+    layoutStateWarnNoPermissionRef(actor);
     return;
   }
 
@@ -401,7 +411,7 @@ async function towCombatOverlayRemoveWound(actor) {
     const isMinion = actor.type === "npc" && actor.system?.type === "minion";
     if (!wounds.length) {
       if (isMinion && actor.hasCondition?.("dead")) {
-        await removeActorCondition(actor, "dead");
+        await layoutStateRemoveActorConditionRef(actor, "dead");
       }
       return;
     }
@@ -412,7 +422,7 @@ async function towCombatOverlayRemoveWound(actor) {
 
     if (isMinion && actor.hasCondition?.("dead")) {
       const remaining = towCombatOverlayGetActorWoundItemCount(actor);
-      if (remaining <= 0) await removeActorCondition(actor, "dead");
+      if (remaining <= 0) await layoutStateRemoveActorConditionRef(actor, "dead");
     }
   });
 }
