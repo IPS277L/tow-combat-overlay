@@ -1,4 +1,7 @@
 function getTowCombatOverlayApiFromModuleOrGame() {
+  if (typeof globalThis.getTowCombatOverlayOverlayApi === "function") {
+    return globalThis.getTowCombatOverlayOverlayApi();
+  }
   const { moduleId } = getTowCombatOverlayModuleConstants();
   return game.modules.get(moduleId)?.api?.towOverlay ?? game.towOverlay ?? null;
 }
@@ -26,44 +29,33 @@ function syncTowCombatOverlayEnabledSetting() {
   return false;
 }
 
+function registerTowCombatOverlayRuntimeApis() {
+  if (typeof globalThis.registerTowActionsApi === "function") {
+    const services = typeof globalThis.getTowCombatOverlayActionServices === "function"
+      ? globalThis.getTowCombatOverlayActionServices()
+      : {};
+    globalThis.registerTowActionsApi({
+      attackActor: services.attackActor,
+      castActor: services.castActor,
+      defenceActor: services.defenceActor,
+      runAttackForControlled: services.runAttackForControlled,
+      runCastingForControlled: services.runCastingForControlled,
+      runDefenceForControlled: services.runDefenceForControlled
+    });
+  }
+  if (typeof globalThis.registerTowOverlayApi === "function") {
+    globalThis.registerTowOverlayApi();
+  }
+}
+
 function registerTowCombatOverlayModuleHooks() {
   Hooks.once("init", () => {
     registerTowCombatOverlaySettings();
-    if (typeof globalThis.registerTowActionsApi === "function") {
-      const services = typeof globalThis.getTowCombatOverlayActionServices === "function"
-        ? globalThis.getTowCombatOverlayActionServices()
-        : {};
-      globalThis.registerTowActionsApi({
-        attackActor: services.attackActor,
-        castActor: services.castActor,
-        defenceActor: services.defenceActor,
-        runAttackForControlled: services.runAttackForControlled,
-        runCastingForControlled: services.runCastingForControlled,
-        runDefenceForControlled: services.runDefenceForControlled
-      });
-    }
-    if (typeof globalThis.registerTowOverlayApi === "function") {
-      globalThis.registerTowOverlayApi();
-    }
+    registerTowCombatOverlayRuntimeApis();
   });
 
   Hooks.once("ready", () => {
-    if (typeof globalThis.registerTowActionsApi === "function") {
-      const services = typeof globalThis.getTowCombatOverlayActionServices === "function"
-        ? globalThis.getTowCombatOverlayActionServices()
-        : {};
-      globalThis.registerTowActionsApi({
-        attackActor: services.attackActor,
-        castActor: services.castActor,
-        defenceActor: services.defenceActor,
-        runAttackForControlled: services.runAttackForControlled,
-        runCastingForControlled: services.runCastingForControlled,
-        runDefenceForControlled: services.runDefenceForControlled
-      });
-    }
-    if (typeof globalThis.registerTowOverlayApi === "function") {
-      globalThis.registerTowOverlayApi();
-    }
+    registerTowCombatOverlayRuntimeApis();
     if (typeof globalThis.syncTowCombatOverlayPublicApisFromGlobals === "function") {
       globalThis.syncTowCombatOverlayPublicApisFromGlobals();
     }

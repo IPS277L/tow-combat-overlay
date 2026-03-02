@@ -15,7 +15,10 @@ async function towCombatOverlayEnsureTowActions() {
 }
 
 function towCombatOverlayGetTowActionsSystemAdapter() {
-  return game.towActions?.systemAdapter ?? null;
+  const api = typeof globalThis.getTowCombatOverlayActionsApi === "function"
+    ? globalThis.getTowCombatOverlayActionsApi()
+    : game.towActions;
+  return api?.systemAdapter ?? null;
 }
 
 async function towCombatOverlayAddActorCondition(actor, condition, options = {}) {

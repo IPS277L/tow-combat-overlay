@@ -12,16 +12,14 @@ const overlayControlsCanEditActorRef = globalThis.towCombatOverlayCanEditActor;
 const overlayControlsClearDisplayObjectRef = globalThis.towCombatOverlayClearDisplayObject;
 const overlayControlsAddWoundRef = globalThis.towCombatOverlayAddWound;
 const overlayControlsRemoveWoundRef = globalThis.towCombatOverlayRemoveWound;
-function overlayControlsArmDefaultStaggerChoiceWoundRef(durationMs) {
-  return globalThis.towCombatOverlayArmDefaultStaggerChoiceWound(durationMs);
+function getOverlayControlsAutomationRef() {
+  return globalThis.towCombatOverlayAutomation ?? null;
 }
 
-function overlayControlsArmAutoDefenceForOpposedRef(sourceToken, targetToken, options) {
-  return globalThis.towCombatOverlayArmAutoDefenceForOpposed(sourceToken, targetToken, options);
-}
-
-function overlayControlsSnapshotActorStateRef(actor) {
-  return globalThis.towCombatOverlaySnapshotActorState(actor);
+function getOverlayControlsActionsApiRef() {
+  return typeof globalThis.getTowCombatOverlayActionsApi === "function"
+    ? globalThis.getTowCombatOverlayActionsApi()
+    : game.towActions;
 }
 
 function getDragLineStyle(sourceToken) {
@@ -345,7 +343,7 @@ function towCombatOverlayCreateWoundControlUI(tokenObject) {
 
       const shiftManual = pointerDownShift || overlayControlsIsShiftModifierRef(upEvent);
       if (!dragStarted) {
-        await game.towActions.attackActor(sourceActor, { manual: shiftManual });
+        await getOverlayControlsActionsApiRef().attackActor(sourceActor, { manual: shiftManual });
         return;
       }
 
@@ -356,13 +354,17 @@ function towCombatOverlayCreateWoundControlUI(tokenObject) {
 
       await setSingleTarget(target);
       const armAutoOpposedFlow = () => {
-        const sourceBeforeState = overlayControlsSnapshotActorStateRef(sourceActor);
-        const restoreStaggerPrompt = overlayControlsArmDefaultStaggerChoiceWoundRef(AUTO_STAGGER_PATCH_MS);
-        overlayControlsArmAutoDefenceForOpposedRef(sourceToken, target, { sourceBeforeState });
+        const automation = getOverlayControlsAutomationRef();
+        if (!automation) {
+          throw new Error("[the-old-world-combat-overlay] Overlay automation coordinator is unavailable.");
+        }
+        const sourceBeforeState = automation.snapshotActorState(sourceActor);
+        const restoreStaggerPrompt = automation.armDefaultStaggerChoiceWound(AUTO_STAGGER_PATCH_MS);
+        automation.armAutoDefenceForOpposed(sourceToken, target, { sourceBeforeState });
         return () => setTimeout(() => restoreStaggerPrompt(), AUTO_APPLY_WAIT_MS);
       };
       if (shiftManual) {
-        await game.towActions.attackActor(sourceActor, {
+        await getOverlayControlsActionsApiRef().attackActor(sourceActor, {
           manual: true,
           onFastAuto: async () => {
             armAutoOpposedFlow()();
@@ -373,7 +375,7 @@ function towCombatOverlayCreateWoundControlUI(tokenObject) {
 
       const restoreAutoFlow = armAutoOpposedFlow();
       try {
-        await game.towActions.attackActor(sourceActor, { manual: false });
+        await getOverlayControlsActionsApiRef().attackActor(sourceActor, { manual: false });
       } finally {
         restoreAutoFlow();
       }
@@ -395,7 +397,8 @@ function towCombatOverlayCreateWoundControlUI(tokenObject) {
     const actor = overlayControlsGetActorFromTokenRef(tokenObject);
     if (!actor) return;
     if (!(await ensureTowActions())) return;
-    await game.towActions.defenceActor(actor, { manual: game.towActions.isShiftHeld() });
+    const actionsApi = getOverlayControlsActionsApiRef();
+    await actionsApi.defenceActor(actor, { manual: actionsApi.isShiftHeld() });
   });
   defenceHitBox.on("contextmenu", overlayControlsPreventPointerDefaultRef);
   overlayControlsBindTooltipHandlersRef(defenceHitBox, () => ({

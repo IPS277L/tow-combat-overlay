@@ -16,20 +16,20 @@ function createTowActionsApi(overrides = {}) {
 }
 
 function registerTowActionsApi(apiOverrides = {}) {
-  const existingApi = game[TOW_ACTIONS_KEY] ?? {};
   const nextApi = createTowActionsApi(apiOverrides);
-  game[TOW_ACTIONS_KEY] = {
-    ...existingApi,
-    ...nextApi
-  };
+  const targetApi = (game[TOW_ACTIONS_KEY] && typeof game[TOW_ACTIONS_KEY] === "object")
+    ? game[TOW_ACTIONS_KEY]
+    : {};
+  Object.assign(targetApi, nextApi);
+  game[TOW_ACTIONS_KEY] = targetApi;
 
   if (typeof globalThis.registerTowCombatOverlayPublicApis === "function") {
     globalThis.registerTowCombatOverlayPublicApis({
-      actionsApi: game[TOW_ACTIONS_KEY]
+      actionsApi: targetApi
     });
   }
 
-  return game[TOW_ACTIONS_KEY];
+  return targetApi;
 }
 
 globalThis.registerTowActionsApi = registerTowActionsApi;

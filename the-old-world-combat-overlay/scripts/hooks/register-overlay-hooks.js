@@ -30,9 +30,30 @@ function getOverlayHooksQueueDeadSyncFromWoundsRef() {
   return globalThis.towCombatOverlayQueueDeadSyncFromWounds;
 }
 
+function resolveTowCombatOverlayHookBindings() {
+  const bindings = {
+    refreshAllOverlays: getOverlayHooksRefreshAllOverlaysRef(),
+    refreshTokenOverlay: getOverlayHooksRefreshTokenOverlayRef(),
+    refreshActorOverlays: getOverlayHooksRefreshActorOverlaysRef(),
+    bringTokenToFront: getOverlayHooksBringTokenToFrontRef(),
+    hideCoreTokenHoverVisuals: getOverlayHooksHideCoreTokenHoverVisualsRef(),
+    updateCustomLayoutBorderVisibility: getOverlayHooksUpdateCustomLayoutBorderVisibilityRef(),
+    queueActorOverlayResync: getOverlayHooksQueueActorOverlayResyncRef(),
+    queueDeadSyncFromWounds: getOverlayHooksQueueDeadSyncFromWoundsRef()
+  };
+  const missing = Object.entries(bindings)
+    .filter(([, value]) => typeof value !== "function")
+    .map(([key]) => key);
+  if (missing.length) {
+    throw new Error(`[the-old-world-combat-overlay] Missing required overlay hook bindings: ${missing.join(", ")}`);
+  }
+  return bindings;
+}
+
 function registerTowCombatOverlayHooks() {
+  const bindings = resolveTowCombatOverlayHookBindings();
   return {
-    canvasReady: Hooks.on("canvasReady", () => getOverlayHooksRefreshAllOverlaysRef()?.()),
+    canvasReady: Hooks.on("canvasReady", () => bindings.refreshAllOverlays()),
     canvasPan: Hooks.on("canvasPan", (_canvas, viewPosition) => {
       const state = game[MODULE_KEY];
       if (!state) return;
@@ -40,39 +61,39 @@ function registerTowCombatOverlayHooks() {
       const lastScale = Number(state.lastCanvasScale ?? NaN);
       if (Number.isFinite(lastScale) && Math.abs(nextScale - lastScale) < 0.01) return;
       state.lastCanvasScale = nextScale;
-      getOverlayHooksRefreshAllOverlaysRef()?.();
+      bindings.refreshAllOverlays();
     }),
-    refreshToken: Hooks.on("refreshToken", (token) => getOverlayHooksRefreshTokenOverlayRef()?.(token)),
+    refreshToken: Hooks.on("refreshToken", (token) => bindings.refreshTokenOverlay(token)),
     hoverToken: Hooks.on("hoverToken", (token, hovered) => {
-      getOverlayHooksHideCoreTokenHoverVisualsRef()?.(token);
-      getOverlayHooksUpdateCustomLayoutBorderVisibilityRef()?.(token, { hovered });
+      bindings.hideCoreTokenHoverVisuals(token);
+      bindings.updateCustomLayoutBorderVisibility(token, { hovered });
     }),
     controlToken: Hooks.on("controlToken", (token, controlled) => {
-      if (controlled) void getOverlayHooksBringTokenToFrontRef()?.(token);
-      getOverlayHooksHideCoreTokenHoverVisualsRef()?.(token);
-      getOverlayHooksUpdateCustomLayoutBorderVisibilityRef()?.(token, { controlled });
+      if (controlled) void bindings.bringTokenToFront(token);
+      bindings.hideCoreTokenHoverVisuals(token);
+      bindings.updateCustomLayoutBorderVisibility(token, { controlled });
     }),
     createItem: Hooks.on("createItem", (item) => {
       if (item.type !== WOUND_ITEM_TYPE) return;
-      getOverlayHooksRefreshActorOverlaysRef()?.(item.parent);
-      getOverlayHooksQueueActorOverlayResyncRef()?.(item.parent);
-      getOverlayHooksQueueDeadSyncFromWoundsRef()?.(item.parent);
+      bindings.refreshActorOverlays(item.parent);
+      bindings.queueActorOverlayResync(item.parent);
+      bindings.queueDeadSyncFromWounds(item.parent);
     }),
     updateItem: Hooks.on("updateItem", (item) => {
       if (item.type !== WOUND_ITEM_TYPE) return;
-      getOverlayHooksRefreshActorOverlaysRef()?.(item.parent);
-      getOverlayHooksQueueActorOverlayResyncRef()?.(item.parent);
-      getOverlayHooksQueueDeadSyncFromWoundsRef()?.(item.parent);
+      bindings.refreshActorOverlays(item.parent);
+      bindings.queueActorOverlayResync(item.parent);
+      bindings.queueDeadSyncFromWounds(item.parent);
     }),
     deleteItem: Hooks.on("deleteItem", (item) => {
       if (item.type !== WOUND_ITEM_TYPE) return;
-      getOverlayHooksRefreshActorOverlaysRef()?.(item.parent);
-      getOverlayHooksQueueActorOverlayResyncRef()?.(item.parent);
-      getOverlayHooksQueueDeadSyncFromWoundsRef()?.(item.parent);
+      bindings.refreshActorOverlays(item.parent);
+      bindings.queueActorOverlayResync(item.parent);
+      bindings.queueDeadSyncFromWounds(item.parent);
     }),
-    createActiveEffect: Hooks.on("createActiveEffect", (effect) => getOverlayHooksRefreshActorOverlaysRef()?.(effect?.parent)),
-    updateActiveEffect: Hooks.on("updateActiveEffect", (effect) => getOverlayHooksRefreshActorOverlaysRef()?.(effect?.parent)),
-    deleteActiveEffect: Hooks.on("deleteActiveEffect", (effect) => getOverlayHooksRefreshActorOverlaysRef()?.(effect?.parent))
+    createActiveEffect: Hooks.on("createActiveEffect", (effect) => bindings.refreshActorOverlays(effect?.parent)),
+    updateActiveEffect: Hooks.on("updateActiveEffect", (effect) => bindings.refreshActorOverlays(effect?.parent)),
+    deleteActiveEffect: Hooks.on("deleteActiveEffect", (effect) => bindings.refreshActorOverlays(effect?.parent))
   };
 }
 

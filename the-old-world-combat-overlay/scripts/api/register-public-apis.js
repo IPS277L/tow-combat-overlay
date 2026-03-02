@@ -1,30 +1,54 @@
+function ensureTowCombatOverlayApiObject(hostObject, key) {
+  if (!hostObject || !key) return null;
+  const current = hostObject[key];
+  if (current && typeof current === "object") return current;
+  const next = {};
+  hostObject[key] = next;
+  return next;
+}
+
+function resolveTowCombatOverlaySharedApiObject({
+  moduleApi = null,
+  moduleKey = "",
+  gameKey = ""
+} = {}) {
+  const moduleObject = (moduleApi && moduleKey) ? moduleApi[moduleKey] : null;
+  const gameObject = (game && gameKey) ? game[gameKey] : null;
+  if (gameObject && typeof gameObject === "object") return gameObject;
+  if (moduleObject && typeof moduleObject === "object") return moduleObject;
+  return {};
+}
+
 function registerTowCombatOverlayPublicApis({
   actionsApi = null,
   overlayApi = null
 } = {}) {
   const { moduleId } = getTowCombatOverlayModuleConstants();
   const moduleState = game?.modules?.get?.(moduleId) ?? null;
-  if (moduleState) {
-    moduleState.api = {
-      ...(moduleState.api ?? {}),
-      ...(actionsApi ? { towActions: actionsApi } : {}),
-      ...(overlayApi ? { towOverlay: overlayApi } : {})
-    };
-  }
+  const moduleApi = moduleState
+    ? ensureTowCombatOverlayApiObject(moduleState, "api")
+    : null;
 
   if (actionsApi) {
-    // TODO: Think about renaming towActions to something more specific
-    game.towActions = {
-      ...(game.towActions ?? {}),
-      ...actionsApi
-    };
+    const sharedActionsApi = resolveTowCombatOverlaySharedApiObject({
+      moduleApi,
+      moduleKey: "towActions",
+      gameKey: "towActions"
+    });
+    Object.assign(sharedActionsApi, actionsApi);
+    game.towActions = sharedActionsApi;
+    if (moduleApi) moduleApi.towActions = sharedActionsApi;
   }
 
   if (overlayApi) {
-    game.towOverlay = {
-      ...(game.towOverlay ?? {}),
-      ...overlayApi
-    };
+    const sharedOverlayApi = resolveTowCombatOverlaySharedApiObject({
+      moduleApi,
+      moduleKey: "towOverlay",
+      gameKey: "towOverlay"
+    });
+    Object.assign(sharedOverlayApi, overlayApi);
+    game.towOverlay = sharedOverlayApi;
+    if (moduleApi) moduleApi.towOverlay = sharedOverlayApi;
   }
 }
 
@@ -46,13 +70,23 @@ function getTowCombatOverlayPublicApi(apiKey) {
   return null;
 }
 
+function getTowCombatOverlayActionsApi() {
+  return getTowCombatOverlayPublicApi("towActions");
+}
+
+function getTowCombatOverlayOverlayApi() {
+  return getTowCombatOverlayPublicApi("towOverlay");
+}
+
 function syncTowCombatOverlayPublicApisFromGlobals() {
   registerTowCombatOverlayPublicApis({
-    actionsApi: game.towActions ?? null,
-    overlayApi: game.towOverlay ?? null
+    actionsApi: getTowCombatOverlayActionsApi(),
+    overlayApi: getTowCombatOverlayOverlayApi()
   });
 }
 
 globalThis.registerTowCombatOverlayPublicApis = registerTowCombatOverlayPublicApis;
 globalThis.getTowCombatOverlayPublicApi = getTowCombatOverlayPublicApi;
+globalThis.getTowCombatOverlayActionsApi = getTowCombatOverlayActionsApi;
+globalThis.getTowCombatOverlayOverlayApi = getTowCombatOverlayOverlayApi;
 globalThis.syncTowCombatOverlayPublicApisFromGlobals = syncTowCombatOverlayPublicApisFromGlobals;

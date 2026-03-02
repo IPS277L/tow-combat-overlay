@@ -866,20 +866,20 @@ function createTowOverlayApi(overrides = {}) {
 }
 
 function registerTowOverlayApi(apiOverrides = {}) {
-  const existingApi = game[TOW_OVERLAY_API_KEY] ?? {};
   const nextApi = createTowOverlayApi(apiOverrides);
-  game[TOW_OVERLAY_API_KEY] = {
-    ...existingApi,
-    ...nextApi
-  };
+  const targetApi = (game[TOW_OVERLAY_API_KEY] && typeof game[TOW_OVERLAY_API_KEY] === "object")
+    ? game[TOW_OVERLAY_API_KEY]
+    : {};
+  Object.assign(targetApi, nextApi);
+  game[TOW_OVERLAY_API_KEY] = targetApi;
 
   if (typeof globalThis.registerTowCombatOverlayPublicApis === "function") {
     globalThis.registerTowCombatOverlayPublicApis({
-      overlayApi: game[TOW_OVERLAY_API_KEY]
+      overlayApi: targetApi
     });
   }
 
-  return game[TOW_OVERLAY_API_KEY];
+  return targetApi;
 }
 
 const TOW_OVERLAY_API_KEY = "towOverlay";

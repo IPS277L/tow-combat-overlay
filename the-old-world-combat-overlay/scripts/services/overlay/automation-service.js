@@ -15,10 +15,13 @@ const ensureTowActionsRuntime = typeof globalThis.towCombatOverlayEnsureTowActio
 const ensureTowActions = typeof globalThis.towCombatOverlayEnsureTowActions === "function"
   ? globalThis.towCombatOverlayEnsureTowActions
   : async function fallbackEnsureTowActions() {
-    const hasApi = typeof game.towActions?.attackActor === "function" &&
-      typeof game.towActions?.defenceActor === "function" &&
-      typeof game.towActions?.isShiftHeld === "function" &&
-      typeof game.towActions?.systemAdapter === "object";
+    const api = typeof globalThis.getTowCombatOverlayActionsApi === "function"
+      ? globalThis.getTowCombatOverlayActionsApi()
+      : game.towActions;
+    const hasApi = typeof api?.attackActor === "function" &&
+      typeof api?.defenceActor === "function" &&
+      typeof api?.isShiftHeld === "function" &&
+      typeof api?.systemAdapter === "object";
     if (hasApi) return true;
 
     const loaded = await ensureTowActionsRuntime();
@@ -27,16 +30,21 @@ const ensureTowActions = typeof globalThis.towCombatOverlayEnsureTowActions === 
       return false;
     }
 
-    return typeof game.towActions?.attackActor === "function" &&
-      typeof game.towActions?.defenceActor === "function" &&
-      typeof game.towActions?.isShiftHeld === "function" &&
-      typeof game.towActions?.systemAdapter === "object";
+    const resolvedApi = typeof globalThis.getTowCombatOverlayActionsApi === "function"
+      ? globalThis.getTowCombatOverlayActionsApi()
+      : game.towActions;
+    return typeof resolvedApi?.attackActor === "function" &&
+      typeof resolvedApi?.defenceActor === "function" &&
+      typeof resolvedApi?.isShiftHeld === "function" &&
+      typeof resolvedApi?.systemAdapter === "object";
   };
 
 const addActorCondition = typeof globalThis.towCombatOverlayAddActorCondition === "function"
   ? globalThis.towCombatOverlayAddActorCondition
   : async function fallbackAddActorCondition(actor, condition, options = {}) {
-    const adapter = game.towActions?.systemAdapter ?? null;
+    const adapter = (typeof globalThis.getTowCombatOverlayActionsApi === "function"
+      ? globalThis.getTowCombatOverlayActionsApi()
+      : game.towActions)?.systemAdapter ?? null;
     if (typeof adapter?.addCondition === "function") return adapter.addCondition(actor, condition, options);
     return actor?.addCondition?.(condition, options) ?? null;
   };
@@ -44,7 +52,9 @@ const addActorCondition = typeof globalThis.towCombatOverlayAddActorCondition ==
 const removeActorCondition = typeof globalThis.towCombatOverlayRemoveActorCondition === "function"
   ? globalThis.towCombatOverlayRemoveActorCondition
   : async function fallbackRemoveActorCondition(actor, condition) {
-    const adapter = game.towActions?.systemAdapter ?? null;
+    const adapter = (typeof globalThis.getTowCombatOverlayActionsApi === "function"
+      ? globalThis.getTowCombatOverlayActionsApi()
+      : game.towActions)?.systemAdapter ?? null;
     if (typeof adapter?.removeCondition === "function") return adapter.removeCondition(actor, condition);
     return actor?.removeCondition?.(condition) ?? null;
   };
@@ -52,7 +62,9 @@ const removeActorCondition = typeof globalThis.towCombatOverlayRemoveActorCondit
 const addActorWound = typeof globalThis.towCombatOverlayAddActorWound === "function"
   ? globalThis.towCombatOverlayAddActorWound
   : async function fallbackAddActorWound(actor, options = {}) {
-    const adapter = game.towActions?.systemAdapter ?? null;
+    const adapter = (typeof globalThis.getTowCombatOverlayActionsApi === "function"
+      ? globalThis.getTowCombatOverlayActionsApi()
+      : game.towActions)?.systemAdapter ?? null;
     if (typeof adapter?.addWound === "function") return adapter.addWound(actor, options);
     return actor?.system?.addWound?.(options) ?? null;
   };
@@ -60,7 +72,9 @@ const addActorWound = typeof globalThis.towCombatOverlayAddActorWound === "funct
 const applyActorDamage = typeof globalThis.towCombatOverlayApplyActorDamage === "function"
   ? globalThis.towCombatOverlayApplyActorDamage
   : async function fallbackApplyActorDamage(actor, damage, context = {}) {
-    const adapter = game.towActions?.systemAdapter ?? null;
+    const adapter = (typeof globalThis.getTowCombatOverlayActionsApi === "function"
+      ? globalThis.getTowCombatOverlayActionsApi()
+      : game.towActions)?.systemAdapter ?? null;
     if (typeof adapter?.applyDamage === "function") return adapter.applyDamage(actor, damage, context);
     return actor?.system?.applyDamage?.(damage, context) ?? null;
   };
@@ -154,7 +168,10 @@ function armAutoDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState 
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
 
-    await game.towActions.defenceActor(targetToken.actor, { manual: false });
+    const actionsApi = typeof globalThis.getTowCombatOverlayActionsApi === "function"
+      ? globalThis.getTowCombatOverlayActionsApi()
+      : game.towActions;
+    await actionsApi.defenceActor(targetToken.actor, { manual: false });
     armAutoApplyDamageForOpposed(message, {
       sourceActor: sourceToken.actor,
       sourceBeforeState
@@ -335,6 +352,14 @@ function deriveAppliedStatusLabels(before, after) {
   return labels;
 }
 
+function createTowCombatOverlayAutomationCoordinator() {
+  return {
+    armDefaultStaggerChoiceWound,
+    armAutoDefenceForOpposed,
+    snapshotActorState
+  };
+}
+
 function getFlowNamesMarkup(attackerName, defenderName) {
   const attackerSafe = foundry.utils.escapeHTML(attackerName);
   const defenderSafe = foundry.utils.escapeHTML(defenderName);
@@ -472,6 +497,4 @@ async function postFlowSeparatorCard(opposed, { sourceStatusHints = [], targetSt
   });
 }
 
-globalThis.towCombatOverlayArmDefaultStaggerChoiceWound = armDefaultStaggerChoiceWound;
-globalThis.towCombatOverlayArmAutoDefenceForOpposed = armAutoDefenceForOpposed;
-globalThis.towCombatOverlaySnapshotActorState = snapshotActorState;
+globalThis.towCombatOverlayAutomation = createTowCombatOverlayAutomationCoordinator();
