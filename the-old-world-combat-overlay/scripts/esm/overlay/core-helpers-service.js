@@ -11,35 +11,35 @@ const {
   overlayEdgePadExp: OVERLAY_EDGE_PAD_EXP
 } = getTowCombatOverlayOverlayRuntimeConstants();
 
-export const towCombatOverlayCanEditActor = globalThis.towCombatOverlayCanEditActor ?? function towCombatOverlayCanEditActorFallback(actor) {
+export function towCombatOverlayCanEditActor(actor) {
   return actor?.isOwner === true;
-};
+}
 
-export const towCombatOverlayWarnNoPermission = globalThis.towCombatOverlayWarnNoPermission ?? function towCombatOverlayWarnNoPermissionFallback(actor) {
+export function towCombatOverlayWarnNoPermission(actor) {
   ui.notifications.warn(`No permission to edit ${actor?.name ?? "actor"}.`);
-};
+}
 
-export const towCombatOverlayGetActorFromToken = globalThis.towCombatOverlayGetActorFromToken ?? function towCombatOverlayGetActorFromTokenFallback(tokenObject) {
+export function towCombatOverlayGetActorFromToken(tokenObject) {
   return tokenObject?.document?.actor ?? null;
-};
+}
 
-export const towCombatOverlayAsTokenObject = globalThis.towCombatOverlayAsTokenObject ?? function towCombatOverlayAsTokenObjectFallback(tokenLike) {
+export function towCombatOverlayAsTokenObject(tokenLike) {
   return tokenLike?.object ?? tokenLike ?? null;
-};
+}
 
-export const towCombatOverlayForEachSceneToken = globalThis.towCombatOverlayForEachSceneToken ?? function towCombatOverlayForEachSceneTokenFallback(callback) {
+export function towCombatOverlayForEachSceneToken(callback) {
   for (const token of canvas.tokens.placeables) callback(token);
-};
+}
 
-export const towCombatOverlayForEachActorToken = globalThis.towCombatOverlayForEachActorToken ?? function towCombatOverlayForEachActorTokenFallback(actor, callback) {
+export function towCombatOverlayForEachActorToken(actor, callback) {
   if (!actor) return;
   for (const token of actor.getActiveTokens(true)) {
     const tokenObject = towCombatOverlayAsTokenObject(token);
     if (tokenObject) callback(tokenObject);
   }
-};
+}
 
-export const towCombatOverlayGetActorTokenObjects = globalThis.towCombatOverlayGetActorTokenObjects ?? function towCombatOverlayGetActorTokenObjectsFallback(actor) {
+export function towCombatOverlayGetActorTokenObjects(actor) {
   const seen = new Set();
   const tokens = [];
   towCombatOverlayForEachActorToken(actor, (tokenObject) => {
@@ -55,9 +55,9 @@ export const towCombatOverlayGetActorTokenObjects = globalThis.towCombatOverlayG
   }
 
   return tokens;
-};
+}
 
-export const towCombatOverlayGetTokenOverlayScale = globalThis.towCombatOverlayGetTokenOverlayScale ?? function towCombatOverlayGetTokenOverlayScaleFallback(tokenObject) {
+export function towCombatOverlayGetTokenOverlayScale(tokenObject) {
   const width = Number(tokenObject?.w ?? NaN);
   const height = Number(tokenObject?.h ?? NaN);
   const tokenSize = Math.min(width, height);
@@ -67,52 +67,52 @@ export const towCombatOverlayGetTokenOverlayScale = globalThis.towCombatOverlayG
     ? Math.pow(ratio, OVERLAY_SCALE_EXP_SMALL)
     : Math.pow(ratio, OVERLAY_SCALE_EXP_LARGE);
   return Math.max(OVERLAY_SCALE_MIN, Math.min(OVERLAY_SCALE_MAX, curvedScale));
-};
+}
 
-export const towCombatOverlayGetOverlayEdgePad = globalThis.towCombatOverlayGetOverlayEdgePad ?? function towCombatOverlayGetOverlayEdgePadFallback(tokenObject) {
+export function towCombatOverlayGetOverlayEdgePad(tokenObject) {
   const overlayScale = towCombatOverlayGetTokenOverlayScale(tokenObject);
   const scaledFactor = Math.pow(Math.max(overlayScale, 0.001), OVERLAY_EDGE_PAD_EXP);
   const factor = Math.max(OVERLAY_EDGE_PAD_MIN_FACTOR, Math.min(1, scaledFactor));
   return TOKEN_CONTROL_PAD * factor;
-};
+}
 
-export const towCombatOverlayGetOverlayEdgePadPx = globalThis.towCombatOverlayGetOverlayEdgePadPx ?? function towCombatOverlayGetOverlayEdgePadPxFallback(tokenObject) {
+export function towCombatOverlayGetOverlayEdgePadPx(tokenObject) {
   return Math.round(towCombatOverlayGetOverlayEdgePad(tokenObject));
-};
+}
 
-export const towCombatOverlayClampNumber = globalThis.towCombatOverlayClampNumber ?? function towCombatOverlayClampNumberFallback(value, min, max) {
+export function towCombatOverlayClampNumber(value, min, max) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return min;
   return Math.min(max, Math.max(min, numeric));
-};
+}
 
-export const towCombatOverlayRoundTo = globalThis.towCombatOverlayRoundTo ?? function towCombatOverlayRoundToFallback(value, digits = 2) {
+export function towCombatOverlayRoundTo(value, digits = 2) {
   const factor = 10 ** Math.max(0, Number(digits) || 0);
   return Math.round(Number(value) * factor) / factor;
-};
+}
 
-export const towCombatOverlayPreventPointerDefault = globalThis.towCombatOverlayPreventPointerDefault ?? function towCombatOverlayPreventPointerDefaultFallback(event) {
+export function towCombatOverlayPreventPointerDefault(event) {
   event.stopPropagation();
   event.nativeEvent?.preventDefault?.();
-};
+}
 
-export const towCombatOverlayGetMouseButton = globalThis.towCombatOverlayGetMouseButton ?? function towCombatOverlayGetMouseButtonFallback(event) {
+export function towCombatOverlayGetMouseButton(event) {
   return event.button ?? event.data?.button ?? event.nativeEvent?.button ?? 0;
-};
+}
 
-export const towCombatOverlayIsShiftModifier = globalThis.towCombatOverlayIsShiftModifier ?? function towCombatOverlayIsShiftModifierFallback() {
+export function towCombatOverlayIsShiftModifier() {
   const shiftKey = foundry.helpers?.interaction?.KeyboardManager?.MODIFIER_KEYS?.SHIFT
     ?? KeyboardManager?.MODIFIER_KEYS?.SHIFT;
   if (!shiftKey) return false;
   return game.keyboard?.isModifierActive?.(shiftKey) === true;
-};
+}
 
-export const towCombatOverlayCopyPoint = globalThis.towCombatOverlayCopyPoint ?? function towCombatOverlayCopyPointFallback(point) {
+export function towCombatOverlayCopyPoint(point) {
   if (!point) return null;
   return { x: Number(point.x ?? 0), y: Number(point.y ?? 0) };
-};
+}
 
-export const towCombatOverlayGetWorldPoint = globalThis.towCombatOverlayGetWorldPoint ?? function towCombatOverlayGetWorldPointFallback(event) {
+export function towCombatOverlayGetWorldPoint(event) {
   if (typeof event?.getLocalPosition === "function" && canvas?.stage) {
     return towCombatOverlayCopyPoint(event.getLocalPosition(canvas.stage));
   }
@@ -122,17 +122,17 @@ export const towCombatOverlayGetWorldPoint = globalThis.towCombatOverlayGetWorld
   const global = event?.global ?? event?.data?.global;
   if (global && canvas?.stage?.worldTransform) return towCombatOverlayCopyPoint(canvas.stage.worldTransform.applyInverse(global));
   return towCombatOverlayCopyPoint(canvas.mousePosition);
-};
+}
 
-export const towCombatOverlayGetScreenPoint = globalThis.towCombatOverlayGetScreenPoint ?? function towCombatOverlayGetScreenPointFallback(event) {
+export function towCombatOverlayGetScreenPoint(event) {
   return towCombatOverlayCopyPoint(event?.global ?? event?.data?.global ?? null);
-};
+}
 
-export const towCombatOverlayGetTooltipPointFromEvent = globalThis.towCombatOverlayGetTooltipPointFromEvent ?? function towCombatOverlayGetTooltipPointFromEventFallback(event) {
+export function towCombatOverlayGetTooltipPointFromEvent(event) {
   return towCombatOverlayGetScreenPoint(event) ?? towCombatOverlayGetWorldPoint(event);
-};
+}
 
-export const towCombatOverlayBindTooltipHandlers = globalThis.towCombatOverlayBindTooltipHandlers ?? function towCombatOverlayBindTooltipHandlersFallback(displayObject, getTooltipData, keyStore = null) {
+export function towCombatOverlayBindTooltipHandlers(displayObject, getTooltipData, keyStore = null) {
   if (!displayObject || typeof getTooltipData !== "function") return null;
 
   const onShow = (event) => {
@@ -156,9 +156,9 @@ export const towCombatOverlayBindTooltipHandlers = globalThis.towCombatOverlayBi
   if (keyStore?.move) displayObject[keyStore.move] = onShow;
   if (keyStore?.out) displayObject[keyStore.out] = onHide;
   return { onShow, onHide };
-};
+}
 
-export const towCombatOverlayTokenAtPoint = globalThis.towCombatOverlayTokenAtPoint ?? function towCombatOverlayTokenAtPointFallback(point, { excludeTokenId } = {}) {
+export function towCombatOverlayTokenAtPoint(point, { excludeTokenId } = {}) {
   if (!point) return null;
   const globalPoint = canvas?.stage?.worldTransform?.apply?.(point) ?? null;
   const placeables = [...canvas.tokens.placeables];
@@ -176,36 +176,38 @@ export const towCombatOverlayTokenAtPoint = globalThis.towCombatOverlayTokenAtPo
     if (point.x >= token.x && point.x <= token.x + token.w && point.y >= token.y && point.y <= token.y + token.h) return token;
   }
   return null;
-};
+}
 
-export const towCombatOverlayExecuteFirstMacroByNameCandidates = globalThis.towCombatOverlayExecuteFirstMacroByNameCandidates ?? async function towCombatOverlayExecuteFirstMacroByNameCandidatesFallback(candidates) {
+export async function towCombatOverlayExecuteFirstMacroByNameCandidates(candidates) {
   const macro = candidates
     .map((name) => game.macros.getName(name))
     .find(Boolean);
   if (!macro) return false;
   await macro.execute();
   return true;
-};
+}
 
-globalThis.towCombatOverlayCanEditActor = globalThis.towCombatOverlayCanEditActor ?? towCombatOverlayCanEditActor;
-globalThis.towCombatOverlayWarnNoPermission = globalThis.towCombatOverlayWarnNoPermission ?? towCombatOverlayWarnNoPermission;
-globalThis.towCombatOverlayGetActorFromToken = globalThis.towCombatOverlayGetActorFromToken ?? towCombatOverlayGetActorFromToken;
-globalThis.towCombatOverlayAsTokenObject = globalThis.towCombatOverlayAsTokenObject ?? towCombatOverlayAsTokenObject;
-globalThis.towCombatOverlayForEachSceneToken = globalThis.towCombatOverlayForEachSceneToken ?? towCombatOverlayForEachSceneToken;
-globalThis.towCombatOverlayForEachActorToken = globalThis.towCombatOverlayForEachActorToken ?? towCombatOverlayForEachActorToken;
-globalThis.towCombatOverlayGetActorTokenObjects = globalThis.towCombatOverlayGetActorTokenObjects ?? towCombatOverlayGetActorTokenObjects;
-globalThis.towCombatOverlayGetTokenOverlayScale = globalThis.towCombatOverlayGetTokenOverlayScale ?? towCombatOverlayGetTokenOverlayScale;
-globalThis.towCombatOverlayGetOverlayEdgePad = globalThis.towCombatOverlayGetOverlayEdgePad ?? towCombatOverlayGetOverlayEdgePad;
-globalThis.towCombatOverlayGetOverlayEdgePadPx = globalThis.towCombatOverlayGetOverlayEdgePadPx ?? towCombatOverlayGetOverlayEdgePadPx;
-globalThis.towCombatOverlayClampNumber = globalThis.towCombatOverlayClampNumber ?? towCombatOverlayClampNumber;
-globalThis.towCombatOverlayRoundTo = globalThis.towCombatOverlayRoundTo ?? towCombatOverlayRoundTo;
-globalThis.towCombatOverlayPreventPointerDefault = globalThis.towCombatOverlayPreventPointerDefault ?? towCombatOverlayPreventPointerDefault;
-globalThis.towCombatOverlayGetMouseButton = globalThis.towCombatOverlayGetMouseButton ?? towCombatOverlayGetMouseButton;
-globalThis.towCombatOverlayIsShiftModifier = globalThis.towCombatOverlayIsShiftModifier ?? towCombatOverlayIsShiftModifier;
-globalThis.towCombatOverlayCopyPoint = globalThis.towCombatOverlayCopyPoint ?? towCombatOverlayCopyPoint;
-globalThis.towCombatOverlayGetWorldPoint = globalThis.towCombatOverlayGetWorldPoint ?? towCombatOverlayGetWorldPoint;
-globalThis.towCombatOverlayGetScreenPoint = globalThis.towCombatOverlayGetScreenPoint ?? towCombatOverlayGetScreenPoint;
-globalThis.towCombatOverlayGetTooltipPointFromEvent = globalThis.towCombatOverlayGetTooltipPointFromEvent ?? towCombatOverlayGetTooltipPointFromEvent;
-globalThis.towCombatOverlayBindTooltipHandlers = globalThis.towCombatOverlayBindTooltipHandlers ?? towCombatOverlayBindTooltipHandlers;
-globalThis.towCombatOverlayTokenAtPoint = globalThis.towCombatOverlayTokenAtPoint ?? towCombatOverlayTokenAtPoint;
-globalThis.towCombatOverlayExecuteFirstMacroByNameCandidates = globalThis.towCombatOverlayExecuteFirstMacroByNameCandidates ?? towCombatOverlayExecuteFirstMacroByNameCandidates;
+Object.assign(globalThis, {
+  towCombatOverlayCanEditActor,
+  towCombatOverlayWarnNoPermission,
+  towCombatOverlayGetActorFromToken,
+  towCombatOverlayAsTokenObject,
+  towCombatOverlayForEachSceneToken,
+  towCombatOverlayForEachActorToken,
+  towCombatOverlayGetActorTokenObjects,
+  towCombatOverlayGetTokenOverlayScale,
+  towCombatOverlayGetOverlayEdgePad,
+  towCombatOverlayGetOverlayEdgePadPx,
+  towCombatOverlayClampNumber,
+  towCombatOverlayRoundTo,
+  towCombatOverlayPreventPointerDefault,
+  towCombatOverlayGetMouseButton,
+  towCombatOverlayIsShiftModifier,
+  towCombatOverlayCopyPoint,
+  towCombatOverlayGetWorldPoint,
+  towCombatOverlayGetScreenPoint,
+  towCombatOverlayGetTooltipPointFromEvent,
+  towCombatOverlayBindTooltipHandlers,
+  towCombatOverlayTokenAtPoint,
+  towCombatOverlayExecuteFirstMacroByNameCandidates
+});
