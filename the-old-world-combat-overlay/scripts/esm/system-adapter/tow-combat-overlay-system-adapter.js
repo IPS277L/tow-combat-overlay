@@ -70,7 +70,7 @@ function createTowCombatOverlaySystemAdapter() {
   };
 }
 
-function getTowCombatOverlaySystemAdapter() {
+export function getTowCombatOverlaySystemAdapter() {
   const state = globalThis.towCombatOverlayModule ?? (globalThis.towCombatOverlayModule = {});
   if (!state.systemAdapter) {
     state.systemAdapter = createTowCombatOverlaySystemAdapter();

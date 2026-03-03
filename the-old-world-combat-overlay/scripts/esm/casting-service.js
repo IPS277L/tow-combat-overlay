@@ -1,3 +1,10 @@
+import {
+  towCombatOverlayEscapeHtml,
+  towCombatOverlayScheduleSoon,
+  towCombatOverlayToElement
+} from "./core-service.js";
+import { getTowCombatOverlaySystemAdapter } from "./system-adapter/tow-combat-overlay-system-adapter.js";
+
 function towCombatOverlayHasLoreText(value) {
   return typeof value === "string" && value.length > 0;
 }
@@ -13,7 +20,7 @@ function towCombatOverlayGetSpellLoreLabel(spell) {
   return game.oldworld?.config?.magicLore?.[lore] ?? lore ?? "";
 }
 
-function towCombatOverlayGetSortedSpells(actor) {
+export function towCombatOverlayGetSortedSpells(actor) {
   return actor.items
     .filter(towCombatOverlayIsCastableSpell)
     .sort((a, b) => {
@@ -39,13 +46,13 @@ function towCombatOverlayArmAutoSubmitCastingDialog(actor, spell) {
     const sameSpell = app?.spell?.id === spell.id;
     if (!sameActor || !sameSpell) return;
 
-    const element = toElement(app?.element);
+    const element = towCombatOverlayToElement(app?.element);
     if (element) {
       element.style.visibility = "hidden";
       element.style.pointerEvents = "none";
     }
 
-    scheduleSoon(async () => {
+    towCombatOverlayScheduleSoon(async () => {
       if (typeof app?.submit !== "function") {
         console.error("[the-old-world-combat-overlay] CastingDialog.submit() is unavailable.");
         if (element) {
@@ -60,7 +67,7 @@ function towCombatOverlayArmAutoSubmitCastingDialog(actor, spell) {
   });
 }
 
-async function towCombatOverlaySetupCastingTest(actor, spell, { autoRoll = false } = {}) {
+export async function towCombatOverlaySetupCastingTest(actor, spell, { autoRoll = false } = {}) {
   const lore = spell.system?.lore;
 
   if (!towCombatOverlayHasLoreText(lore) || lore === "none") {
@@ -72,15 +79,15 @@ async function towCombatOverlaySetupCastingTest(actor, spell, { autoRoll = false
     towCombatOverlayArmAutoSubmitCastingDialog(actor, spell);
   }
 
-  return towCombatOverlaySystemAdapter.setupCastingTest(actor, { lore, spell }, SELF_ROLL_CONTEXT);
+  return getTowCombatOverlaySystemAdapter().setupCastingTest(actor, { lore, spell }, SELF_ROLL_CONTEXT);
 }
 
-function towCombatOverlayRenderSpellSelector(actor, spells) {
+export function towCombatOverlayRenderSpellSelector(actor, spells) {
   const buttonMarkup = spells
     .map((spell) => {
-      const itemId = escapeHtml(spell.id);
-      const itemName = escapeHtml(spell.name);
-      const loreName = escapeHtml(towCombatOverlayGetSpellLoreLabel(spell) || "No Lore");
+      const itemId = towCombatOverlayEscapeHtml(spell.id);
+      const itemName = towCombatOverlayEscapeHtml(spell.name);
+      const loreName = towCombatOverlayEscapeHtml(towCombatOverlayGetSpellLoreLabel(spell) || "No Lore");
       const cv = Number(spell.system?.cv ?? 0);
 
       return `<button type="button"
@@ -113,7 +120,7 @@ function towCombatOverlayRenderSpellSelector(actor, spells) {
   selectorDialog.render(true);
 }
 
-async function towCombatOverlayCastActor(actor, { manual = false } = {}) {
+export async function towCombatOverlayCastActor(actor, { manual = false } = {}) {
   if (!actor) return;
 
   const spells = towCombatOverlayGetSortedSpells(actor);
@@ -130,7 +137,7 @@ async function towCombatOverlayCastActor(actor, { manual = false } = {}) {
   await towCombatOverlaySetupCastingTest(actor, spells[0], { autoRoll: true });
 }
 
-async function towCombatOverlayRunCastingForControlled({ manual = false } = {}) {
+export async function towCombatOverlayRunCastingForControlled({ manual = false } = {}) {
   const tokens = canvas.tokens.controlled;
   if (!tokens.length) {
     ui.notifications.warn("Select at least one token.");

@@ -1,15 +1,17 @@
-const attackServiceToElementRef = globalThis.towCombatOverlayToElement;
-const attackServiceScheduleSoonRef = globalThis.towCombatOverlayScheduleSoon;
-const attackServiceEscapeHtmlRef = globalThis.towCombatOverlayEscapeHtml;
-const attackServiceGetSortedWeaponAttacksRef = globalThis.towCombatOverlayGetSortedWeaponAttacks;
-const attackServiceGetAttackMetaRef = globalThis.towCombatOverlayGetAttackMeta;
-const attackServiceRenderSelectorRowButtonRef = globalThis.towCombatOverlayRenderSelectorRowButton;
-const attackServiceWaitForChatMessageRef = globalThis.towCombatOverlayWaitForChatMessage;
-const attackServiceRenderDamageDisplayRef = globalThis.towCombatOverlayRenderDamageDisplay;
-const attackServiceShouldExecuteAttackRef = globalThis.towCombatOverlayShouldExecuteAttack;
+import {
+  towCombatOverlayEscapeHtml,
+  towCombatOverlayGetAttackMeta,
+  towCombatOverlayGetSortedWeaponAttacks,
+  towCombatOverlayRenderDamageDisplay,
+  towCombatOverlayRenderSelectorRowButton,
+  towCombatOverlayScheduleSoon,
+  towCombatOverlayShouldExecuteAttack,
+  towCombatOverlayToElement,
+  towCombatOverlayWaitForChatMessage
+} from "./core-service.js";
+import { getTowCombatOverlaySystemAdapter } from "./system-adapter/tow-combat-overlay-system-adapter.js";
 
-// TODO: Think about removing -service from the file name and just have it be attack.js or similar
-function towCombatOverlayArmDamageAppend(actor, ability) {
+export function towCombatOverlayArmDamageAppend(actor, ability) {
   let timeoutId = null;
 
   const cleanup = (hookId) => {
@@ -28,13 +30,13 @@ function towCombatOverlayArmDamageAppend(actor, ability) {
 
     cleanup(hookId);
     const flatDamage = test?.testData?.damage ?? ability.system.damage?.value ?? 0;
-    await attackServiceRenderDamageDisplayRef(message, { damage: flatDamage });
+    await towCombatOverlayRenderDamageDisplay(message, { damage: flatDamage });
   });
 
   timeoutId = setTimeout(() => cleanup(hookId), 30000);
 }
 
-function towCombatOverlayArmAutoSubmitDialog({ hookName, matches, submitErrorMessage }) {
+export function towCombatOverlayArmAutoSubmitDialog({ hookName, matches, submitErrorMessage }) {
   if (typeof globalThis.shouldTowCombatOverlayAutoSubmitDialogs === "function"
     && !globalThis.shouldTowCombatOverlayAutoSubmitDialogs()) {
     return;
@@ -43,13 +45,13 @@ function towCombatOverlayArmAutoSubmitDialog({ hookName, matches, submitErrorMes
   Hooks.once(hookName, (app) => {
     if (!matches(app)) return;
 
-    const element = attackServiceToElementRef(app?.element);
+    const element = towCombatOverlayToElement(app?.element);
     if (element) {
       element.style.visibility = "hidden";
       element.style.pointerEvents = "none";
     }
 
-    attackServiceScheduleSoonRef(async () => {
+    towCombatOverlayScheduleSoon(async () => {
       if (typeof app?.submit !== "function") {
         console.error(`[the-old-world-combat-overlay] ${submitErrorMessage}`);
         if (element) {
@@ -71,35 +73,35 @@ function towCombatOverlayArmAutoSubmitAbilityDialog(actor, ability) {
   });
 }
 
-async function towCombatOverlaySetupAbilityTestWithDamage(actor, ability, { autoRoll = false } = {}) {
+export async function towCombatOverlaySetupAbilityTestWithDamage(actor, ability, { autoRoll = false } = {}) {
   towCombatOverlayArmDamageAppend(actor, ability);
 
   let testRef;
 
   if (autoRoll) {
     towCombatOverlayArmAutoSubmitAbilityDialog(actor, ability);
-    testRef = await towCombatOverlaySystemAdapter.setupAbilityTest(actor, ability);
+    testRef = await getTowCombatOverlaySystemAdapter().setupAbilityTest(actor, ability);
   } else {
-    testRef = await towCombatOverlaySystemAdapter.setupAbilityTest(actor, ability);
+    testRef = await getTowCombatOverlaySystemAdapter().setupAbilityTest(actor, ability);
   }
 
   if (!testRef) return null;
 
   const flatDamage = testRef.testData?.damage ?? ability.system.damage?.value ?? 0;
-  const message = await attackServiceWaitForChatMessageRef(testRef.context?.messageId);
-  await attackServiceRenderDamageDisplayRef(message, { damage: flatDamage });
+  const message = await towCombatOverlayWaitForChatMessage(testRef.context?.messageId);
+  await towCombatOverlayRenderDamageDisplay(message, { damage: flatDamage });
   return testRef;
 }
 
-function towCombatOverlayRenderAttackSelector(actor, attacks, { onFastAuto } = {}) {
+export function towCombatOverlayRenderAttackSelector(actor, attacks, { onFastAuto } = {}) {
   const buttonMarkup = attacks
     .map((attack, index) => {
-      const itemId = attackServiceEscapeHtmlRef(attack.id);
-      return attackServiceRenderSelectorRowButtonRef({
+      const itemId = towCombatOverlayEscapeHtml(attack.id);
+      return towCombatOverlayRenderSelectorRowButton({
         rowClass: "attack-btn",
         dataAttrs: `data-id="${itemId}"`,
         label: attack.name,
-        subLabel: attackServiceGetAttackMetaRef(attack),
+        subLabel: towCombatOverlayGetAttackMeta(attack),
         valueLabel: "",
         highlighted: index === 0,
         compact: false
@@ -142,10 +144,10 @@ function towCombatOverlayRenderAttackSelector(actor, attacks, { onFastAuto } = {
   selectorDialog.render(true);
 }
 
-async function towCombatOverlayAttackActor(actor, { manual = false, onFastAuto = null } = {}) {
+export async function towCombatOverlayAttackActor(actor, { manual = false, onFastAuto = null } = {}) {
   if (!actor) return;
-  if (!attackServiceShouldExecuteAttackRef(actor, { manual })) return;
-  const attacks = attackServiceGetSortedWeaponAttacksRef(actor);
+  if (!towCombatOverlayShouldExecuteAttack(actor, { manual })) return;
+  const attacks = towCombatOverlayGetSortedWeaponAttacks(actor);
   if (attacks.length === 0) return;
 
   if (manual) {
@@ -155,7 +157,7 @@ async function towCombatOverlayAttackActor(actor, { manual = false, onFastAuto =
   await towCombatOverlaySetupAbilityTestWithDamage(actor, attacks[0], { autoRoll: true });
 }
 
-async function towCombatOverlayRunAttackForControlled({ manual = false } = {}) {
+export async function towCombatOverlayRunAttackForControlled({ manual = false } = {}) {
   const tokens = canvas.tokens.controlled;
   if (!tokens.length) {
     ui.notifications.warn("Select at least one token.");

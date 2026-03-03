@@ -1,4 +1,4 @@
-async function towCombatOverlayEnsureTowActionsRuntime() {
+export async function towCombatOverlayEnsureTowActionsRuntime() {
   const api = typeof globalThis.getTowCombatOverlayPublicApi === "function"
     ? globalThis.getTowCombatOverlayPublicApi("towActions")
     : game.towActions;
@@ -8,20 +8,20 @@ async function towCombatOverlayEnsureTowActionsRuntime() {
     typeof api?.systemAdapter === "object";
 }
 
-async function towCombatOverlayEnsureTowActions() {
+export async function towCombatOverlayEnsureTowActions() {
   const ready = await towCombatOverlayEnsureTowActionsRuntime();
   if (!ready) ui.notifications.error("The Old World Combat Overlay module API is unavailable.");
   return ready;
 }
 
-function towCombatOverlayGetTowActionsSystemAdapter() {
+export function towCombatOverlayGetTowActionsSystemAdapter() {
   const api = typeof globalThis.getTowCombatOverlayActionsApi === "function"
     ? globalThis.getTowCombatOverlayActionsApi()
     : game.towActions;
   return api?.systemAdapter ?? null;
 }
 
-async function towCombatOverlayAddActorCondition(actor, condition, options = {}) {
+export async function towCombatOverlayAddActorCondition(actor, condition, options = {}) {
   const adapter = towCombatOverlayGetTowActionsSystemAdapter();
   if (typeof adapter?.addCondition === "function") {
     return adapter.addCondition(actor, condition, options);
@@ -29,7 +29,7 @@ async function towCombatOverlayAddActorCondition(actor, condition, options = {})
   return actor?.addCondition?.(condition, options) ?? null;
 }
 
-async function towCombatOverlayRemoveActorCondition(actor, condition) {
+export async function towCombatOverlayRemoveActorCondition(actor, condition) {
   const adapter = towCombatOverlayGetTowActionsSystemAdapter();
   if (typeof adapter?.removeCondition === "function") {
     return adapter.removeCondition(actor, condition);
@@ -37,7 +37,7 @@ async function towCombatOverlayRemoveActorCondition(actor, condition) {
   return actor?.removeCondition?.(condition) ?? null;
 }
 
-async function towCombatOverlayAddActorWound(actor, options = {}) {
+export async function towCombatOverlayAddActorWound(actor, options = {}) {
   const adapter = towCombatOverlayGetTowActionsSystemAdapter();
   if (typeof adapter?.addWound === "function") {
     return adapter.addWound(actor, options);
@@ -45,7 +45,7 @@ async function towCombatOverlayAddActorWound(actor, options = {}) {
   return actor?.system?.addWound?.(options) ?? null;
 }
 
-async function towCombatOverlayApplyActorDamage(actor, damage, context = {}) {
+export async function towCombatOverlayApplyActorDamage(actor, damage, context = {}) {
   const adapter = towCombatOverlayGetTowActionsSystemAdapter();
   if (typeof adapter?.applyDamage === "function") {
     return adapter.applyDamage(actor, damage, context);

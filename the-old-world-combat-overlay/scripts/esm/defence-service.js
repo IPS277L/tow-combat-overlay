@@ -1,5 +1,12 @@
-const defenceServiceEscapeHtmlRef = globalThis.towCombatOverlayEscapeHtml;
-const defenceServiceRenderSelectorRowButtonRef = globalThis.towCombatOverlayRenderSelectorRowButton;
+import {
+  DEFAULT_DEFENCE_SKILL,
+  SELF_ROLL_CONTEXT,
+} from "./action-runtime-constants.js";
+import {
+  towCombatOverlayEscapeHtml,
+  towCombatOverlayRenderSelectorRowButton
+} from "./core-service.js";
+import { getTowCombatOverlaySystemAdapter } from "./system-adapter/tow-combat-overlay-system-adapter.js";
 
 function towCombatOverlayGetSkillLabel(skill) {
   return game.oldworld?.config?.skills?.[skill] ?? skill;
@@ -11,7 +18,7 @@ function towCombatOverlayGetCharacteristicLabel(characteristic) {
     ?? characteristic;
 }
 
-function towCombatOverlayGetActorSkills(actor) {
+export function towCombatOverlayGetActorSkills(actor) {
   const skills = Object.keys(actor.system?.skills ?? {}).filter((skill) => {
     const skillData = actor.system?.skills?.[skill];
     return skillData && typeof skillData.value !== "undefined";
@@ -27,7 +34,7 @@ function towCombatOverlayGetActorCharacteristics(actor) {
   });
 }
 
-function towCombatOverlayGetManualDefenceEntries(actor) {
+export function towCombatOverlayGetManualDefenceEntries(actor) {
   const skillEntries = towCombatOverlayGetActorSkills(actor).map((skill) => ({
     type: "skill",
     id: skill,
@@ -56,13 +63,13 @@ function towCombatOverlayArmAutoSubmitSkillDialog(actor, skill) {
   });
 }
 
-async function towCombatOverlayRollSkill(actor, skill, { autoRoll = false } = {}) {
+export async function towCombatOverlayRollSkill(actor, skill, { autoRoll = false } = {}) {
   if (autoRoll) towCombatOverlayArmAutoSubmitSkillDialog(actor, skill);
-  return towCombatOverlaySystemAdapter.setupSkillTest(actor, skill, SELF_ROLL_CONTEXT);
+  return getTowCombatOverlaySystemAdapter().setupSkillTest(actor, skill, SELF_ROLL_CONTEXT);
 }
 
 async function towCombatOverlayRollCharacteristic(actor, characteristic) {
-  const OldWorldTestClass = towCombatOverlaySystemAdapter.getOldWorldTestClass();
+  const OldWorldTestClass = getTowCombatOverlaySystemAdapter().getOldWorldTestClass();
   if (!OldWorldTestClass) {
     ui.notifications.error("OldWorldTest roll class is unavailable.");
     return null;
@@ -108,14 +115,14 @@ async function towCombatOverlayRollCharacteristic(actor, characteristic) {
   return test;
 }
 
-function towCombatOverlayRenderDefenceSelector(actor, entries) {
+export function towCombatOverlayRenderDefenceSelector(actor, entries) {
   const emphasizedSkills = new Set(["defence", "athletics", "endurance"]);
   const renderEntryButton = (entry) => {
-    const id = defenceServiceEscapeHtmlRef(entry.id);
-    const type = defenceServiceEscapeHtmlRef(entry.type);
+    const id = towCombatOverlayEscapeHtml(entry.id);
+    const type = towCombatOverlayEscapeHtml(entry.type);
     const value = Number(entry.target ?? 0);
     const shouldEmphasize = entry.type === "skill" && emphasizedSkills.has(String(entry.id).toLowerCase());
-    return defenceServiceRenderSelectorRowButtonRef({
+    return towCombatOverlayRenderSelectorRowButton({
       rowClass: "skill-btn",
       dataAttrs: `data-type="${type}" data-id="${id}"`,
       label: entry.label,
@@ -172,7 +179,7 @@ function towCombatOverlayRenderDefenceSelector(actor, entries) {
   selectorDialog.render(true);
 }
 
-async function towCombatOverlayDefenceActor(actor, { manual = false } = {}) {
+export async function towCombatOverlayDefenceActor(actor, { manual = false } = {}) {
   if (!actor) return;
   const skills = towCombatOverlayGetActorSkills(actor);
   const manualEntries = towCombatOverlayGetManualDefenceEntries(actor);
@@ -198,7 +205,7 @@ async function towCombatOverlayDefenceActor(actor, { manual = false } = {}) {
   await towCombatOverlayRollSkill(actor, skillToRoll, { autoRoll: true });
 }
 
-async function towCombatOverlayRunDefenceForControlled({ manual = false } = {}) {
+export async function towCombatOverlayRunDefenceForControlled({ manual = false } = {}) {
   const tokens = canvas.tokens.controlled;
   if (!tokens.length) {
     ui.notifications.warn("Select at least one token.");

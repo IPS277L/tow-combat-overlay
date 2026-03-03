@@ -1,8 +1,15 @@
-function towCombatOverlayIsShiftHeld() {
+import {
+  ATTACK_CALL_DEDUPE_MS,
+  DAMAGE_RENDER_DEDUPE_MS,
+  SHIFT_KEY,
+  TOW_ACTIONS_KEY
+} from "./action-runtime-constants.js";
+
+export function towCombatOverlayIsShiftHeld() {
   return game.keyboard.isModifierActive(SHIFT_KEY);
 }
 
-function towCombatOverlayShouldExecuteAttack(actor, { manual = false } = {}) {
+export function towCombatOverlayShouldExecuteAttack(actor, { manual = false } = {}) {
   if (!actor) return false;
 
   const api = game[TOW_ACTIONS_KEY];
@@ -25,14 +32,14 @@ function towCombatOverlayShouldExecuteAttack(actor, { manual = false } = {}) {
   return true;
 }
 
-function towCombatOverlayToElement(appElement) {
+export function towCombatOverlayToElement(appElement) {
   if (!appElement) return null;
   if (appElement instanceof HTMLElement) return appElement;
   if (appElement[0] instanceof HTMLElement) return appElement[0];
   return null;
 }
 
-function towCombatOverlayScheduleSoon(callback) {
+export function towCombatOverlayScheduleSoon(callback) {
   if (typeof window?.requestAnimationFrame === "function") {
     window.requestAnimationFrame(() => {
       void callback();
@@ -44,7 +51,7 @@ function towCombatOverlayScheduleSoon(callback) {
   });
 }
 
-function towCombatOverlayEscapeHtml(value) {
+export function towCombatOverlayEscapeHtml(value) {
   return foundry.utils.escapeHTML(String(value ?? ""));
 }
 
@@ -58,7 +65,7 @@ function towCombatOverlayIsWeaponAttack(item) {
   return typeof item.system.attack.skill === "string" && item.system.attack.skill.length > 0;
 }
 
-function towCombatOverlayGetSortedWeaponAttacks(actor) {
+export function towCombatOverlayGetSortedWeaponAttacks(actor) {
   return actor.items
     .filter(towCombatOverlayIsWeaponAttack)
     .sort((a, b) => {
@@ -69,7 +76,7 @@ function towCombatOverlayGetSortedWeaponAttacks(actor) {
     });
 }
 
-function towCombatOverlayGetAttackMeta(attack) {
+export function towCombatOverlayGetAttackMeta(attack) {
   const skill = attack.system?.attack?.skill;
   const skillLabel = game.oldworld?.config?.skills?.[skill] ?? skill ?? "Attack";
   const attackType = attack.system?.isRanged || towCombatOverlayIsRangedAttack(attack) ? "Ranged" : "Melee";
@@ -84,7 +91,7 @@ function towCombatOverlayGetAttackMeta(attack) {
   return `${attackType} | ${rangeLabel} | ${skillLabel} | DMG ${damage}`;
 }
 
-function towCombatOverlayRenderSelectorRowButton({
+export function towCombatOverlayRenderSelectorRowButton({
   rowClass,
   dataAttrs = "",
   label,
@@ -133,7 +140,7 @@ function towCombatOverlayRenderSelectorRowButton({
   </button>`;
 }
 
-async function towCombatOverlayWaitForChatMessage(messageId, timeoutMs = 3000) {
+export async function towCombatOverlayWaitForChatMessage(messageId, timeoutMs = 3000) {
   if (!messageId) return null;
   const existing = game.messages.get(messageId);
   if (existing) return existing;
@@ -209,7 +216,7 @@ async function towCombatOverlayPostSeparateDamageMessage(message, damage) {
   });
 }
 
-async function towCombatOverlayRenderDamageDisplay(message, { damage }) {
+export async function towCombatOverlayRenderDamageDisplay(message, { damage }) {
   if (!message) return;
   await towCombatOverlayPostSeparateDamageMessage(message, damage);
 }

@@ -1,85 +1,18 @@
-// TODO: Think about renaming thing like ensureTowActions to something more specific to the module
-// and combat overlay related, like ensureTowCombatOverlayActions or similar
-const ensureTowActionsRuntime = typeof globalThis.towCombatOverlayEnsureTowActionsRuntime === "function"
-  ? globalThis.towCombatOverlayEnsureTowActionsRuntime
-  : async function fallbackEnsureTowActionsRuntime() {
-    const api = typeof globalThis.getTowCombatOverlayPublicApi === "function"
-      ? globalThis.getTowCombatOverlayPublicApi("towActions")
-      : game.towActions;
-    return typeof api?.attackActor === "function" &&
-      typeof api?.defenceActor === "function" &&
-      typeof api?.isShiftHeld === "function" &&
-      typeof api?.systemAdapter === "object";
-  };
+import {
+  AUTO_APPLY_WAIT_MS,
+  AUTO_DEFENCE_WAIT_MS,
+  AUTO_STAGGER_PATCH_MS,
+  FLOW_CARD_CHIP_FONT_SIZE,
+  FLOW_CARD_FONT_SIZE,
+  MODULE_KEY,
+  OPPOSED_LINK_WAIT_MS
+} from "../overlay-runtime-constants.js";
+import {
+  towCombatOverlayApplyActorDamage,
+  towCombatOverlayEnsureTowActions
+} from "./actions-bridge-service.js";
 
-const ensureTowActions = typeof globalThis.towCombatOverlayEnsureTowActions === "function"
-  ? globalThis.towCombatOverlayEnsureTowActions
-  : async function fallbackEnsureTowActions() {
-    const api = typeof globalThis.getTowCombatOverlayActionsApi === "function"
-      ? globalThis.getTowCombatOverlayActionsApi()
-      : game.towActions;
-    const hasApi = typeof api?.attackActor === "function" &&
-      typeof api?.defenceActor === "function" &&
-      typeof api?.isShiftHeld === "function" &&
-      typeof api?.systemAdapter === "object";
-    if (hasApi) return true;
-
-    const loaded = await ensureTowActionsRuntime();
-    if (!loaded) {
-      ui.notifications.error("The Old World Combat Overlay module API is unavailable.");
-      return false;
-    }
-
-    const resolvedApi = typeof globalThis.getTowCombatOverlayActionsApi === "function"
-      ? globalThis.getTowCombatOverlayActionsApi()
-      : game.towActions;
-    return typeof resolvedApi?.attackActor === "function" &&
-      typeof resolvedApi?.defenceActor === "function" &&
-      typeof resolvedApi?.isShiftHeld === "function" &&
-      typeof resolvedApi?.systemAdapter === "object";
-  };
-
-const addActorCondition = typeof globalThis.towCombatOverlayAddActorCondition === "function"
-  ? globalThis.towCombatOverlayAddActorCondition
-  : async function fallbackAddActorCondition(actor, condition, options = {}) {
-    const adapter = (typeof globalThis.getTowCombatOverlayActionsApi === "function"
-      ? globalThis.getTowCombatOverlayActionsApi()
-      : game.towActions)?.systemAdapter ?? null;
-    if (typeof adapter?.addCondition === "function") return adapter.addCondition(actor, condition, options);
-    return actor?.addCondition?.(condition, options) ?? null;
-  };
-
-const removeActorCondition = typeof globalThis.towCombatOverlayRemoveActorCondition === "function"
-  ? globalThis.towCombatOverlayRemoveActorCondition
-  : async function fallbackRemoveActorCondition(actor, condition) {
-    const adapter = (typeof globalThis.getTowCombatOverlayActionsApi === "function"
-      ? globalThis.getTowCombatOverlayActionsApi()
-      : game.towActions)?.systemAdapter ?? null;
-    if (typeof adapter?.removeCondition === "function") return adapter.removeCondition(actor, condition);
-    return actor?.removeCondition?.(condition) ?? null;
-  };
-
-const addActorWound = typeof globalThis.towCombatOverlayAddActorWound === "function"
-  ? globalThis.towCombatOverlayAddActorWound
-  : async function fallbackAddActorWound(actor, options = {}) {
-    const adapter = (typeof globalThis.getTowCombatOverlayActionsApi === "function"
-      ? globalThis.getTowCombatOverlayActionsApi()
-      : game.towActions)?.systemAdapter ?? null;
-    if (typeof adapter?.addWound === "function") return adapter.addWound(actor, options);
-    return actor?.system?.addWound?.(options) ?? null;
-  };
-
-const applyActorDamage = typeof globalThis.towCombatOverlayApplyActorDamage === "function"
-  ? globalThis.towCombatOverlayApplyActorDamage
-  : async function fallbackApplyActorDamage(actor, damage, context = {}) {
-    const adapter = (typeof globalThis.getTowCombatOverlayActionsApi === "function"
-      ? globalThis.getTowCombatOverlayActionsApi()
-      : game.towActions)?.systemAdapter ?? null;
-    if (typeof adapter?.applyDamage === "function") return adapter.applyDamage(actor, damage, context);
-    return actor?.system?.applyDamage?.(damage, context) ?? null;
-  };
-
-function armDefaultStaggerChoiceWound(durationMs = AUTO_STAGGER_PATCH_MS) {
+export function armDefaultStaggerChoiceWound(durationMs = AUTO_STAGGER_PATCH_MS) {
   if (typeof globalThis.shouldTowCombatOverlayAutoChooseStaggerWound === "function"
     && !globalThis.shouldTowCombatOverlayAutoChooseStaggerWound()) {
     return () => {};
@@ -97,8 +30,8 @@ function armDefaultStaggerChoiceWound(durationMs = AUTO_STAGGER_PATCH_MS) {
       const title = String(config?.window?.title ?? "");
       const content = String(config?.content ?? "");
       const actions = Array.isArray(config?.buttons)
-        ? config.buttons.map((b) => String(b?.action ?? ""))
-        : Object.values(config?.buttons ?? {}).map((b) => String(b?.action ?? ""));
+        ? config.buttons.map((button) => String(button?.action ?? ""))
+        : Object.values(config?.buttons ?? {}).map((button) => String(button?.action ?? ""));
       const hasStaggerChoices = actions.includes("wound")
         && (actions.includes("prone") || actions.includes("give"));
       const likelyStaggerText = title.toLowerCase().includes("stagger")
@@ -129,7 +62,7 @@ function armDefaultStaggerChoiceWound(durationMs = AUTO_STAGGER_PATCH_MS) {
   };
 }
 
-function armAutoDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState } = {}) {
+export function armAutoDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState } = {}) {
   if (typeof globalThis.shouldTowCombatOverlayAutoDefence === "function"
     && !globalThis.shouldTowCombatOverlayAutoDefence()) {
     return;
@@ -160,7 +93,7 @@ function armAutoDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState 
     }
 
     cleanup(hookId);
-    if (!(await ensureTowActions())) return;
+    if (!(await towCombatOverlayEnsureTowActions())) return;
 
     const started = Date.now();
     while (Date.now() - started < OPPOSED_LINK_WAIT_MS) {
@@ -181,90 +114,13 @@ function armAutoDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState 
   timeoutId = setTimeout(() => cleanup(hookId), AUTO_DEFENCE_WAIT_MS);
 }
 
-function armAutoApplyDamageForOpposed(opposedMessage, { sourceActor = null, sourceBeforeState = null } = {}) {
-  if (typeof globalThis.shouldTowCombatOverlayAutoApplyDamage === "function"
-    && !globalThis.shouldTowCombatOverlayAutoApplyDamage()) {
-    return;
-  }
-
-  if (!opposedMessage?.id) return;
-  const state = game[MODULE_KEY];
-  if (state) {
-    if (!state.autoApplyArmed) state.autoApplyArmed = new Set();
-    if (state.autoApplyArmed.has(opposedMessage.id)) return;
-    state.autoApplyArmed.add(opposedMessage.id);
-  }
-
-  const cleanup = () => {
-    state?.autoApplyArmed?.delete(opposedMessage.id);
-    state?.autoDefenceHandled?.delete(opposedMessage.id);
-  };
-  void (async () => {
-    let applying = false;
-    let separatorPosted = false;
-    const postSeparatorOnce = async (opposed) => {
-      if (separatorPosted) return;
-      separatorPosted = true;
-      const sourceStatusHints = await deriveSourceStatusHints(sourceActor, sourceBeforeState);
-      await postFlowSeparatorCard(opposed, { sourceStatusHints, targetStatusHints: [] });
-    };
-
-    const started = Date.now();
-    while (Date.now() - started < AUTO_APPLY_WAIT_MS) {
-      const message = game.messages.get(opposedMessage.id);
-      const opposed = message?.system;
-      if (!opposed) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        continue;
-      }
-
-      const computed = opposed.result?.computed === true;
-      const hasDamage = typeof opposed.result?.damage !== "undefined" && opposed.result?.damage !== null;
-      const alreadyApplied = opposed.result?.damage?.applied === true;
-      if (!computed) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        continue;
-      }
-
-      if (!hasDamage || alreadyApplied) {
-        await postSeparatorOnce(opposed);
-        break;
-      }
-
-      const defenderActor = ChatMessage.getSpeakerActor(opposed.defender);
-      if (!defenderActor?.isOwner || applying) {
-        await postSeparatorOnce(opposed);
-        break;
-      }
-
-      applying = true;
-      const beforeState = snapshotActorState(defenderActor);
-      const damageValue = Number(opposed.result?.damage?.value ?? 0);
-      await applyDamageWithWoundsFallback(defenderActor, damageValue, {
-        opposed,
-        item: opposed.attackerTest?.item,
-        test: opposed.attackerMessage?.system?.test
-      });
-      const afterState = await captureSettledActorState(defenderActor, beforeState, 700);
-      const targetStatusHints = deriveAppliedStatusLabels(beforeState, afterState);
-      const sourceStatusHints = await deriveSourceStatusHints(sourceActor, sourceBeforeState);
-      if (!separatorPosted) {
-        separatorPosted = true;
-        await postFlowSeparatorCard(opposed, { sourceStatusHints, targetStatusHints });
-      }
-      break;
-    }
-    cleanup();
-  })();
-}
-
 async function applyDamageWithWoundsFallback(defenderActor, damageValue, context) {
   const system = defenderActor?.system;
   if (!system || typeof system.applyDamage !== "function") return;
 
   const originalAddWound = (typeof system.addWound === "function") ? system.addWound.bind(system) : null;
   if (!originalAddWound) {
-    await applyActorDamage(defenderActor, damageValue, context);
+    await towCombatOverlayApplyActorDamage(defenderActor, damageValue, context);
     return;
   }
 
@@ -285,14 +141,14 @@ async function applyDamageWithWoundsFallback(defenderActor, damageValue, context
   };
 
   try {
-    await applyActorDamage(defenderActor, damageValue, context);
+    await towCombatOverlayApplyActorDamage(defenderActor, damageValue, context);
   } finally {
     system.addWound = originalAddWound;
   }
 }
 
-function snapshotActorState(actor) {
-  const statuses = new Set(Array.from(actor?.statuses ?? []).map((s) => String(s)));
+export function snapshotActorState(actor) {
+  const statuses = new Set(Array.from(actor?.statuses ?? []).map((status) => String(status)));
   for (const effect of Array.from(actor?.effects?.contents ?? [])) {
     for (const status of Array.from(effect?.statuses ?? [])) statuses.add(String(status));
   }
@@ -310,7 +166,7 @@ async function captureSettledActorState(actor, baselineState, settleMs = 700) {
     const current = snapshotActorState(actor);
     const sameWounds = current.wounds === last.wounds;
     const sameStatuses = current.statuses.size === last.statuses.size
-      && Array.from(current.statuses).every((s) => last.statuses.has(s));
+      && Array.from(current.statuses).every((status) => last.statuses.has(status));
     if (sameWounds && sameStatuses) {
       stableFor += 80;
       if (stableFor >= 160) return current;
@@ -350,14 +206,6 @@ function deriveAppliedStatusLabels(before, after) {
     add(label);
   }
   return labels;
-}
-
-function createTowCombatOverlayAutomationCoordinator() {
-  return {
-    armDefaultStaggerChoiceWound,
-    armAutoDefenceForOpposed,
-    snapshotActorState
-  };
 }
 
 function getFlowNamesMarkup(attackerName, defenderName) {
@@ -497,4 +345,94 @@ async function postFlowSeparatorCard(opposed, { sourceStatusHints = [], targetSt
   });
 }
 
+function armAutoApplyDamageForOpposed(opposedMessage, { sourceActor = null, sourceBeforeState = null } = {}) {
+  if (typeof globalThis.shouldTowCombatOverlayAutoApplyDamage === "function"
+    && !globalThis.shouldTowCombatOverlayAutoApplyDamage()) {
+    return;
+  }
+
+  if (!opposedMessage?.id) return;
+  const state = game[MODULE_KEY];
+  if (state) {
+    if (!state.autoApplyArmed) state.autoApplyArmed = new Set();
+    if (state.autoApplyArmed.has(opposedMessage.id)) return;
+    state.autoApplyArmed.add(opposedMessage.id);
+  }
+
+  const cleanup = () => {
+    state?.autoApplyArmed?.delete(opposedMessage.id);
+    state?.autoDefenceHandled?.delete(opposedMessage.id);
+  };
+
+  void (async () => {
+    let applying = false;
+    let separatorPosted = false;
+    const postSeparatorOnce = async (opposed) => {
+      if (separatorPosted) return;
+      separatorPosted = true;
+      const sourceStatusHints = await deriveSourceStatusHints(sourceActor, sourceBeforeState);
+      await postFlowSeparatorCard(opposed, { sourceStatusHints, targetStatusHints: [] });
+    };
+
+    const started = Date.now();
+    while (Date.now() - started < AUTO_APPLY_WAIT_MS) {
+      const message = game.messages.get(opposedMessage.id);
+      const opposed = message?.system;
+      if (!opposed) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        continue;
+      }
+
+      const computed = opposed.result?.computed === true;
+      const hasDamage = typeof opposed.result?.damage !== "undefined" && opposed.result?.damage !== null;
+      const alreadyApplied = opposed.result?.damage?.applied === true;
+      if (!computed) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        continue;
+      }
+
+      if (!hasDamage || alreadyApplied) {
+        await postSeparatorOnce(opposed);
+        break;
+      }
+
+      const defenderActor = ChatMessage.getSpeakerActor(opposed.defender);
+      if (!defenderActor?.isOwner || applying) {
+        await postSeparatorOnce(opposed);
+        break;
+      }
+
+      applying = true;
+      const beforeState = snapshotActorState(defenderActor);
+      const damageValue = Number(opposed.result?.damage?.value ?? 0);
+      await applyDamageWithWoundsFallback(defenderActor, damageValue, {
+        opposed,
+        item: opposed.attackerTest?.item,
+        test: opposed.attackerMessage?.system?.test
+      });
+      const afterState = await captureSettledActorState(defenderActor, beforeState, 700);
+      const targetStatusHints = deriveAppliedStatusLabels(beforeState, afterState);
+      const sourceStatusHints = await deriveSourceStatusHints(sourceActor, sourceBeforeState);
+      if (!separatorPosted) {
+        separatorPosted = true;
+        await postFlowSeparatorCard(opposed, { sourceStatusHints, targetStatusHints });
+      }
+      break;
+    }
+    cleanup();
+  })();
+}
+
+export function createTowCombatOverlayAutomationCoordinator() {
+  return {
+    armDefaultStaggerChoiceWound,
+    armAutoDefenceForOpposed,
+    snapshotActorState
+  };
+}
+
+globalThis.createTowCombatOverlayAutomationCoordinator = createTowCombatOverlayAutomationCoordinator;
+globalThis.armDefaultStaggerChoiceWound = armDefaultStaggerChoiceWound;
+globalThis.armAutoDefenceForOpposed = armAutoDefenceForOpposed;
+globalThis.snapshotActorState = snapshotActorState;
 globalThis.towCombatOverlayAutomation = createTowCombatOverlayAutomationCoordinator();

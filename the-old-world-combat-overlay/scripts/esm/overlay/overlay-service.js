@@ -1,33 +1,108 @@
-const overlayServiceClearDisplayObjectRef = globalThis.towCombatOverlayClearDisplayObject;
-const overlayServiceCanEditActorRef = globalThis.towCombatOverlayCanEditActor;
-const overlayServiceWarnNoPermissionRef = globalThis.towCombatOverlayWarnNoPermission;
-const overlayServiceGetActorFromTokenRef = globalThis.towCombatOverlayGetActorFromToken;
-const overlayServiceForEachSceneTokenRef = globalThis.towCombatOverlayForEachSceneToken;
-const overlayServiceGetActorTokenObjectsRef = globalThis.towCombatOverlayGetActorTokenObjects;
-const overlayServiceGetTokenOverlayScaleRef = globalThis.towCombatOverlayGetTokenOverlayScale;
-const overlayServiceGetOverlayEdgePadPxRef = globalThis.towCombatOverlayGetOverlayEdgePadPx;
-const overlayServicePreventPointerDefaultRef = globalThis.towCombatOverlayPreventPointerDefault;
-const overlayServiceGetMouseButtonRef = globalThis.towCombatOverlayGetMouseButton;
-const overlayServiceBindTooltipHandlersRef = globalThis.towCombatOverlayBindTooltipHandlers;
-const overlayServiceEnsureTokenOverlayInteractivityRef = globalThis.towCombatOverlayEnsureTokenOverlayInteractivity;
-const overlayServiceUpdateTokenOverlayHitAreaRef = globalThis.towCombatOverlayUpdateTokenOverlayHitArea;
-const overlayServiceRestoreTokenOverlayInteractivityRef = globalThis.towCombatOverlayRestoreTokenOverlayInteractivity;
-const overlayServiceAddActorConditionRef = globalThis.towCombatOverlayAddActorCondition;
-const overlayServiceRemoveActorConditionRef = globalThis.towCombatOverlayRemoveActorCondition;
-const overlayServiceUpdateCustomLayoutBorderVisibilityRef = globalThis.towCombatOverlayUpdateCustomLayoutBorderVisibility;
-const overlayServiceClearCustomLayoutBorderRef = globalThis.towCombatOverlayClearCustomLayoutBorder;
-const overlayServiceClearDeadVisualRef = globalThis.towCombatOverlayClearDeadVisual;
-const overlayServiceEnsureDeadVisualRef = globalThis.towCombatOverlayEnsureDeadVisual;
-const overlayServicePrimeDeadPresenceRef = globalThis.towCombatOverlayPrimeDeadPresence;
-const overlayServiceQueueWoundSyncFromDeadStateRef = globalThis.towCombatOverlayQueueWoundSyncFromDeadState;
-const overlayServiceGetActorTypeLabelRef = globalThis.towCombatOverlayGetActorTypeLabel;
-const overlayServiceGetMaxWoundLimitRef = globalThis.towCombatOverlayGetMaxWoundLimit;
-const overlayServiceUpdateWoundControlUIRef = globalThis.towCombatOverlayUpdateWoundControlUI;
-const overlayServiceClearAllWoundControlsRef = globalThis.towCombatOverlayClearAllWoundControls;
-const overlayServiceUpdateNameLabelRef = globalThis.towCombatOverlayUpdateNameLabel;
-const overlayServiceClearAllNameLabelsRef = globalThis.towCombatOverlayClearAllNameLabels;
-const overlayServiceUpdateResilienceLabelRef = globalThis.towCombatOverlayUpdateResilienceLabel;
-const overlayServiceClearAllResilienceLabelsRef = globalThis.towCombatOverlayClearAllResilienceLabels;
+import {
+  ACTOR_OVERLAY_RESYNC_DELAYS_MS,
+  KEYS,
+  MODULE_KEY,
+  OVERLAY_FONT_SIZE,
+  STATUS_PALETTE_ACTIVE_TINT,
+  STATUS_PALETTE_BACKDROP_COLOR,
+  STATUS_PALETTE_DEAD_RING,
+  STATUS_PALETTE_ICON_GAP,
+  STATUS_PALETTE_ICON_SIZE,
+  STATUS_PALETTE_INACTIVE_ALPHA,
+  STATUS_PALETTE_INACTIVE_TINT,
+  STATUS_PALETTE_ROWS,
+  STATUS_PALETTE_SPECIAL_BG_DEAD_ALPHA,
+  STATUS_PALETTE_SPECIAL_BG_OUTLINE,
+  STATUS_PALETTE_SPECIAL_BG_STAGGERED_ALPHA,
+  STATUS_PALETTE_STAGGERED_RING,
+  STATUS_TOOLTIP_BG_ALPHA,
+  STATUS_TOOLTIP_BORDER_ALPHA,
+  STATUS_TOOLTIP_DOM_CLASS,
+  STATUS_TOOLTIP_FONT_SIZE,
+  STATUS_TOOLTIP_MAX_WIDTH,
+  STATUS_TOOLTIP_OFFSET_X,
+  STATUS_TOOLTIP_OFFSET_Y,
+  STATUS_TOOLTIP_PAD_X,
+  STATUS_TOOLTIP_PAD_Y,
+  getStatusPaletteBackdropStyle,
+  getStatusSpecialBgStyle
+} from "../overlay-runtime-constants.js";
+import {
+  towCombatOverlayGetActorTokenObjects,
+} from "./core-helpers-service.js";
+import "./automation-service.js";
+import {
+  towCombatOverlayBringTokenToFront,
+  towCombatOverlayClearCustomLayoutBorder,
+  towCombatOverlayClearDeadVisual,
+  towCombatOverlayClearDisplayObject,
+  towCombatOverlayEnsureDeadVisual,
+  towCombatOverlayEnsureTokenOverlayInteractivity,
+  towCombatOverlayGetMaxWoundLimit,
+  towCombatOverlayPrimeDeadPresence,
+  towCombatOverlayQueueWoundSyncFromDeadState,
+  towCombatOverlayRestoreTokenOverlayInteractivity,
+  towCombatOverlayUpdateCustomLayoutBorderVisibility,
+  towCombatOverlayUpdateTokenOverlayHitArea
+} from "./layout-state-service.js";
+import "./actions-bridge-service.js";
+import {
+  towCombatOverlayClearAllNameLabels,
+  towCombatOverlayClearAllResilienceLabels,
+  towCombatOverlayClearAllWoundControls,
+  towCombatOverlayGetActorTypeLabel,
+  towCombatOverlayUpdateNameLabel,
+  towCombatOverlayUpdateResilienceLabel,
+  towCombatOverlayUpdateWoundControlUI
+} from "./controls-service.js";
+
+function overlayServiceCanEditActorRef(actor) {
+  return globalThis.towCombatOverlayCanEditActor?.(actor) ?? actor?.isOwner === true;
+}
+
+function overlayServiceWarnNoPermissionRef(actor) {
+  return globalThis.towCombatOverlayWarnNoPermission?.(actor)
+    ?? ui.notifications.warn(`No permission to edit ${actor?.name ?? "actor"}.`);
+}
+
+function overlayServiceGetActorFromTokenRef(tokenObject) {
+  return globalThis.towCombatOverlayGetActorFromToken?.(tokenObject) ?? tokenObject?.document?.actor ?? null;
+}
+
+function overlayServiceForEachSceneTokenRef(callback) {
+  return globalThis.towCombatOverlayForEachSceneToken?.(callback)
+    ?? (canvas?.tokens?.placeables ?? []).forEach(callback);
+}
+
+function overlayServiceGetTokenOverlayScaleRef(tokenObject) {
+  return globalThis.towCombatOverlayGetTokenOverlayScale?.(tokenObject) ?? 1;
+}
+
+function overlayServiceGetOverlayEdgePadPxRef(tokenObject) {
+  return globalThis.towCombatOverlayGetOverlayEdgePadPx?.(tokenObject) ?? 0;
+}
+
+function overlayServicePreventPointerDefaultRef(event) {
+  return globalThis.towCombatOverlayPreventPointerDefault?.(event)
+    ?? event?.nativeEvent?.preventDefault?.();
+}
+
+function overlayServiceGetMouseButtonRef(event) {
+  return globalThis.towCombatOverlayGetMouseButton?.(event)
+    ?? event?.button ?? event?.data?.button ?? event?.nativeEvent?.button ?? 0;
+}
+
+function overlayServiceBindTooltipHandlersRef(displayObject, getTooltipData, keyStore) {
+  return globalThis.towCombatOverlayBindTooltipHandlers?.(displayObject, getTooltipData, keyStore) ?? null;
+}
+
+async function overlayServiceAddActorConditionRef(actor, condition) {
+  return globalThis.towCombatOverlayAddActorCondition?.(actor, condition);
+}
+
+async function overlayServiceRemoveActorConditionRef(actor, condition) {
+  return globalThis.towCombatOverlayRemoveActorCondition?.(actor, condition);
+}
 
 function getIconSrc(displayObject) {
   return (
@@ -55,7 +130,7 @@ function getEffectIconSrc(effect) {
   return normalizeIconSrc(effect?.img ?? effect?.icon ?? "");
 }
 
-async function runActorOpLock(actor, opKey, operation) {
+export async function runActorOpLock(actor, opKey, operation) {
   const state = game[MODULE_KEY];
   if (!state || !actor || !opKey || typeof operation !== "function") return;
   if (!state.statusRemoveInFlight) state.statusRemoveInFlight = new Set();
@@ -92,7 +167,6 @@ async function setActorConditionState(actor, conditionId, active) {
       await actor.toggleStatusEffect(id, { active });
       return;
     } catch (_error) {
-      // Fall back to system helpers if status effect registry lookup fails.
     }
   }
 
@@ -151,13 +225,13 @@ function getTypeTooltipData(actor) {
   const fallbackType = String(actor?.type ?? "actor").trim().toLowerCase();
   const typeKey = systemType || fallbackType;
   const npcTypeLabelKey = game.oldworld?.config?.npcType?.[typeKey] ?? null;
-  const typeLabel = npcTypeLabelKey ? game.i18n.localize(npcTypeLabelKey) : overlayServiceGetActorTypeLabelRef(actor);
+  const typeLabel = npcTypeLabelKey ? game.i18n.localize(npcTypeLabelKey) : towCombatOverlayGetActorTypeLabel(actor);
 
   if (typeKey === "minion") {
     return { title: typeLabel, description: "Minions are defeated at 1 wound." };
   }
   if (["brute", "champion", "monstrosity"].includes(typeKey)) {
-    const cap = overlayServiceGetMaxWoundLimitRef(actor);
+    const cap = towCombatOverlayGetMaxWoundLimit(actor);
     const capText = Number.isFinite(cap) ? ` Defeated at ${cap} wounds.` : "";
     return { title: typeLabel, description: `Threshold-based NPC type.${capText}` };
   }
@@ -185,7 +259,7 @@ function ensureStatusTooltip() {
   element.style.padding = `${STATUS_TOOLTIP_PAD_Y}px ${STATUS_TOOLTIP_PAD_X}px`;
   element.style.borderRadius = "5px";
   element.style.border = `1px solid rgba(193, 139, 44, ${STATUS_TOOLTIP_BORDER_ALPHA})`;
-  element.style.background = "rgba(15, 12, 9, 0.94)";
+  element.style.background = `rgba(15, 12, 9, ${STATUS_TOOLTIP_BG_ALPHA})`;
   element.style.color = "#f2e7cc";
   element.style.fontFamily = "var(--font-primary, Signika)";
   element.style.fontSize = `${STATUS_TOOLTIP_FONT_SIZE}px`;
@@ -221,7 +295,7 @@ function ensureStatusTooltip() {
   return state.statusTooltip;
 }
 
-function showOverlayTooltip(title, description, point, existingTooltip = null) {
+export function showOverlayTooltip(title, description, point, existingTooltip = null) {
   const tooltip = existingTooltip ?? ensureStatusTooltip();
   if (!tooltip || !point) return;
   tooltip.title.textContent = String(title ?? "");
@@ -244,7 +318,7 @@ function showOverlayTooltip(title, description, point, existingTooltip = null) {
   tooltip.element.style.display = "block";
 }
 
-function hideStatusTooltip() {
+export function hideStatusTooltip() {
   for (const element of Array.from(document.querySelectorAll(`.${STATUS_TOOLTIP_DOM_CLASS}`))) {
     if (element instanceof HTMLElement) element.style.display = "none";
   }
@@ -356,7 +430,7 @@ function restoreDefaultStatusPanel(tokenObject) {
   delete tokenObject[KEYS.defaultEffectsVisible];
 }
 
-function hideCoreTokenHoverVisuals(tokenObject) {
+export function towCombatOverlayHideCoreTokenHoverVisuals(tokenObject) {
   if (!tokenObject || tokenObject.destroyed) return;
   const tooltip = tokenObject?.tooltip ?? null;
   if (tooltip) {
@@ -710,42 +784,42 @@ function clearAllStatusOverlays() {
     clearStatusPalette(token);
     restoreDefaultStatusPanel(token);
     restoreCoreTokenHoverVisuals(token);
-    overlayServiceClearDeadVisualRef(token);
-    overlayServiceRestoreTokenOverlayInteractivityRef(token);
-    overlayServiceClearCustomLayoutBorderRef(token);
+    towCombatOverlayClearDeadVisual(token);
+    towCombatOverlayRestoreTokenOverlayInteractivity(token);
+    towCombatOverlayClearCustomLayoutBorder(token);
   });
 
   const orphaned = [];
   for (const child of canvas.tokens.children ?? []) {
     if (child?.[KEYS.statusPaletteMarker] === true) orphaned.push(child);
   }
-  for (const layer of orphaned) overlayServiceClearDisplayObjectRef(layer);
+  for (const layer of orphaned) towCombatOverlayClearDisplayObject(layer);
   clearStatusTooltip();
 }
 
-function refreshTokenOverlay(tokenObject) {
-  overlayServicePrimeDeadPresenceRef(overlayServiceGetActorFromTokenRef(tokenObject));
-  overlayServiceEnsureTokenOverlayInteractivityRef(tokenObject);
+export function towCombatOverlayRefreshTokenOverlay(tokenObject) {
+  towCombatOverlayPrimeDeadPresence(overlayServiceGetActorFromTokenRef(tokenObject));
+  towCombatOverlayEnsureTokenOverlayInteractivity(tokenObject);
   hideDefaultStatusPanel(tokenObject);
-  hideCoreTokenHoverVisuals(tokenObject);
+  towCombatOverlayHideCoreTokenHoverVisuals(tokenObject);
   setupStatusPalette(tokenObject);
-  overlayServiceUpdateWoundControlUIRef(tokenObject);
-  overlayServiceUpdateNameLabelRef(tokenObject);
-  overlayServiceUpdateResilienceLabelRef(tokenObject);
-  overlayServiceUpdateTokenOverlayHitAreaRef(tokenObject);
-  overlayServiceUpdateCustomLayoutBorderVisibilityRef(tokenObject);
-  overlayServiceEnsureDeadVisualRef(tokenObject);
+  towCombatOverlayUpdateWoundControlUI(tokenObject);
+  towCombatOverlayUpdateNameLabel(tokenObject);
+  towCombatOverlayUpdateResilienceLabel(tokenObject);
+  towCombatOverlayUpdateTokenOverlayHitArea(tokenObject);
+  towCombatOverlayUpdateCustomLayoutBorderVisibility(tokenObject);
+  towCombatOverlayEnsureDeadVisual(tokenObject);
 }
 
-function refreshActorOverlays(actor) {
-  overlayServicePrimeDeadPresenceRef(actor);
-  overlayServiceQueueWoundSyncFromDeadStateRef(actor);
-  for (const tokenObject of overlayServiceGetActorTokenObjectsRef(actor)) {
-    refreshTokenOverlay(tokenObject);
+export function towCombatOverlayRefreshActorOverlays(actor) {
+  towCombatOverlayPrimeDeadPresence(actor);
+  towCombatOverlayQueueWoundSyncFromDeadState(actor);
+  for (const tokenObject of towCombatOverlayGetActorTokenObjects(actor)) {
+    towCombatOverlayRefreshTokenOverlay(tokenObject);
   }
 }
 
-function queueActorOverlayResync(actor) {
+export function towCombatOverlayQueueActorOverlayResync(actor) {
   if (!actor) return;
   const state = game[MODULE_KEY];
   if (!state) return;
@@ -760,30 +834,30 @@ function queueActorOverlayResync(actor) {
   }
 
   const timers = ACTOR_OVERLAY_RESYNC_DELAYS_MS.map((delayMs) => setTimeout(() => {
-    refreshActorOverlays(actor);
+    towCombatOverlayRefreshActorOverlays(actor);
   }, delayMs));
   state.actorOverlayResyncTimers.set(key, timers);
 }
 
-function refreshAllOverlays() {
+export function towCombatOverlayRefreshAllOverlays() {
   overlayServiceForEachSceneTokenRef((token) => {
-    refreshTokenOverlay(token);
+    towCombatOverlayRefreshTokenOverlay(token);
   });
 }
 
 function registerHooks() {
-  return registerTowCombatOverlayHooks();
+  return globalThis.registerTowCombatOverlayHooks();
 }
 
 function unregisterHooks(hookIds) {
-  unregisterTowCombatOverlayHooks(hookIds);
+  globalThis.unregisterTowCombatOverlayHooks(hookIds);
 }
 
-function isOverlayEnabled() {
+export function towCombatOverlayIsEnabled() {
   return !!game[MODULE_KEY];
 }
 
-function enableOverlay() {
+export function towCombatOverlayEnable() {
   if (game[MODULE_KEY]) return false;
   const hookIds = registerHooks();
   game[MODULE_KEY] = {
@@ -800,12 +874,12 @@ function enableOverlay() {
     statusRemoveQueue: new Map(),
     lastCanvasScale: Number(canvas?.stage?.scale?.x ?? 1)
   };
-  refreshAllOverlays();
+  towCombatOverlayRefreshAllOverlays();
   ui.notifications.info("Overlay enabled: wounds + resilience + status highlights.");
   return true;
 }
 
-function disableOverlay() {
+export function towCombatOverlayDisable() {
   const state = game[MODULE_KEY];
   if (!state) return false;
   unregisterHooks(state);
@@ -839,57 +913,30 @@ function disableOverlay() {
   }
   delete game[MODULE_KEY];
 
-  overlayServiceClearAllWoundControlsRef();
-  overlayServiceClearAllNameLabelsRef();
-  overlayServiceClearAllResilienceLabelsRef();
+  towCombatOverlayClearAllWoundControls();
+  towCombatOverlayClearAllNameLabels();
+  towCombatOverlayClearAllResilienceLabels();
   clearAllStatusOverlays();
   ui.notifications.info("Overlay disabled.");
   return true;
 }
 
-function toggleOverlay() {
-  return isOverlayEnabled() ? disableOverlay() : enableOverlay();
+export function towCombatOverlayToggle() {
+  return towCombatOverlayIsEnabled() ? towCombatOverlayDisable() : towCombatOverlayEnable();
 }
 
-function createTowOverlayApi(overrides = {}) {
-  return {
-    version: TOW_OVERLAY_VERSION,
-    isEnabled: isOverlayEnabled,
-    enable: enableOverlay,
-    disable: disableOverlay,
-    toggle: toggleOverlay,
-    refreshAll: refreshAllOverlays,
-    refreshActor: refreshActorOverlays,
-    refreshToken: refreshTokenOverlay,
-    ...overrides
-  };
-}
-
-function registerTowOverlayApi(apiOverrides = {}) {
-  const nextApi = createTowOverlayApi(apiOverrides);
-  const targetApi = (game[TOW_OVERLAY_API_KEY] && typeof game[TOW_OVERLAY_API_KEY] === "object")
-    ? game[TOW_OVERLAY_API_KEY]
-    : {};
-  Object.assign(targetApi, nextApi);
-  game[TOW_OVERLAY_API_KEY] = targetApi;
-
-  if (typeof globalThis.registerTowCombatOverlayPublicApis === "function") {
-    globalThis.registerTowCombatOverlayPublicApis({
-      overlayApi: targetApi
-    });
-  }
-
-  return targetApi;
-}
-
-const TOW_OVERLAY_API_KEY = "towOverlay";
-const TOW_OVERLAY_VERSION = "1.0.0";
-
-globalThis.towCombatOverlayRefreshAllOverlays = refreshAllOverlays;
-globalThis.towCombatOverlayRefreshActorOverlays = refreshActorOverlays;
-globalThis.towCombatOverlayRefreshTokenOverlay = refreshTokenOverlay;
-globalThis.towCombatOverlayHideCoreTokenHoverVisuals = hideCoreTokenHoverVisuals;
-globalThis.towCombatOverlayQueueActorOverlayResync = queueActorOverlayResync;
-globalThis.registerTowOverlayApi = registerTowOverlayApi;
-
-registerTowOverlayApi();
+Object.assign(globalThis, {
+  runActorOpLock,
+  showOverlayTooltip,
+  hideStatusTooltip,
+  getTypeTooltipData,
+  towCombatOverlayRefreshAllOverlays,
+  towCombatOverlayRefreshActorOverlays,
+  towCombatOverlayRefreshTokenOverlay,
+  towCombatOverlayHideCoreTokenHoverVisuals,
+  towCombatOverlayQueueActorOverlayResync,
+  isOverlayEnabled: towCombatOverlayIsEnabled,
+  enableOverlay: towCombatOverlayEnable,
+  disableOverlay: towCombatOverlayDisable,
+  toggleOverlay: towCombatOverlayToggle
+});

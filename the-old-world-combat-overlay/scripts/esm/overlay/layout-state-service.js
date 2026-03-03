@@ -1,20 +1,52 @@
+import {
+  DEAD_SYNC_DEBOUNCE_MS,
+  DEAD_TO_WOUND_SYNC_DEBOUNCE_MS,
+  KEYS,
+  LAYOUT_BORDER_COLOR,
+  MODULE_KEY,
+  WOUND_ITEM_TYPE,
+  getLayoutBorderStyle
+} from "../overlay-runtime-constants.js";
+
+function layoutStateCanEditActorRef(actor) {
+  return globalThis.towCombatOverlayCanEditActor?.(actor) ?? actor?.isOwner === true;
+}
+
+function layoutStateWarnNoPermissionRef(actor) {
+  return globalThis.towCombatOverlayWarnNoPermission?.(actor)
+    ?? ui.notifications.warn(`No permission to edit ${actor?.name ?? "actor"}.`);
+}
+
+async function layoutStateAddActorConditionRef(actor, condition) {
+  return globalThis.towCombatOverlayAddActorCondition?.(actor, condition);
+}
+
+async function layoutStateRemoveActorConditionRef(actor, condition) {
+  return globalThis.towCombatOverlayRemoveActorCondition?.(actor, condition);
+}
+
+async function layoutStateAddActorWoundRef(actor, options) {
+  return globalThis.towCombatOverlayAddActorWound?.(actor, options);
+}
+
+async function runActorOpLockRef(actor, opKey, operation) {
+  if (typeof globalThis.runActorOpLock === "function") {
+    return globalThis.runActorOpLock(actor, opKey, operation);
+  }
+  return operation();
+}
+
 function layoutStateGetLayoutBorderStyleRef(tokenObject) {
   return getLayoutBorderStyle(tokenObject);
 }
 
-const layoutStateCanEditActorRef = globalThis.towCombatOverlayCanEditActor;
-const layoutStateWarnNoPermissionRef = globalThis.towCombatOverlayWarnNoPermission;
-const layoutStateAddActorConditionRef = globalThis.towCombatOverlayAddActorCondition;
-const layoutStateRemoveActorConditionRef = globalThis.towCombatOverlayRemoveActorCondition;
-const layoutStateAddActorWoundRef = globalThis.towCombatOverlayAddActorWound;
-
-function towCombatOverlayClearDisplayObject(displayObject) {
+export function towCombatOverlayClearDisplayObject(displayObject) {
   if (!displayObject) return;
   displayObject.parent?.removeChild(displayObject);
   displayObject.destroy({ children: true });
 }
 
-function towCombatOverlayEnsureTokenOverlayInteractivity(tokenObject) {
+export function towCombatOverlayEnsureTokenOverlayInteractivity(tokenObject) {
   if (!tokenObject || tokenObject.destroyed) return;
   if (typeof tokenObject[KEYS.tokenInteractiveChildrenOriginal] === "undefined") {
     tokenObject[KEYS.tokenInteractiveChildrenOriginal] = tokenObject.interactiveChildren === true;
@@ -25,7 +57,7 @@ function towCombatOverlayEnsureTokenOverlayInteractivity(tokenObject) {
   tokenObject.interactiveChildren = true;
 }
 
-function towCombatOverlayUpdateTokenOverlayHitArea(tokenObject) {
+export function towCombatOverlayUpdateTokenOverlayHitArea(tokenObject) {
   if (!tokenObject || tokenObject.destroyed) return;
   const points = [
     { x: 0, y: 0 },
@@ -78,7 +110,7 @@ function towCombatOverlayUpdateTokenOverlayHitArea(tokenObject) {
   towCombatOverlayDrawCustomLayoutBorder(tokenObject);
 }
 
-function towCombatOverlayRestoreTokenOverlayInteractivity(tokenObject) {
+export function towCombatOverlayRestoreTokenOverlayInteractivity(tokenObject) {
   if (!tokenObject || tokenObject.destroyed) return;
   const prior = tokenObject[KEYS.tokenInteractiveChildrenOriginal];
   if (typeof prior !== "boolean") return;
@@ -90,7 +122,7 @@ function towCombatOverlayRestoreTokenOverlayInteractivity(tokenObject) {
   }
 }
 
-function towCombatOverlayEnsureCustomLayoutBorder(tokenObject) {
+export function towCombatOverlayEnsureCustomLayoutBorder(tokenObject) {
   if (!tokenObject || tokenObject.destroyed) return null;
   let border = tokenObject[KEYS.layoutBorder];
   if (!border || border.destroyed || border.parent !== tokenObject) {
@@ -103,7 +135,7 @@ function towCombatOverlayEnsureCustomLayoutBorder(tokenObject) {
   return border;
 }
 
-function towCombatOverlayDrawCustomLayoutBorder(tokenObject) {
+export function towCombatOverlayDrawCustomLayoutBorder(tokenObject) {
   if (!tokenObject || tokenObject.destroyed) return;
   const border = towCombatOverlayEnsureCustomLayoutBorder(tokenObject);
   if (!border) return;
@@ -122,7 +154,7 @@ function towCombatOverlayDrawCustomLayoutBorder(tokenObject) {
   border.drawRoundedRect(bounds.x, bounds.y, bounds.width, bounds.height, borderStyle.radius);
 }
 
-function towCombatOverlayUpdateCustomLayoutBorderVisibility(tokenObject, { hovered = null, controlled = null } = {}) {
+export function towCombatOverlayUpdateCustomLayoutBorderVisibility(tokenObject, { hovered = null, controlled = null } = {}) {
   if (!tokenObject || tokenObject.destroyed) return;
   const border = towCombatOverlayEnsureCustomLayoutBorder(tokenObject);
   if (!border) return;
@@ -131,14 +163,14 @@ function towCombatOverlayUpdateCustomLayoutBorderVisibility(tokenObject, { hover
   border.visible = tokenObject.visible && (isHovered || isControlled);
 }
 
-function towCombatOverlayClearCustomLayoutBorder(tokenObject) {
+export function towCombatOverlayClearCustomLayoutBorder(tokenObject) {
   const border = tokenObject?.[KEYS.layoutBorder];
   if (border) towCombatOverlayClearDisplayObject(border);
   delete tokenObject?.[KEYS.layoutBorder];
   delete tokenObject?.[KEYS.layoutBounds];
 }
 
-async function towCombatOverlayBringTokenToFront(tokenObject) {
+export async function towCombatOverlayBringTokenToFront(tokenObject) {
   if (!tokenObject || tokenObject.destroyed) return;
   const tokenDocument = tokenObject.document ?? null;
   if (tokenDocument?.isOwner && typeof tokenDocument.update === "function") {
@@ -171,11 +203,11 @@ async function towCombatOverlayBringTokenToFront(tokenObject) {
   parent.setChildIndex(tokenObject, topIndex);
 }
 
-function towCombatOverlayGetDeadFilterTargets(tokenObject) {
+export function towCombatOverlayGetDeadFilterTargets(tokenObject) {
   return [tokenObject?.mesh, tokenObject?.icon].filter(Boolean);
 }
 
-function towCombatOverlayEnsureDeadVisual(tokenObject) {
+export function towCombatOverlayEnsureDeadVisual(tokenObject) {
   if (!tokenObject) return;
   const hasDead = !!tokenObject.document?.actor?.hasCondition?.("dead");
   if (!hasDead) {
@@ -201,7 +233,7 @@ function towCombatOverlayEnsureDeadVisual(tokenObject) {
   tokenObject[KEYS.deadVisualState] = { entries };
 }
 
-function towCombatOverlayClearDeadVisual(tokenObject) {
+export function towCombatOverlayClearDeadVisual(tokenObject) {
   const state = tokenObject?.[KEYS.deadVisualState];
   if (!state) return;
 
@@ -216,7 +248,7 @@ function towCombatOverlayClearDeadVisual(tokenObject) {
   delete tokenObject[KEYS.deadVisualState];
 }
 
-function towCombatOverlayGetWoundCount(tokenDocument) {
+export function towCombatOverlayGetWoundCount(tokenDocument) {
   const actor = tokenDocument?.actor;
   if (!actor) return null;
   const liveItems = actor.items?.contents ?? [];
@@ -228,7 +260,7 @@ function towCombatOverlayGetWoundCount(tokenDocument) {
   return itemWounds;
 }
 
-function towCombatOverlayGetActorWoundItemCount(actor) {
+export function towCombatOverlayGetActorWoundItemCount(actor) {
   if (!actor) return 0;
   const items = actor.items?.contents ?? [];
   if (Array.isArray(items)) return items.filter((item) => item.type === WOUND_ITEM_TYPE).length;
@@ -236,7 +268,7 @@ function towCombatOverlayGetActorWoundItemCount(actor) {
   return 0;
 }
 
-function towCombatOverlayGetMaxWoundLimit(actor) {
+export function towCombatOverlayGetMaxWoundLimit(actor) {
   if (!actor || actor.type !== "npc") return null;
   if (actor.system?.type === "minion") return 1;
   if (!actor.system?.hasThresholds) return null;
@@ -245,14 +277,14 @@ function towCombatOverlayGetMaxWoundLimit(actor) {
   return defeatedThreshold;
 }
 
-function towCombatOverlayIsAtWoundCap(actor) {
+export function towCombatOverlayIsAtWoundCap(actor) {
   const cap = towCombatOverlayGetMaxWoundLimit(actor);
   if (!Number.isFinite(cap)) return false;
   if (actor.system?.type === "minion" && actor.hasCondition?.("dead")) return true;
   return towCombatOverlayGetActorWoundItemCount(actor) >= cap;
 }
 
-async function towCombatOverlaySyncNpcDeadFromWounds(actor) {
+export async function towCombatOverlaySyncNpcDeadFromWounds(actor) {
   if (!actor || actor.type !== "npc" || !layoutStateCanEditActorRef(actor)) return;
   if (actor.system?.type === "minion") return;
   if (!actor.system?.hasThresholds || typeof actor.system?.thresholdAtWounds !== "function") return;
@@ -272,12 +304,12 @@ async function towCombatOverlaySyncNpcDeadFromWounds(actor) {
     if (shouldBeDead === hasDead) return;
 
     if (shouldBeDead) {
-      await runActorOpLock(actor, "condition:dead", async () => {
+      await runActorOpLockRef(actor, "condition:dead", async () => {
         if (actor.hasCondition?.("dead")) return;
         await layoutStateAddActorConditionRef(actor, "dead");
       });
     } else {
-      await runActorOpLock(actor, "condition:dead", async () => {
+      await runActorOpLockRef(actor, "condition:dead", async () => {
         if (!actor.hasCondition?.("dead")) return;
         await layoutStateRemoveActorConditionRef(actor, "dead");
       });
@@ -287,7 +319,7 @@ async function towCombatOverlaySyncNpcDeadFromWounds(actor) {
   }
 }
 
-function towCombatOverlayQueueDeadSyncFromWounds(actor) {
+export function towCombatOverlayQueueDeadSyncFromWounds(actor) {
   if (!actor) return;
   const state = game[MODULE_KEY];
   if (!state) return;
@@ -308,7 +340,7 @@ function towCombatOverlayQueueDeadSyncFromWounds(actor) {
   debounced(actor);
 }
 
-async function towCombatOverlaySyncWoundsFromDeadState(actor) {
+export async function towCombatOverlaySyncWoundsFromDeadState(actor) {
   if (!actor || !layoutStateCanEditActorRef(actor)) return;
   const state = game[MODULE_KEY];
   if (!state) return;
@@ -325,7 +357,7 @@ async function towCombatOverlaySyncWoundsFromDeadState(actor) {
   if (!Number.isFinite(cap) || cap <= 0) return;
 
   if (hasDead) {
-    await runActorOpLock(actor, "dead-wound-sync", async () => {
+    await runActorOpLockRef(actor, "dead-wound-sync", async () => {
       const current = towCombatOverlayGetActorWoundItemCount(actor);
       const missing = Math.max(0, cap - current);
       if (missing <= 0) return;
@@ -340,7 +372,7 @@ async function towCombatOverlaySyncWoundsFromDeadState(actor) {
 
   if (!wasDead) return;
   if (towCombatOverlayGetActorWoundItemCount(actor) < cap) return;
-  await runActorOpLock(actor, "dead-wound-sync", async () => {
+  await runActorOpLockRef(actor, "dead-wound-sync", async () => {
     const maxPasses = Math.max(1, towCombatOverlayGetActorWoundItemCount(actor) + 2);
     for (let i = 0; i < maxPasses; i++) {
       const wounds = (actor.items?.contents ?? []).filter((item) => item.type === WOUND_ITEM_TYPE);
@@ -354,7 +386,7 @@ async function towCombatOverlaySyncWoundsFromDeadState(actor) {
   });
 }
 
-function towCombatOverlayQueueWoundSyncFromDeadState(actor) {
+export function towCombatOverlayQueueWoundSyncFromDeadState(actor) {
   if (!actor) return;
   const state = game[MODULE_KEY];
   if (!state) return;
@@ -373,7 +405,7 @@ function towCombatOverlayQueueWoundSyncFromDeadState(actor) {
   debounced(actor);
 }
 
-function towCombatOverlayPrimeDeadPresence(actor) {
+export function towCombatOverlayPrimeDeadPresence(actor) {
   if (!actor) return;
   const state = game[MODULE_KEY];
   if (!state) return;
@@ -383,11 +415,11 @@ function towCombatOverlayPrimeDeadPresence(actor) {
   state.deadPresenceByActor.set(actorKey, !!actor.hasCondition?.("dead"));
 }
 
-function towCombatOverlayGetResilienceValue(tokenDocument) {
+export function towCombatOverlayGetResilienceValue(tokenDocument) {
   return tokenDocument?.actor?.system?.resilience?.value ?? null;
 }
 
-async function towCombatOverlayAddWound(actor) {
+export async function towCombatOverlayAddWound(actor) {
   if (!layoutStateCanEditActorRef(actor)) {
     layoutStateWarnNoPermissionRef(actor);
     return;
@@ -400,13 +432,13 @@ async function towCombatOverlayAddWound(actor) {
   }
 }
 
-async function towCombatOverlayRemoveWound(actor) {
+export async function towCombatOverlayRemoveWound(actor) {
   if (!layoutStateCanEditActorRef(actor)) {
     layoutStateWarnNoPermissionRef(actor);
     return;
   }
 
-  await runActorOpLock(actor, "remove-wound", async () => {
+  await runActorOpLockRef(actor, "remove-wound", async () => {
     const wounds = (actor.items?.contents ?? []).filter((item) => item.type === WOUND_ITEM_TYPE);
     const isMinion = actor.type === "npc" && actor.system?.type === "minion";
     if (!wounds.length) {
@@ -427,27 +459,29 @@ async function towCombatOverlayRemoveWound(actor) {
   });
 }
 
-globalThis.towCombatOverlayClearDisplayObject = towCombatOverlayClearDisplayObject;
-globalThis.towCombatOverlayEnsureTokenOverlayInteractivity = towCombatOverlayEnsureTokenOverlayInteractivity;
-globalThis.towCombatOverlayUpdateTokenOverlayHitArea = towCombatOverlayUpdateTokenOverlayHitArea;
-globalThis.towCombatOverlayRestoreTokenOverlayInteractivity = towCombatOverlayRestoreTokenOverlayInteractivity;
-globalThis.towCombatOverlayEnsureCustomLayoutBorder = towCombatOverlayEnsureCustomLayoutBorder;
-globalThis.towCombatOverlayDrawCustomLayoutBorder = towCombatOverlayDrawCustomLayoutBorder;
-globalThis.towCombatOverlayUpdateCustomLayoutBorderVisibility = towCombatOverlayUpdateCustomLayoutBorderVisibility;
-globalThis.towCombatOverlayClearCustomLayoutBorder = towCombatOverlayClearCustomLayoutBorder;
-globalThis.towCombatOverlayBringTokenToFront = towCombatOverlayBringTokenToFront;
-globalThis.towCombatOverlayGetDeadFilterTargets = towCombatOverlayGetDeadFilterTargets;
-globalThis.towCombatOverlayEnsureDeadVisual = towCombatOverlayEnsureDeadVisual;
-globalThis.towCombatOverlayClearDeadVisual = towCombatOverlayClearDeadVisual;
-globalThis.towCombatOverlayGetWoundCount = towCombatOverlayGetWoundCount;
-globalThis.towCombatOverlayGetActorWoundItemCount = towCombatOverlayGetActorWoundItemCount;
-globalThis.towCombatOverlayGetMaxWoundLimit = towCombatOverlayGetMaxWoundLimit;
-globalThis.towCombatOverlayIsAtWoundCap = towCombatOverlayIsAtWoundCap;
-globalThis.towCombatOverlaySyncNpcDeadFromWounds = towCombatOverlaySyncNpcDeadFromWounds;
-globalThis.towCombatOverlayQueueDeadSyncFromWounds = towCombatOverlayQueueDeadSyncFromWounds;
-globalThis.towCombatOverlaySyncWoundsFromDeadState = towCombatOverlaySyncWoundsFromDeadState;
-globalThis.towCombatOverlayQueueWoundSyncFromDeadState = towCombatOverlayQueueWoundSyncFromDeadState;
-globalThis.towCombatOverlayPrimeDeadPresence = towCombatOverlayPrimeDeadPresence;
-globalThis.towCombatOverlayGetResilienceValue = towCombatOverlayGetResilienceValue;
-globalThis.towCombatOverlayAddWound = towCombatOverlayAddWound;
-globalThis.towCombatOverlayRemoveWound = towCombatOverlayRemoveWound;
+Object.assign(globalThis, {
+  towCombatOverlayClearDisplayObject,
+  towCombatOverlayEnsureTokenOverlayInteractivity,
+  towCombatOverlayUpdateTokenOverlayHitArea,
+  towCombatOverlayRestoreTokenOverlayInteractivity,
+  towCombatOverlayEnsureCustomLayoutBorder,
+  towCombatOverlayDrawCustomLayoutBorder,
+  towCombatOverlayUpdateCustomLayoutBorderVisibility,
+  towCombatOverlayClearCustomLayoutBorder,
+  towCombatOverlayBringTokenToFront,
+  towCombatOverlayGetDeadFilterTargets,
+  towCombatOverlayEnsureDeadVisual,
+  towCombatOverlayClearDeadVisual,
+  towCombatOverlayGetWoundCount,
+  towCombatOverlayGetActorWoundItemCount,
+  towCombatOverlayGetMaxWoundLimit,
+  towCombatOverlayIsAtWoundCap,
+  towCombatOverlaySyncNpcDeadFromWounds,
+  towCombatOverlayQueueDeadSyncFromWounds,
+  towCombatOverlaySyncWoundsFromDeadState,
+  towCombatOverlayQueueWoundSyncFromDeadState,
+  towCombatOverlayPrimeDeadPresence,
+  towCombatOverlayGetResilienceValue,
+  towCombatOverlayAddWound,
+  towCombatOverlayRemoveWound
+});
