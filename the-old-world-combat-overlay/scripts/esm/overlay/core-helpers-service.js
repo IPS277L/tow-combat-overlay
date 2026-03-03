@@ -1,4 +1,5 @@
 import { getTowCombatOverlayOverlayRuntimeConstants } from "../overlay-runtime-constants.js";
+import { hideStatusTooltip, showOverlayTooltip } from "./shared-service.js";
 
 const {
   tokenControlPad: TOKEN_CONTROL_PAD,
@@ -142,9 +143,9 @@ export function towCombatOverlayBindTooltipHandlers(displayObject, getTooltipDat
     const title = data.title ?? data.name ?? "";
     const description = data.description ?? "No description.";
     if (!title) return;
-    globalThis.showOverlayTooltip?.(title, description, point);
+    showOverlayTooltip(title, description, point);
   };
-  const onHide = () => globalThis.hideStatusTooltip?.();
+  const onHide = () => hideStatusTooltip();
 
   displayObject.on("pointerover", onShow);
   displayObject.on("pointermove", onShow);
@@ -186,28 +187,3 @@ export async function towCombatOverlayExecuteFirstMacroByNameCandidates(candidat
   await macro.execute();
   return true;
 }
-
-Object.assign(globalThis, {
-  towCombatOverlayCanEditActor,
-  towCombatOverlayWarnNoPermission,
-  towCombatOverlayGetActorFromToken,
-  towCombatOverlayAsTokenObject,
-  towCombatOverlayForEachSceneToken,
-  towCombatOverlayForEachActorToken,
-  towCombatOverlayGetActorTokenObjects,
-  towCombatOverlayGetTokenOverlayScale,
-  towCombatOverlayGetOverlayEdgePad,
-  towCombatOverlayGetOverlayEdgePadPx,
-  towCombatOverlayClampNumber,
-  towCombatOverlayRoundTo,
-  towCombatOverlayPreventPointerDefault,
-  towCombatOverlayGetMouseButton,
-  towCombatOverlayIsShiftModifier,
-  towCombatOverlayCopyPoint,
-  towCombatOverlayGetWorldPoint,
-  towCombatOverlayGetScreenPoint,
-  towCombatOverlayGetTooltipPointFromEvent,
-  towCombatOverlayBindTooltipHandlers,
-  towCombatOverlayTokenAtPoint,
-  towCombatOverlayExecuteFirstMacroByNameCandidates
-});

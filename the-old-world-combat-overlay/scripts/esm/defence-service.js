@@ -2,11 +2,12 @@ import {
   DEFAULT_DEFENCE_SKILL,
   SELF_ROLL_CONTEXT,
 } from "./action-runtime-constants.js";
+import { towCombatOverlayArmAutoSubmitDialog } from "./attack-service.js";
 import {
   towCombatOverlayEscapeHtml,
   towCombatOverlayRenderSelectorRowButton
 } from "./core-service.js";
-import { getTowCombatOverlaySystemAdapter } from "./system-adapter/tow-combat-overlay-system-adapter.js";
+import { getTowCombatOverlaySystemAdapter } from "./system-adapter/system-adapter.js";
 
 function towCombatOverlayGetSkillLabel(skill) {
   return game.oldworld?.config?.skills?.[skill] ?? skill;
@@ -53,10 +54,7 @@ export function towCombatOverlayGetManualDefenceEntries(actor) {
 }
 
 function towCombatOverlayArmAutoSubmitSkillDialog(actor, skill) {
-  const submitDialog = globalThis.towCombatOverlayArmAutoSubmitDialog;
-  if (typeof submitDialog !== "function") return;
-
-  submitDialog({
+  towCombatOverlayArmAutoSubmitDialog({
     hookName: "renderTestDialog",
     matches: (app) => app?.actor?.id === actor.id && app?.skill === skill,
     submitErrorMessage: "TestDialog.submit() is unavailable."
@@ -215,10 +213,3 @@ export async function towCombatOverlayRunDefenceForControlled({ manual = false }
     await towCombatOverlayDefenceActor(token.actor, { manual });
   }
 }
-
-globalThis.towCombatOverlayGetActorSkills = towCombatOverlayGetActorSkills;
-globalThis.towCombatOverlayGetManualDefenceEntries = towCombatOverlayGetManualDefenceEntries;
-globalThis.towCombatOverlayRollSkill = towCombatOverlayRollSkill;
-globalThis.towCombatOverlayRenderDefenceSelector = towCombatOverlayRenderDefenceSelector;
-globalThis.towCombatOverlayDefenceActor = towCombatOverlayDefenceActor;
-globalThis.towCombatOverlayRunDefenceForControlled = towCombatOverlayRunDefenceForControlled;

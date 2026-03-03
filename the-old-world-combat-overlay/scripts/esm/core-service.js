@@ -1,9 +1,11 @@
 import {
   ATTACK_CALL_DEDUPE_MS,
   DAMAGE_RENDER_DEDUPE_MS,
-  SHIFT_KEY,
-  TOW_ACTIONS_KEY
+  SHIFT_KEY
 } from "./action-runtime-constants.js";
+
+const attackCallDeduper = new Map();
+const damageRenderDeduper = new Map();
 
 export function towCombatOverlayIsShiftHeld() {
   return game.keyboard.isModifierActive(SHIFT_KEY);
@@ -12,20 +14,16 @@ export function towCombatOverlayIsShiftHeld() {
 export function towCombatOverlayShouldExecuteAttack(actor, { manual = false } = {}) {
   if (!actor) return false;
 
-  const api = game[TOW_ACTIONS_KEY];
-  if (!api) return true;
-  if (!api._attackCallDeduper) api._attackCallDeduper = new Map();
-
   const key = `${game.user.id}:${actor.id}:${manual ? "manual" : "auto"}`;
   const now = Date.now();
-  const last = Number(api._attackCallDeduper.get(key) ?? 0);
+  const last = Number(attackCallDeduper.get(key) ?? 0);
   if (now - last < ATTACK_CALL_DEDUPE_MS) return false;
 
-  api._attackCallDeduper.set(key, now);
+  attackCallDeduper.set(key, now);
 
-  if (api._attackCallDeduper.size > 200) {
-    for (const [entryKey, ts] of api._attackCallDeduper.entries()) {
-      if (now - Number(ts) > ATTACK_CALL_DEDUPE_MS * 3) api._attackCallDeduper.delete(entryKey);
+  if (attackCallDeduper.size > 200) {
+    for (const [entryKey, ts] of attackCallDeduper.entries()) {
+      if (now - Number(ts) > ATTACK_CALL_DEDUPE_MS * 3) attackCallDeduper.delete(entryKey);
     }
   }
 
@@ -168,10 +166,7 @@ export async function towCombatOverlayWaitForChatMessage(messageId, timeoutMs = 
 }
 
 function towCombatOverlayGetDamageRenderState() {
-  const api = game[TOW_ACTIONS_KEY];
-  if (!api) return null;
-  if (!api._damageRenderDeduper) api._damageRenderDeduper = new Map();
-  return api._damageRenderDeduper;
+  return damageRenderDeduper;
 }
 
 function towCombatOverlayMarkDamageRender(dedupe, key) {
@@ -220,14 +215,3 @@ export async function towCombatOverlayRenderDamageDisplay(message, { damage }) {
   if (!message) return;
   await towCombatOverlayPostSeparateDamageMessage(message, damage);
 }
-
-globalThis.towCombatOverlayIsShiftHeld = towCombatOverlayIsShiftHeld;
-globalThis.towCombatOverlayShouldExecuteAttack = towCombatOverlayShouldExecuteAttack;
-globalThis.towCombatOverlayToElement = towCombatOverlayToElement;
-globalThis.towCombatOverlayScheduleSoon = towCombatOverlayScheduleSoon;
-globalThis.towCombatOverlayEscapeHtml = towCombatOverlayEscapeHtml;
-globalThis.towCombatOverlayGetSortedWeaponAttacks = towCombatOverlayGetSortedWeaponAttacks;
-globalThis.towCombatOverlayGetAttackMeta = towCombatOverlayGetAttackMeta;
-globalThis.towCombatOverlayRenderSelectorRowButton = towCombatOverlayRenderSelectorRowButton;
-globalThis.towCombatOverlayWaitForChatMessage = towCombatOverlayWaitForChatMessage;
-globalThis.towCombatOverlayRenderDamageDisplay = towCombatOverlayRenderDamageDisplay;

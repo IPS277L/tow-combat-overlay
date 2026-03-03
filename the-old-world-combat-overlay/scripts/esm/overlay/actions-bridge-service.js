@@ -1,7 +1,7 @@
+import { getTowCombatOverlayActionsApi, getTowCombatOverlayPublicApi } from "../register-public-apis.js";
+
 export async function towCombatOverlayEnsureTowActionsRuntime() {
-  const api = typeof globalThis.getTowCombatOverlayPublicApi === "function"
-    ? globalThis.getTowCombatOverlayPublicApi("towActions")
-    : game.towActions;
+  const api = getTowCombatOverlayPublicApi("towActions");
   return typeof api?.attackActor === "function" &&
     typeof api?.defenceActor === "function" &&
     typeof api?.isShiftHeld === "function" &&
@@ -15,9 +15,7 @@ export async function towCombatOverlayEnsureTowActions() {
 }
 
 export function towCombatOverlayGetTowActionsSystemAdapter() {
-  const api = typeof globalThis.getTowCombatOverlayActionsApi === "function"
-    ? globalThis.getTowCombatOverlayActionsApi()
-    : game.towActions;
+  const api = getTowCombatOverlayActionsApi();
   return api?.systemAdapter ?? null;
 }
 
@@ -52,11 +50,3 @@ export async function towCombatOverlayApplyActorDamage(actor, damage, context = 
   }
   return actor?.system?.applyDamage?.(damage, context) ?? null;
 }
-
-globalThis.towCombatOverlayEnsureTowActionsRuntime = towCombatOverlayEnsureTowActionsRuntime;
-globalThis.towCombatOverlayEnsureTowActions = towCombatOverlayEnsureTowActions;
-globalThis.towCombatOverlayGetTowActionsSystemAdapter = towCombatOverlayGetTowActionsSystemAdapter;
-globalThis.towCombatOverlayAddActorCondition = towCombatOverlayAddActorCondition;
-globalThis.towCombatOverlayRemoveActorCondition = towCombatOverlayRemoveActorCondition;
-globalThis.towCombatOverlayAddActorWound = towCombatOverlayAddActorWound;
-globalThis.towCombatOverlayApplyActorDamage = towCombatOverlayApplyActorDamage;

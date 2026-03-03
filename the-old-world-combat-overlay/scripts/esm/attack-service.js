@@ -9,7 +9,8 @@ import {
   towCombatOverlayToElement,
   towCombatOverlayWaitForChatMessage
 } from "./core-service.js";
-import { getTowCombatOverlaySystemAdapter } from "./system-adapter/tow-combat-overlay-system-adapter.js";
+import { shouldTowCombatOverlayAutoSubmitDialogs } from "./register-settings.js";
+import { getTowCombatOverlaySystemAdapter } from "./system-adapter/system-adapter.js";
 
 export function towCombatOverlayArmDamageAppend(actor, ability) {
   let timeoutId = null;
@@ -37,8 +38,7 @@ export function towCombatOverlayArmDamageAppend(actor, ability) {
 }
 
 export function towCombatOverlayArmAutoSubmitDialog({ hookName, matches, submitErrorMessage }) {
-  if (typeof globalThis.shouldTowCombatOverlayAutoSubmitDialogs === "function"
-    && !globalThis.shouldTowCombatOverlayAutoSubmitDialogs()) {
+  if (!shouldTowCombatOverlayAutoSubmitDialogs()) {
     return;
   }
 
@@ -167,9 +167,3 @@ export async function towCombatOverlayRunAttackForControlled({ manual = false } 
     await towCombatOverlayAttackActor(token.actor, { manual });
   }
 }
-
-globalThis.towCombatOverlayArmAutoSubmitDialog = towCombatOverlayArmAutoSubmitDialog;
-globalThis.towCombatOverlaySetupAbilityTestWithDamage = towCombatOverlaySetupAbilityTestWithDamage;
-globalThis.towCombatOverlayRenderAttackSelector = towCombatOverlayRenderAttackSelector;
-globalThis.towCombatOverlayAttackActor = towCombatOverlayAttackActor;
-globalThis.towCombatOverlayRunAttackForControlled = towCombatOverlayRunAttackForControlled;

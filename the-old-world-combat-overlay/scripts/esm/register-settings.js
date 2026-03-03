@@ -1,4 +1,5 @@
 import { getTowCombatOverlayModuleConstants } from "./constants.js";
+import { syncTowCombatOverlayEnabledSetting } from "./register-module-hooks.js";
 
 export function getTowCombatOverlaySetting(settingKey, fallbackValue = null) {
   const { moduleId } = getTowCombatOverlayModuleConstants();
@@ -41,11 +42,7 @@ export function registerTowCombatOverlaySettings() {
       name: "Enable Overlay",
       hint: "Enables The Old World Combat Overlay token UI.",
       default: true,
-      onChange: () => {
-        if (typeof globalThis.syncTowCombatOverlayEnabledSetting === "function") {
-          globalThis.syncTowCombatOverlayEnabledSetting();
-        }
-      }
+      onChange: () => syncTowCombatOverlayEnabledSetting()
     },
     {
       key: settingKeys.enableAutoDefence,
@@ -85,11 +82,3 @@ export function registerTowCombatOverlaySettings() {
     });
   }
 }
-
-globalThis.getTowCombatOverlaySetting = getTowCombatOverlaySetting;
-globalThis.isTowCombatOverlaySettingEnabled = isTowCombatOverlaySettingEnabled;
-globalThis.shouldTowCombatOverlayAutoSubmitDialogs = shouldTowCombatOverlayAutoSubmitDialogs;
-globalThis.shouldTowCombatOverlayAutoDefence = shouldTowCombatOverlayAutoDefence;
-globalThis.shouldTowCombatOverlayAutoApplyDamage = shouldTowCombatOverlayAutoApplyDamage;
-globalThis.shouldTowCombatOverlayAutoChooseStaggerWound = shouldTowCombatOverlayAutoChooseStaggerWound;
-globalThis.registerTowCombatOverlaySettings = registerTowCombatOverlaySettings;

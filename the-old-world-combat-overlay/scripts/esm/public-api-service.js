@@ -6,7 +6,7 @@ import {
   towCombatOverlayScheduleSoon,
   towCombatOverlayToElement
 } from "./core-service.js";
-import { getTowCombatOverlaySystemAdapter } from "./system-adapter/tow-combat-overlay-system-adapter.js";
+import { getTowCombatOverlaySystemAdapter } from "./system-adapter/system-adapter.js";
 
 function getTowActionsApiBindings() {
   return {
@@ -45,5 +45,3 @@ export function registerTowActionsApi(apiOverrides = {}) {
 
   return targetApi;
 }
-
-globalThis.registerTowActionsApi = registerTowActionsApi;

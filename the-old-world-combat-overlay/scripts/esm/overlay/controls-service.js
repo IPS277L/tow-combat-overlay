@@ -24,10 +24,28 @@ import {
   OVERLAY_CONTROL_ICON_OUTLINE_THICKNESS,
   OVERLAY_CONTROL_ICON_TINT,
   OVERLAY_FONT_SIZE,
+  OVERLAY_TEXT_RESOLUTION_MAX,
+  OVERLAY_TEXT_RESOLUTION_MIN,
   PreciseTextClass,
   TOKEN_CONTROL_PAD
 } from "../overlay-runtime-constants.js";
 import { getTowCombatOverlayActionsApi } from "../register-public-apis.js";
+import { shouldTowCombatOverlayAutoChooseStaggerWound } from "../register-settings.js";
+import {
+  towCombatOverlayAsTokenObject,
+  towCombatOverlayBindTooltipHandlers,
+  towCombatOverlayCanEditActor,
+  towCombatOverlayForEachSceneToken,
+  towCombatOverlayGetActorFromToken,
+  towCombatOverlayGetMouseButton,
+  towCombatOverlayGetOverlayEdgePadPx,
+  towCombatOverlayGetScreenPoint,
+  towCombatOverlayGetTokenOverlayScale,
+  towCombatOverlayGetWorldPoint,
+  towCombatOverlayIsShiftModifier,
+  towCombatOverlayPreventPointerDefault,
+  towCombatOverlayTokenAtPoint
+} from "./core-helpers-service.js";
 import {
   towCombatOverlayAddWound,
   towCombatOverlayClearDisplayObject,
@@ -35,71 +53,73 @@ import {
   towCombatOverlayGetWoundCount,
   towCombatOverlayRemoveWound
 } from "./layout-state-service.js";
+import {
+  towCombatOverlayEnsureTowActions
+} from "./actions-bridge-service.js";
+import {
+  createTowCombatOverlayAutomationCoordinator,
+  towCombatOverlayAutomation
+} from "./automation-service.js";
+import { getTypeTooltipData } from "./shared-service.js";
 
 function overlayControlsGetActorFromTokenRef(tokenObject) {
-  return globalThis.towCombatOverlayGetActorFromToken?.(tokenObject) ?? tokenObject?.document?.actor ?? null;
+  return towCombatOverlayGetActorFromToken(tokenObject);
 }
 
 function overlayControlsGetTokenOverlayScaleRef(tokenObject) {
-  return globalThis.towCombatOverlayGetTokenOverlayScale?.(tokenObject) ?? 1;
+  return towCombatOverlayGetTokenOverlayScale(tokenObject);
 }
 
 function overlayControlsGetOverlayEdgePadPxRef(tokenObject) {
-  return globalThis.towCombatOverlayGetOverlayEdgePadPx?.(tokenObject) ?? TOKEN_CONTROL_PAD;
+  return towCombatOverlayGetOverlayEdgePadPx(tokenObject) ?? TOKEN_CONTROL_PAD;
 }
 
 function overlayControlsPreventPointerDefaultRef(event) {
-  return globalThis.towCombatOverlayPreventPointerDefault?.(event)
-    ?? event?.nativeEvent?.preventDefault?.();
+  return towCombatOverlayPreventPointerDefault(event);
 }
 
 function overlayControlsGetMouseButtonRef(event) {
-  return globalThis.towCombatOverlayGetMouseButton?.(event)
-    ?? event?.button ?? event?.data?.button ?? event?.nativeEvent?.button ?? 0;
+  return towCombatOverlayGetMouseButton(event);
 }
 
 function overlayControlsIsShiftModifierRef(event) {
-  if (typeof globalThis.towCombatOverlayIsShiftModifier === "function") {
-    return globalThis.towCombatOverlayIsShiftModifier(event);
-  }
-  return false;
+  return towCombatOverlayIsShiftModifier(event);
 }
 
 function overlayControlsGetWorldPointRef(event) {
-  return globalThis.towCombatOverlayGetWorldPoint?.(event) ?? null;
+  return towCombatOverlayGetWorldPoint(event);
 }
 
 function overlayControlsGetScreenPointRef(event) {
-  return globalThis.towCombatOverlayGetScreenPoint?.(event) ?? null;
+  return towCombatOverlayGetScreenPoint(event);
 }
 
 function overlayControlsBindTooltipHandlersRef(displayObject, getTooltipData) {
-  return globalThis.towCombatOverlayBindTooltipHandlers?.(displayObject, getTooltipData) ?? null;
+  return towCombatOverlayBindTooltipHandlers(displayObject, getTooltipData);
 }
 
 function overlayControlsTokenAtPointRef(point, options) {
-  return globalThis.towCombatOverlayTokenAtPoint?.(point, options) ?? null;
+  return towCombatOverlayTokenAtPoint(point, options);
 }
 
 function overlayControlsCanEditActorRef(actor) {
-  return globalThis.towCombatOverlayCanEditActor?.(actor) ?? actor?.isOwner === true;
+  return towCombatOverlayCanEditActor(actor);
 }
 
 function overlayControlsForEachSceneTokenRef(callback) {
-  return globalThis.towCombatOverlayForEachSceneToken?.(callback)
-    ?? (canvas?.tokens?.placeables ?? []).forEach(callback);
+  return towCombatOverlayForEachSceneToken(callback);
 }
 
 function overlayControlsGetTypeTooltipDataRef(actor) {
-  return globalThis.getTypeTooltipData?.(actor) ?? null;
+  return getTypeTooltipData(actor);
 }
 
 function getOverlayControlsAutomationRef() {
-  return globalThis.towCombatOverlayAutomation ?? null;
+  return towCombatOverlayAutomation ?? createTowCombatOverlayAutomationCoordinator();
 }
 
 async function ensureTowActions() {
-  return globalThis.towCombatOverlayEnsureTowActions?.() ?? false;
+  return towCombatOverlayEnsureTowActions();
 }
 
 function getDragLineStyle(sourceToken) {
@@ -134,19 +154,28 @@ function drawDragLine(graphics, origin, point, style) {
   const dx = point.x - origin.x;
   const dy = point.y - origin.y;
   const angle = Math.atan2(dy, dx);
+  const arrowSize = style.arrowSize * 0.76;
   const leftAngle = angle + ((Math.PI * 5) / 6);
   const rightAngle = angle - ((Math.PI * 5) / 6);
-  const leftX = point.x + (Math.cos(leftAngle) * style.arrowSize);
-  const leftY = point.y + (Math.sin(leftAngle) * style.arrowSize);
-  const rightX = point.x + (Math.cos(rightAngle) * style.arrowSize);
-  const rightY = point.y + (Math.sin(rightAngle) * style.arrowSize);
+  const leftX = point.x + (Math.cos(leftAngle) * arrowSize);
+  const leftY = point.y + (Math.sin(leftAngle) * arrowSize);
+  const rightX = point.x + (Math.cos(rightAngle) * arrowSize);
+  const rightY = point.y + (Math.sin(rightAngle) * arrowSize);
+  const startRadius = style.endpointRadius + 0.8;
+  const startRingWidth = Math.max(0.6, style.endpointRingWidth * 0.68);
+  const outerLineWidth = Math.max(1, style.outerWidth - 0.7);
+  const innerLineWidth = Math.max(1, style.innerWidth - 0.35);
+  const startFillRadius = Math.max(1.5, startRadius - 0.9);
 
   graphics.lineStyle({
-    width: style.outerWidth,
+    width: outerLineWidth,
     color: DRAG_LINE_OUTER_COLOR,
-    alpha: DRAG_LINE_OUTER_ALPHA,
+    alpha: 1,
+    alignment: 0.5,
     cap: "round",
-    join: "round"
+    join: "round",
+    miterLimit: 1,
+    native: false
   });
   graphics.moveTo(origin.x, origin.y);
   graphics.lineTo(point.x, point.y);
@@ -156,11 +185,14 @@ function drawDragLine(graphics, origin, point, style) {
   graphics.lineTo(rightX, rightY);
 
   graphics.lineStyle({
-    width: style.innerWidth,
+    width: innerLineWidth,
     color: DRAG_LINE_INNER_COLOR,
     alpha: DRAG_LINE_INNER_ALPHA,
+    alignment: 0.5,
     cap: "round",
-    join: "round"
+    join: "round",
+    miterLimit: 1,
+    native: false
   });
   graphics.moveTo(origin.x, origin.y);
   graphics.lineTo(point.x, point.y);
@@ -170,12 +202,17 @@ function drawDragLine(graphics, origin, point, style) {
   graphics.lineTo(rightX, rightY);
 
   graphics.lineStyle({
-    width: style.endpointRingWidth + 1,
+    width: startRingWidth,
     color: DRAG_LINE_OUTER_COLOR,
-    alpha: DRAG_LINE_OUTER_ALPHA
+    alpha: 1,
+    alignment: 0.5,
+    cap: "round",
+    join: "round",
+    miterLimit: 1,
+    native: false
   });
   graphics.beginFill(DRAG_LINE_INNER_COLOR, DRAG_LINE_INNER_ALPHA);
-  graphics.drawCircle(origin.x, origin.y, style.endpointRadius);
+  graphics.drawCircle(origin.x, origin.y, startFillRadius);
   graphics.endFill();
 }
 
@@ -297,8 +334,8 @@ export function towCombatOverlayTuneOverlayText(textObject) {
   const zoom = (Number.isFinite(canvasScale) && canvasScale > 0) ? canvasScale : 1;
   const zoomBoost = zoom < 1 ? (1 / zoom) : 1;
   const resolution = Math.min(
-    globalThis.OVERLAY_TEXT_RESOLUTION_MAX,
-    Math.max(globalThis.OVERLAY_TEXT_RESOLUTION_MIN, Math.ceil(devicePixelRatio * zoomBoost))
+    OVERLAY_TEXT_RESOLUTION_MAX,
+    Math.max(OVERLAY_TEXT_RESOLUTION_MIN, Math.ceil(devicePixelRatio * zoomBoost))
   );
   if ("resolution" in textObject && textObject.resolution !== resolution) {
     textObject.resolution = resolution;
@@ -866,21 +903,3 @@ export function towCombatOverlayClearAllNameLabels() {
   }
   for (const labelContainer of orphaned) towCombatOverlayClearDisplayObject(labelContainer);
 }
-
-Object.assign(globalThis, {
-  towCombatOverlayGetControlStyle,
-  towCombatOverlayGetNameStyle,
-  towCombatOverlayGetNameTypeStyle,
-  towCombatOverlayGetIconValueStyle,
-  towCombatOverlayCreateOverlayIconSprite,
-  towCombatOverlayGetActorTypeLabel,
-  towCombatOverlayTuneOverlayText,
-  towCombatOverlayDrawHitBoxRect,
-  towCombatOverlayCreateWoundControlUI,
-  towCombatOverlayUpdateWoundControlUI,
-  towCombatOverlayClearAllWoundControls,
-  towCombatOverlayUpdateNameLabel,
-  towCombatOverlayUpdateResilienceLabel,
-  towCombatOverlayClearAllResilienceLabels,
-  towCombatOverlayClearAllNameLabels
-});

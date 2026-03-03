@@ -1,9 +1,11 @@
+import { SELF_ROLL_CONTEXT } from "./action-runtime-constants.js";
+import { shouldTowCombatOverlayAutoSubmitDialogs } from "./register-settings.js";
 import {
   towCombatOverlayEscapeHtml,
   towCombatOverlayScheduleSoon,
   towCombatOverlayToElement
 } from "./core-service.js";
-import { getTowCombatOverlaySystemAdapter } from "./system-adapter/tow-combat-overlay-system-adapter.js";
+import { getTowCombatOverlaySystemAdapter } from "./system-adapter/system-adapter.js";
 
 function towCombatOverlayHasLoreText(value) {
   return typeof value === "string" && value.length > 0;
@@ -36,8 +38,7 @@ export function towCombatOverlayGetSortedSpells(actor) {
 }
 
 function towCombatOverlayArmAutoSubmitCastingDialog(actor, spell) {
-  if (typeof globalThis.shouldTowCombatOverlayAutoSubmitDialogs === "function"
-    && !globalThis.shouldTowCombatOverlayAutoSubmitDialogs()) {
+  if (!shouldTowCombatOverlayAutoSubmitDialogs()) {
     return;
   }
 
@@ -148,9 +149,3 @@ export async function towCombatOverlayRunCastingForControlled({ manual = false }
     await towCombatOverlayCastActor(token.actor, { manual });
   }
 }
-
-globalThis.towCombatOverlayGetSortedSpells = towCombatOverlayGetSortedSpells;
-globalThis.towCombatOverlaySetupCastingTest = towCombatOverlaySetupCastingTest;
-globalThis.towCombatOverlayRenderSpellSelector = towCombatOverlayRenderSpellSelector;
-globalThis.towCombatOverlayCastActor = towCombatOverlayCastActor;
-globalThis.towCombatOverlayRunCastingForControlled = towCombatOverlayRunCastingForControlled;

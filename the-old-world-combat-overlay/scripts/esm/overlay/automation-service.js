@@ -7,14 +7,19 @@ import {
   MODULE_KEY,
   OPPOSED_LINK_WAIT_MS
 } from "../overlay-runtime-constants.js";
+import { getTowCombatOverlayActionsApi } from "../register-public-apis.js";
+import {
+  shouldTowCombatOverlayAutoApplyDamage,
+  shouldTowCombatOverlayAutoChooseStaggerWound,
+  shouldTowCombatOverlayAutoDefence
+} from "../register-settings.js";
 import {
   towCombatOverlayApplyActorDamage,
   towCombatOverlayEnsureTowActions
 } from "./actions-bridge-service.js";
 
 export function armDefaultStaggerChoiceWound(durationMs = AUTO_STAGGER_PATCH_MS) {
-  if (typeof globalThis.shouldTowCombatOverlayAutoChooseStaggerWound === "function"
-    && !globalThis.shouldTowCombatOverlayAutoChooseStaggerWound()) {
+  if (!shouldTowCombatOverlayAutoChooseStaggerWound()) {
     return () => {};
   }
 
@@ -63,8 +68,7 @@ export function armDefaultStaggerChoiceWound(durationMs = AUTO_STAGGER_PATCH_MS)
 }
 
 export function armAutoDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState } = {}) {
-  if (typeof globalThis.shouldTowCombatOverlayAutoDefence === "function"
-    && !globalThis.shouldTowCombatOverlayAutoDefence()) {
+  if (!shouldTowCombatOverlayAutoDefence()) {
     return;
   }
 
@@ -101,9 +105,7 @@ export function armAutoDefenceForOpposed(sourceToken, targetToken, { sourceBefor
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
 
-    const actionsApi = typeof globalThis.getTowCombatOverlayActionsApi === "function"
-      ? globalThis.getTowCombatOverlayActionsApi()
-      : game.towActions;
+    const actionsApi = getTowCombatOverlayActionsApi();
     await actionsApi.defenceActor(targetToken.actor, { manual: false });
     armAutoApplyDamageForOpposed(message, {
       sourceActor: sourceToken.actor,
@@ -346,8 +348,7 @@ async function postFlowSeparatorCard(opposed, { sourceStatusHints = [], targetSt
 }
 
 function armAutoApplyDamageForOpposed(opposedMessage, { sourceActor = null, sourceBeforeState = null } = {}) {
-  if (typeof globalThis.shouldTowCombatOverlayAutoApplyDamage === "function"
-    && !globalThis.shouldTowCombatOverlayAutoApplyDamage()) {
+  if (!shouldTowCombatOverlayAutoApplyDamage()) {
     return;
   }
 
@@ -431,8 +432,4 @@ export function createTowCombatOverlayAutomationCoordinator() {
   };
 }
 
-globalThis.createTowCombatOverlayAutomationCoordinator = createTowCombatOverlayAutomationCoordinator;
-globalThis.armDefaultStaggerChoiceWound = armDefaultStaggerChoiceWound;
-globalThis.armAutoDefenceForOpposed = armAutoDefenceForOpposed;
-globalThis.snapshotActorState = snapshotActorState;
-globalThis.towCombatOverlayAutomation = createTowCombatOverlayAutomationCoordinator();
+export const towCombatOverlayAutomation = createTowCombatOverlayAutomationCoordinator();

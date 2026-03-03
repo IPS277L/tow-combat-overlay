@@ -70,12 +70,11 @@ function createTowCombatOverlaySystemAdapter() {
   };
 }
 
-export function getTowCombatOverlaySystemAdapter() {
-  const state = globalThis.towCombatOverlayModule ?? (globalThis.towCombatOverlayModule = {});
-  if (!state.systemAdapter) {
-    state.systemAdapter = createTowCombatOverlaySystemAdapter();
-  }
-  return state.systemAdapter;
-}
+let systemAdapterSingleton = null;
 
-globalThis.getTowCombatOverlaySystemAdapter = getTowCombatOverlaySystemAdapter;
+export function getTowCombatOverlaySystemAdapter() {
+  if (!systemAdapterSingleton) {
+    systemAdapterSingleton = createTowCombatOverlaySystemAdapter();
+  }
+  return systemAdapterSingleton;
+}

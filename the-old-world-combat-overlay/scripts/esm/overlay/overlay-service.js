@@ -15,21 +15,32 @@ import {
   STATUS_PALETTE_SPECIAL_BG_OUTLINE,
   STATUS_PALETTE_SPECIAL_BG_STAGGERED_ALPHA,
   STATUS_PALETTE_STAGGERED_RING,
-  STATUS_TOOLTIP_BG_ALPHA,
-  STATUS_TOOLTIP_BORDER_ALPHA,
-  STATUS_TOOLTIP_DOM_CLASS,
-  STATUS_TOOLTIP_FONT_SIZE,
-  STATUS_TOOLTIP_MAX_WIDTH,
-  STATUS_TOOLTIP_OFFSET_X,
-  STATUS_TOOLTIP_OFFSET_Y,
-  STATUS_TOOLTIP_PAD_X,
-  STATUS_TOOLTIP_PAD_Y,
   getStatusPaletteBackdropStyle,
   getStatusSpecialBgStyle
 } from "../overlay-runtime-constants.js";
 import {
-  towCombatOverlayGetActorTokenObjects,
+  registerTowCombatOverlayHooks,
+  unregisterTowCombatOverlayHooks
+} from "../register-overlay-hooks.js";
+import {
+  clearStatusTooltip,
+  getTypeTooltipData,
+  hideStatusTooltip,
+  runActorOpLock,
+  showOverlayTooltip
+} from "./shared-service.js";
+import {
+  towCombatOverlayBindTooltipHandlers,
+  towCombatOverlayCanEditActor,
+  towCombatOverlayForEachSceneToken,
+  towCombatOverlayGetActorFromToken,
+  towCombatOverlayGetMouseButton,
+  towCombatOverlayGetOverlayEdgePadPx,
+  towCombatOverlayGetTokenOverlayScale,
+  towCombatOverlayPreventPointerDefault,
+  towCombatOverlayWarnNoPermission
 } from "./core-helpers-service.js";
+import { towCombatOverlayGetActorTokenObjects } from "./core-helpers-service.js";
 import "./automation-service.js";
 import {
   towCombatOverlayBringTokenToFront,
@@ -45,7 +56,10 @@ import {
   towCombatOverlayUpdateCustomLayoutBorderVisibility,
   towCombatOverlayUpdateTokenOverlayHitArea
 } from "./layout-state-service.js";
-import "./actions-bridge-service.js";
+import {
+  towCombatOverlayAddActorCondition,
+  towCombatOverlayRemoveActorCondition
+} from "./actions-bridge-service.js";
 import {
   towCombatOverlayClearAllNameLabels,
   towCombatOverlayClearAllResilienceLabels,
@@ -57,51 +71,47 @@ import {
 } from "./controls-service.js";
 
 function overlayServiceCanEditActorRef(actor) {
-  return globalThis.towCombatOverlayCanEditActor?.(actor) ?? actor?.isOwner === true;
+  return towCombatOverlayCanEditActor(actor);
 }
 
 function overlayServiceWarnNoPermissionRef(actor) {
-  return globalThis.towCombatOverlayWarnNoPermission?.(actor)
-    ?? ui.notifications.warn(`No permission to edit ${actor?.name ?? "actor"}.`);
+  return towCombatOverlayWarnNoPermission(actor);
 }
 
 function overlayServiceGetActorFromTokenRef(tokenObject) {
-  return globalThis.towCombatOverlayGetActorFromToken?.(tokenObject) ?? tokenObject?.document?.actor ?? null;
+  return towCombatOverlayGetActorFromToken(tokenObject);
 }
 
 function overlayServiceForEachSceneTokenRef(callback) {
-  return globalThis.towCombatOverlayForEachSceneToken?.(callback)
-    ?? (canvas?.tokens?.placeables ?? []).forEach(callback);
+  return towCombatOverlayForEachSceneToken(callback);
 }
 
 function overlayServiceGetTokenOverlayScaleRef(tokenObject) {
-  return globalThis.towCombatOverlayGetTokenOverlayScale?.(tokenObject) ?? 1;
+  return towCombatOverlayGetTokenOverlayScale(tokenObject);
 }
 
 function overlayServiceGetOverlayEdgePadPxRef(tokenObject) {
-  return globalThis.towCombatOverlayGetOverlayEdgePadPx?.(tokenObject) ?? 0;
+  return towCombatOverlayGetOverlayEdgePadPx(tokenObject);
 }
 
 function overlayServicePreventPointerDefaultRef(event) {
-  return globalThis.towCombatOverlayPreventPointerDefault?.(event)
-    ?? event?.nativeEvent?.preventDefault?.();
+  return towCombatOverlayPreventPointerDefault(event);
 }
 
 function overlayServiceGetMouseButtonRef(event) {
-  return globalThis.towCombatOverlayGetMouseButton?.(event)
-    ?? event?.button ?? event?.data?.button ?? event?.nativeEvent?.button ?? 0;
+  return towCombatOverlayGetMouseButton(event);
 }
 
 function overlayServiceBindTooltipHandlersRef(displayObject, getTooltipData, keyStore) {
-  return globalThis.towCombatOverlayBindTooltipHandlers?.(displayObject, getTooltipData, keyStore) ?? null;
+  return towCombatOverlayBindTooltipHandlers(displayObject, getTooltipData, keyStore);
 }
 
 async function overlayServiceAddActorConditionRef(actor, condition) {
-  return globalThis.towCombatOverlayAddActorCondition?.(actor, condition);
+  return towCombatOverlayAddActorCondition(actor, condition);
 }
 
 async function overlayServiceRemoveActorConditionRef(actor, condition) {
-  return globalThis.towCombatOverlayRemoveActorCondition?.(actor, condition);
+  return towCombatOverlayRemoveActorCondition(actor, condition);
 }
 
 function getIconSrc(displayObject) {
@@ -128,34 +138,6 @@ function getActorEffects(actor) {
 
 function getEffectIconSrc(effect) {
   return normalizeIconSrc(effect?.img ?? effect?.icon ?? "");
-}
-
-export async function runActorOpLock(actor, opKey, operation) {
-  const state = game[MODULE_KEY];
-  if (!state || !actor || !opKey || typeof operation !== "function") return;
-  if (!state.statusRemoveInFlight) state.statusRemoveInFlight = new Set();
-  if (!state.statusRemoveQueue) state.statusRemoveQueue = new Map();
-  const actorKey = actor.uuid ?? actor.id;
-  if (!actorKey) return;
-
-  const lockKey = `${actorKey}:${String(opKey)}`;
-  const queueKey = actorKey;
-  const previous = state.statusRemoveQueue.get(queueKey) ?? Promise.resolve();
-  let releaseQueue = null;
-  const current = new Promise((resolve) => { releaseQueue = resolve; });
-  state.statusRemoveQueue.set(queueKey, current);
-  await previous;
-
-  state.statusRemoveInFlight.add(lockKey);
-  try {
-    await operation();
-  } finally {
-    state.statusRemoveInFlight.delete(lockKey);
-    releaseQueue?.();
-    if (state.statusRemoveQueue.get(queueKey) === current) {
-      state.statusRemoveQueue.delete(queueKey);
-    }
-  }
 }
 
 async function setActorConditionState(actor, conditionId, active) {
@@ -218,133 +200,6 @@ function getConditionTooltipData(conditionId) {
     name: String(name ?? conditionId ?? "Condition"),
     description: String(shortDescription ?? "")
   };
-}
-
-function getTypeTooltipData(actor) {
-  const systemType = String(actor?.system?.type ?? "").trim().toLowerCase();
-  const fallbackType = String(actor?.type ?? "actor").trim().toLowerCase();
-  const typeKey = systemType || fallbackType;
-  const npcTypeLabelKey = game.oldworld?.config?.npcType?.[typeKey] ?? null;
-  const typeLabel = npcTypeLabelKey ? game.i18n.localize(npcTypeLabelKey) : towCombatOverlayGetActorTypeLabel(actor);
-
-  if (typeKey === "minion") {
-    return { title: typeLabel, description: "Minions are defeated at 1 wound." };
-  }
-  if (["brute", "champion", "monstrosity"].includes(typeKey)) {
-    const cap = towCombatOverlayGetMaxWoundLimit(actor);
-    const capText = Number.isFinite(cap) ? ` Defeated at ${cap} wounds.` : "";
-    return { title: typeLabel, description: `Threshold-based NPC type.${capText}` };
-  }
-  return { title: typeLabel, description: "Actor type." };
-}
-
-function ensureStatusTooltip() {
-  const state = game[MODULE_KEY];
-  if (!state) return null;
-  if (state.statusTooltip?.element instanceof HTMLElement && state.statusTooltip.element.isConnected) return state.statusTooltip;
-
-  for (const stale of Array.from(document.querySelectorAll(`.${STATUS_TOOLTIP_DOM_CLASS}`))) {
-    stale.remove();
-  }
-
-  const element = document.createElement("div");
-  element.classList.add(STATUS_TOOLTIP_DOM_CLASS);
-  element.style.position = "fixed";
-  element.style.left = "0px";
-  element.style.top = "0px";
-  element.style.display = "none";
-  element.style.pointerEvents = "none";
-  element.style.zIndex = "10000";
-  element.style.maxWidth = `${STATUS_TOOLTIP_MAX_WIDTH}px`;
-  element.style.padding = `${STATUS_TOOLTIP_PAD_Y}px ${STATUS_TOOLTIP_PAD_X}px`;
-  element.style.borderRadius = "5px";
-  element.style.border = `1px solid rgba(193, 139, 44, ${STATUS_TOOLTIP_BORDER_ALPHA})`;
-  element.style.background = `rgba(15, 12, 9, ${STATUS_TOOLTIP_BG_ALPHA})`;
-  element.style.color = "#f2e7cc";
-  element.style.fontFamily = "var(--font-primary, Signika)";
-  element.style.fontSize = `${STATUS_TOOLTIP_FONT_SIZE}px`;
-  element.style.fontWeight = "400";
-  element.style.lineHeight = "1.3";
-  element.style.whiteSpace = "normal";
-
-  const title = document.createElement("div");
-  title.style.fontSize = `${STATUS_TOOLTIP_FONT_SIZE + 1}px`;
-  title.style.fontWeight = "600";
-  title.style.color = "#fff4d8";
-  title.style.marginBottom = "3px";
-
-  const body = document.createElement("div");
-  body.style.fontSize = `${STATUS_TOOLTIP_FONT_SIZE}px`;
-  body.style.fontWeight = "400";
-  body.style.color = "#f2e7cc";
-
-  element.appendChild(title);
-  element.appendChild(body);
-  document.body.appendChild(element);
-  const view = canvas?.app?.renderer?.events?.domElement ?? canvas?.app?.view ?? null;
-  const hideOnLeave = () => hideStatusTooltip();
-  const hideOnBlur = () => hideStatusTooltip();
-  const hideOnPointerDown = () => hideStatusTooltip();
-  const hideOnKeyDown = () => hideStatusTooltip();
-  if (view?.addEventListener) view.addEventListener("mouseleave", hideOnLeave);
-  window.addEventListener("blur", hideOnBlur);
-  window.addEventListener("pointerdown", hideOnPointerDown, true);
-  window.addEventListener("keydown", hideOnKeyDown, true);
-
-  state.statusTooltip = { element, title, body, view, hideOnLeave, hideOnBlur, hideOnPointerDown, hideOnKeyDown };
-  return state.statusTooltip;
-}
-
-export function showOverlayTooltip(title, description, point, existingTooltip = null) {
-  const tooltip = existingTooltip ?? ensureStatusTooltip();
-  if (!tooltip || !point) return;
-  tooltip.title.textContent = String(title ?? "");
-  tooltip.body.textContent = String(description ?? "");
-
-  const view = canvas?.app?.renderer?.events?.domElement ?? canvas?.app?.view;
-  const rect = view?.getBoundingClientRect?.();
-  const clientX = Number(point.x ?? 0) + Number(rect?.left ?? 0) + STATUS_TOOLTIP_OFFSET_X;
-  const clientY = Number(point.y ?? 0) + Number(rect?.top ?? 0) + STATUS_TOOLTIP_OFFSET_Y;
-
-  const topElement = document.elementFromPoint(clientX, clientY);
-  const cursorOnCanvas = !!(view && topElement && (topElement === view || view.contains(topElement)));
-  if (!cursorOnCanvas) {
-    hideStatusTooltip();
-    return;
-  }
-
-  tooltip.element.style.left = `${Math.round(clientX)}px`;
-  tooltip.element.style.top = `${Math.round(clientY)}px`;
-  tooltip.element.style.display = "block";
-}
-
-export function hideStatusTooltip() {
-  for (const element of Array.from(document.querySelectorAll(`.${STATUS_TOOLTIP_DOM_CLASS}`))) {
-    if (element instanceof HTMLElement) element.style.display = "none";
-  }
-  const state = game[MODULE_KEY];
-  const element = state?.statusTooltip?.element;
-  if (element instanceof HTMLElement) element.style.display = "none";
-}
-
-function clearStatusTooltip() {
-  const state = game[MODULE_KEY];
-  if (!state?.statusTooltip) return;
-  const view = state.statusTooltip.view;
-  const hideOnLeave = state.statusTooltip.hideOnLeave;
-  const hideOnBlur = state.statusTooltip.hideOnBlur;
-  const hideOnPointerDown = state.statusTooltip.hideOnPointerDown;
-  const hideOnKeyDown = state.statusTooltip.hideOnKeyDown;
-  if (view?.removeEventListener && hideOnLeave) view.removeEventListener("mouseleave", hideOnLeave);
-  if (hideOnBlur) window.removeEventListener("blur", hideOnBlur);
-  if (hideOnPointerDown) window.removeEventListener("pointerdown", hideOnPointerDown, true);
-  if (hideOnKeyDown) window.removeEventListener("keydown", hideOnKeyDown, true);
-  const element = state.statusTooltip.element;
-  if (element instanceof HTMLElement) element.remove();
-  for (const stale of Array.from(document.querySelectorAll(`.${STATUS_TOOLTIP_DOM_CLASS}`))) {
-    stale.remove();
-  }
-  delete state.statusTooltip;
 }
 
 function resolveEffectFromIcon(actor, sprite) {
@@ -846,11 +701,11 @@ export function towCombatOverlayRefreshAllOverlays() {
 }
 
 function registerHooks() {
-  return globalThis.registerTowCombatOverlayHooks();
+  return registerTowCombatOverlayHooks();
 }
 
 function unregisterHooks(hookIds) {
-  globalThis.unregisterTowCombatOverlayHooks(hookIds);
+  unregisterTowCombatOverlayHooks(hookIds);
 }
 
 export function towCombatOverlayIsEnabled() {
@@ -924,19 +779,3 @@ export function towCombatOverlayDisable() {
 export function towCombatOverlayToggle() {
   return towCombatOverlayIsEnabled() ? towCombatOverlayDisable() : towCombatOverlayEnable();
 }
-
-Object.assign(globalThis, {
-  runActorOpLock,
-  showOverlayTooltip,
-  hideStatusTooltip,
-  getTypeTooltipData,
-  towCombatOverlayRefreshAllOverlays,
-  towCombatOverlayRefreshActorOverlays,
-  towCombatOverlayRefreshTokenOverlay,
-  towCombatOverlayHideCoreTokenHoverVisuals,
-  towCombatOverlayQueueActorOverlayResync,
-  isOverlayEnabled: towCombatOverlayIsEnabled,
-  enableOverlay: towCombatOverlayEnable,
-  disableOverlay: towCombatOverlayDisable,
-  toggleOverlay: towCombatOverlayToggle
-});

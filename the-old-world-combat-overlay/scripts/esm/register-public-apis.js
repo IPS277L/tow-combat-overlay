@@ -11,12 +11,9 @@ function ensureTowCombatOverlayApiObject(hostObject, key) {
 
 function resolveTowCombatOverlaySharedApiObject({
   moduleApi = null,
-  moduleKey = "",
-  gameKey = ""
+  moduleKey = ""
 } = {}) {
   const moduleObject = (moduleApi && moduleKey) ? moduleApi[moduleKey] : null;
-  const gameObject = (game && gameKey) ? game[gameKey] : null;
-  if (gameObject && typeof gameObject === "object") return gameObject;
   if (moduleObject && typeof moduleObject === "object") return moduleObject;
   return {};
 }
@@ -34,22 +31,18 @@ export function registerTowCombatOverlayPublicApis({
   if (actionsApi) {
     const sharedActionsApi = resolveTowCombatOverlaySharedApiObject({
       moduleApi,
-      moduleKey: "towActions",
-      gameKey: "towActions"
+      moduleKey: "towActions"
     });
     Object.assign(sharedActionsApi, actionsApi);
-    game.towActions = sharedActionsApi;
     if (moduleApi) moduleApi.towActions = sharedActionsApi;
   }
 
   if (overlayApi) {
     const sharedOverlayApi = resolveTowCombatOverlaySharedApiObject({
       moduleApi,
-      moduleKey: "towOverlay",
-      gameKey: "towOverlay"
+      moduleKey: "towOverlay"
     });
     Object.assign(sharedOverlayApi, overlayApi);
-    game.towOverlay = sharedOverlayApi;
     if (moduleApi) moduleApi.towOverlay = sharedOverlayApi;
   }
 }
@@ -65,9 +58,6 @@ export function getTowCombatOverlayPublicApi(apiKey) {
 
   const moduleApi = getTowCombatOverlayModuleApi()?.[key] ?? null;
   if (moduleApi && typeof moduleApi === "object") return moduleApi;
-
-  const gameApi = game[key] ?? null;
-  if (gameApi && typeof gameApi === "object") return gameApi;
 
   return null;
 }
@@ -86,9 +76,3 @@ export function syncTowCombatOverlayPublicApisFromGlobals() {
     overlayApi: getTowCombatOverlayOverlayApi()
   });
 }
-
-globalThis.registerTowCombatOverlayPublicApis = registerTowCombatOverlayPublicApis;
-globalThis.getTowCombatOverlayPublicApi = getTowCombatOverlayPublicApi;
-globalThis.getTowCombatOverlayActionsApi = getTowCombatOverlayActionsApi;
-globalThis.getTowCombatOverlayOverlayApi = getTowCombatOverlayOverlayApi;
-globalThis.syncTowCombatOverlayPublicApisFromGlobals = syncTowCombatOverlayPublicApisFromGlobals;

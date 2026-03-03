@@ -11,9 +11,6 @@ import {
   registerTowCombatOverlaySettings
 } from "./register-settings.js";
 
-globalThis.registerTowCombatOverlayHooks ??= registerTowCombatOverlayHooks;
-globalThis.unregisterTowCombatOverlayHooks ??= unregisterTowCombatOverlayHooks;
-
 export function syncTowCombatOverlayEnabledSetting() {
   const { settings } = getTowCombatOverlayModuleConstants();
   const overlayApi = getTowCombatOverlayOverlayApi();
@@ -22,7 +19,7 @@ export function syncTowCombatOverlayEnabledSetting() {
   const wantsEnabled = isTowCombatOverlaySettingEnabled(settings.enableOverlay, true);
   const isEnabled = typeof overlayApi.isEnabled === "function"
     ? !!overlayApi.isEnabled()
-    : !!game.towOverlay;
+    : false;
 
   if (wantsEnabled && !isEnabled && typeof overlayApi.enable === "function") {
     overlayApi.enable();
@@ -54,6 +51,3 @@ export function registerTowCombatOverlayModuleHooks() {
     syncTowCombatOverlayEnabledSetting();
   });
 }
-
-globalThis.registerTowCombatOverlayModuleHooks = registerTowCombatOverlayModuleHooks;
-globalThis.syncTowCombatOverlayEnabledSetting = syncTowCombatOverlayEnabledSetting;

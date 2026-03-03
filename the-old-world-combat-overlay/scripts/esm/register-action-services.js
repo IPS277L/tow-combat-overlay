@@ -11,12 +11,11 @@ import {
   towCombatOverlayRunCastingForControlled
 } from "./casting-service.js";
 
-export function registerTowCombatOverlayActionServices(overrides = {}) {
-  const state = globalThis.towCombatOverlayModule ?? (globalThis.towCombatOverlayModule = {});
-  const existingServices = state.actionServices ?? {};
+let actionServicesSingleton = null;
 
-  state.actionServices = {
-    ...existingServices,
+export function registerTowCombatOverlayActionServices(overrides = {}) {
+  actionServicesSingleton = {
+    ...(actionServicesSingleton ?? {}),
     attackActor: towCombatOverlayAttackActor,
     defenceActor: towCombatOverlayDefenceActor,
     castActor: towCombatOverlayCastActor,
@@ -26,13 +25,9 @@ export function registerTowCombatOverlayActionServices(overrides = {}) {
     ...overrides
   };
 
-  return state.actionServices;
+  return actionServicesSingleton;
 }
 
 export function getTowCombatOverlayActionServices() {
-  const state = globalThis.towCombatOverlayModule ?? (globalThis.towCombatOverlayModule = {});
-  return state.actionServices ?? registerTowCombatOverlayActionServices();
+  return actionServicesSingleton ?? registerTowCombatOverlayActionServices();
 }
-
-globalThis.registerTowCombatOverlayActionServices = registerTowCombatOverlayActionServices;
-globalThis.getTowCombatOverlayActionServices = getTowCombatOverlayActionServices;

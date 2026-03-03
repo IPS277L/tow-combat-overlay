@@ -7,33 +7,39 @@ import {
   WOUND_ITEM_TYPE,
   getLayoutBorderStyle
 } from "../overlay-runtime-constants.js";
+import {
+  towCombatOverlayCanEditActor,
+  towCombatOverlayWarnNoPermission
+} from "./core-helpers-service.js";
+import {
+  towCombatOverlayAddActorCondition,
+  towCombatOverlayAddActorWound,
+  towCombatOverlayRemoveActorCondition
+} from "./actions-bridge-service.js";
+import { runActorOpLock } from "./shared-service.js";
 
 function layoutStateCanEditActorRef(actor) {
-  return globalThis.towCombatOverlayCanEditActor?.(actor) ?? actor?.isOwner === true;
+  return towCombatOverlayCanEditActor(actor);
 }
 
 function layoutStateWarnNoPermissionRef(actor) {
-  return globalThis.towCombatOverlayWarnNoPermission?.(actor)
-    ?? ui.notifications.warn(`No permission to edit ${actor?.name ?? "actor"}.`);
+  return towCombatOverlayWarnNoPermission(actor);
 }
 
 async function layoutStateAddActorConditionRef(actor, condition) {
-  return globalThis.towCombatOverlayAddActorCondition?.(actor, condition);
+  return towCombatOverlayAddActorCondition(actor, condition);
 }
 
 async function layoutStateRemoveActorConditionRef(actor, condition) {
-  return globalThis.towCombatOverlayRemoveActorCondition?.(actor, condition);
+  return towCombatOverlayRemoveActorCondition(actor, condition);
 }
 
 async function layoutStateAddActorWoundRef(actor, options) {
-  return globalThis.towCombatOverlayAddActorWound?.(actor, options);
+  return towCombatOverlayAddActorWound(actor, options);
 }
 
 async function runActorOpLockRef(actor, opKey, operation) {
-  if (typeof globalThis.runActorOpLock === "function") {
-    return globalThis.runActorOpLock(actor, opKey, operation);
-  }
-  return operation();
+  return runActorOpLock(actor, opKey, operation);
 }
 
 function layoutStateGetLayoutBorderStyleRef(tokenObject) {
@@ -458,30 +464,3 @@ export async function towCombatOverlayRemoveWound(actor) {
     }
   });
 }
-
-Object.assign(globalThis, {
-  towCombatOverlayClearDisplayObject,
-  towCombatOverlayEnsureTokenOverlayInteractivity,
-  towCombatOverlayUpdateTokenOverlayHitArea,
-  towCombatOverlayRestoreTokenOverlayInteractivity,
-  towCombatOverlayEnsureCustomLayoutBorder,
-  towCombatOverlayDrawCustomLayoutBorder,
-  towCombatOverlayUpdateCustomLayoutBorderVisibility,
-  towCombatOverlayClearCustomLayoutBorder,
-  towCombatOverlayBringTokenToFront,
-  towCombatOverlayGetDeadFilterTargets,
-  towCombatOverlayEnsureDeadVisual,
-  towCombatOverlayClearDeadVisual,
-  towCombatOverlayGetWoundCount,
-  towCombatOverlayGetActorWoundItemCount,
-  towCombatOverlayGetMaxWoundLimit,
-  towCombatOverlayIsAtWoundCap,
-  towCombatOverlaySyncNpcDeadFromWounds,
-  towCombatOverlayQueueDeadSyncFromWounds,
-  towCombatOverlaySyncWoundsFromDeadState,
-  towCombatOverlayQueueWoundSyncFromDeadState,
-  towCombatOverlayPrimeDeadPresence,
-  towCombatOverlayGetResilienceValue,
-  towCombatOverlayAddWound,
-  towCombatOverlayRemoveWound
-});
