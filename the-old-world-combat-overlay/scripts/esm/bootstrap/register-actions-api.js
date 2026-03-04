@@ -1,5 +1,5 @@
+import { registerTowActionsApi } from "../combat/actions-api-service.js";
 import { getTowCombatOverlayActionServices } from "./register-action-services.js";
-import { registerTowActionsApi } from "./public-api-service.js";
 
 export function registerTowCombatOverlayActionsApi() {
   const services = getTowCombatOverlayActionServices();

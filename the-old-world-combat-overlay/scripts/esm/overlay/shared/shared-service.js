@@ -9,7 +9,7 @@ import {
   STATUS_TOOLTIP_OFFSET_Y,
   STATUS_TOOLTIP_PAD_X,
   STATUS_TOOLTIP_PAD_Y
-} from "../overlay-runtime-constants.js";
+} from "../../runtime/overlay-runtime-constants.js";
 
 function getActorTypeLabel(actor) {
   const systemType = String(actor?.system?.type ?? "").trim();

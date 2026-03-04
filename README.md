@@ -34,10 +34,24 @@ Current note:
 
 - Legacy macro source, generated macro bundles, and macro build tooling have been removed.
 - The runtime is native ESM and is bootstrapped from `the-old-world-combat-overlay/scripts/main.js`.
+- The ESM runtime is now grouped by concern:
+  - `the-old-world-combat-overlay/scripts/esm/bootstrap/`
+  - `the-old-world-combat-overlay/scripts/esm/combat/`
+  - `the-old-world-combat-overlay/scripts/esm/runtime/`
+  - `the-old-world-combat-overlay/scripts/esm/overlay/`
+  - `the-old-world-combat-overlay/scripts/esm/system-adapter/`
+- The overlay runtime is also grouped internally by concern:
+  - `the-old-world-combat-overlay/scripts/esm/overlay/controls/`
+  - `the-old-world-combat-overlay/scripts/esm/overlay/layout/`
+  - `the-old-world-combat-overlay/scripts/esm/overlay/lifecycle/`
+  - `the-old-world-combat-overlay/scripts/esm/overlay/status/`
+  - `the-old-world-combat-overlay/scripts/esm/overlay/shared/`
+  - `the-old-world-combat-overlay/scripts/esm/overlay/automation/`
 - The overlay/action runtime is registered through the module API only, but that API should currently be treated as provisional and unsupported for compatibility purposes.
 - Repo-only files such as `.gitignore`, `.gitmodules`, docs, and the system submodule remain outside the release/package root.
 - The package manifest at `the-old-world-combat-overlay/module.json` is the only supported runtime entrypoint.
-- The main remaining technical debt is overlay runtime size, especially in:
+- The top-level overlay barrels are still the stable overlay import surface:
   - `the-old-world-combat-overlay/scripts/esm/overlay/controls-service.js`
   - `the-old-world-combat-overlay/scripts/esm/overlay/overlay-service.js`
   - `the-old-world-combat-overlay/scripts/esm/overlay/layout-state-service.js`
+- The main remaining technical debt is still overlay complexity and behavior coupling, even though the file layout is now much easier to navigate.

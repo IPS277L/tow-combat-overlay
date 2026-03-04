@@ -1,4 +1,4 @@
-import { registerTowCombatOverlayPublicApis } from "./register-public-apis.js";
+import { registerTowCombatOverlayPublicApis } from "../bootstrap/register-public-apis.js";
 import {
   towCombatOverlayDisable,
   towCombatOverlayEnable,
@@ -7,7 +7,7 @@ import {
   towCombatOverlayRefreshAllOverlays,
   towCombatOverlayRefreshTokenOverlay,
   towCombatOverlayToggle
-} from "./overlay/overlay-service.js";
+} from "../overlay/overlay-service.js";
 
 const TOW_OVERLAY_VERSION = "1.0.0";
 

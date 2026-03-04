@@ -2,7 +2,7 @@ import {
   ATTACK_CALL_DEDUPE_MS,
   DAMAGE_RENDER_DEDUPE_MS,
   SHIFT_KEY
-} from "./action-runtime-constants.js";
+} from "../runtime/action-runtime-constants.js";
 
 const attackCallDeduper = new Map();
 const damageRenderDeduper = new Map();

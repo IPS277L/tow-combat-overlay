@@ -1,16 +1,16 @@
-import { getTowCombatOverlayOverlayRuntimeConstants } from "./overlay-runtime-constants.js";
+import { getTowCombatOverlayOverlayRuntimeConstants } from "../runtime/overlay-runtime-constants.js";
 import {
   towCombatOverlayHideCoreTokenHoverVisuals,
   towCombatOverlayQueueActorOverlayResync,
   towCombatOverlayRefreshActorOverlays,
   towCombatOverlayRefreshAllOverlays,
   towCombatOverlayRefreshTokenOverlay
-} from "./overlay/overlay-service.js";
+} from "../overlay/overlay-service.js";
 import {
   towCombatOverlayBringTokenToFront,
   towCombatOverlayQueueDeadSyncFromWounds,
   towCombatOverlayUpdateCustomLayoutBorderVisibility
-} from "./overlay/layout-state-service.js";
+} from "../overlay/layout-state-service.js";
 
 const { moduleKey: MODULE_KEY } = getTowCombatOverlayOverlayRuntimeConstants();
 const WOUND_ITEM_TYPE = "wound";

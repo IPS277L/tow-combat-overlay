@@ -1,4 +1,4 @@
-import { getTowCombatOverlayActionsApi, getTowCombatOverlayPublicApi } from "../register-public-apis.js";
+import { getTowCombatOverlayActionsApi, getTowCombatOverlayPublicApi } from "../../bootstrap/register-public-apis.js";
 
 export async function towCombatOverlayEnsureTowActionsRuntime() {
   const api = getTowCombatOverlayPublicApi("towActions");

@@ -9,8 +9,22 @@ import {
   towCombatOverlayToElement,
   towCombatOverlayWaitForChatMessage
 } from "./core-service.js";
-import { shouldTowCombatOverlayAutoSubmitDialogs } from "./register-settings.js";
-import { getTowCombatOverlaySystemAdapter } from "./system-adapter/system-adapter.js";
+import { shouldTowCombatOverlayAutoSubmitDialogs } from "../bootstrap/register-settings.js";
+import { getTowCombatOverlaySystemAdapter } from "../system-adapter/system-adapter.js";
+
+export function towCombatOverlayEnsurePromiseClose(app) {
+  if (!app || app._towPromiseCloseWrapped || typeof app.close !== "function") return app;
+  const originalClose = app.close;
+  app.close = function wrappedTowPromiseClose(...args) {
+    try {
+      return Promise.resolve(originalClose.apply(this, args));
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  };
+  app._towPromiseCloseWrapped = true;
+  return app;
+}
 
 export function towCombatOverlayArmDamageAppend(actor, ability) {
   let timeoutId = null;
@@ -44,6 +58,7 @@ export function towCombatOverlayArmAutoSubmitDialog({ hookName, matches, submitE
 
   Hooks.once(hookName, (app) => {
     if (!matches(app)) return;
+    towCombatOverlayEnsurePromiseClose(app);
 
     const element = towCombatOverlayToElement(app?.element);
     if (element) {

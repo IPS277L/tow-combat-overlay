@@ -1,4 +1,4 @@
-import { getTowCombatOverlayModuleConstants } from "./constants.js";
+import { getTowCombatOverlayModuleConstants } from "../runtime/constants.js";
 
 function ensureTowCombatOverlayApiObject(hostObject, key) {
   if (!hostObject || !key) return null;

@@ -1,6 +1,7 @@
-import { getTowCombatOverlayModuleConstants } from "./constants.js";
-import { registerTowCombatOverlayActionsApi } from "./actions-bootstrap.js";
-import { registerTowOverlayApi } from "./overlay-public-api-service.js";
+import { towCombatOverlayEnsurePromiseClose } from "../combat/attack-service.js";
+import { registerTowOverlayApi } from "../combat/overlay-api-service.js";
+import { getTowCombatOverlayModuleConstants } from "../runtime/constants.js";
+import { registerTowCombatOverlayActionsApi } from "./register-actions-api.js";
 import {
   registerTowCombatOverlayHooks,
   unregisterTowCombatOverlayHooks
@@ -43,6 +44,22 @@ export function registerTowCombatOverlayModuleHooks() {
   Hooks.once("init", () => {
     registerTowCombatOverlaySettings();
     registerTowCombatOverlayRuntimeApis();
+  });
+
+  Hooks.on("renderAbilityAttackDialog", (app) => {
+    towCombatOverlayEnsurePromiseClose(app);
+  });
+
+  Hooks.on("renderCastingDialog", (app) => {
+    towCombatOverlayEnsurePromiseClose(app);
+  });
+
+  Hooks.on("renderTestDialog", (app) => {
+    towCombatOverlayEnsurePromiseClose(app);
+  });
+
+  Hooks.on("renderWeaponDialog", (app) => {
+    towCombatOverlayEnsurePromiseClose(app);
   });
 
   Hooks.once("ready", () => {

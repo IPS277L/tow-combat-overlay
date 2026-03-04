@@ -1,13 +1,13 @@
 import {
   DEFAULT_DEFENCE_SKILL,
   SELF_ROLL_CONTEXT,
-} from "./action-runtime-constants.js";
+} from "../runtime/action-runtime-constants.js";
 import { towCombatOverlayArmAutoSubmitDialog } from "./attack-service.js";
 import {
   towCombatOverlayEscapeHtml,
   towCombatOverlayRenderSelectorRowButton
 } from "./core-service.js";
-import { getTowCombatOverlaySystemAdapter } from "./system-adapter/system-adapter.js";
+import { getTowCombatOverlaySystemAdapter } from "../system-adapter/system-adapter.js";
 
 function towCombatOverlayGetSkillLabel(skill) {
   return game.oldworld?.config?.skills?.[skill] ?? skill;

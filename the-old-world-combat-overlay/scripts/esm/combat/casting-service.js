@@ -1,11 +1,12 @@
-import { SELF_ROLL_CONTEXT } from "./action-runtime-constants.js";
-import { shouldTowCombatOverlayAutoSubmitDialogs } from "./register-settings.js";
+import { shouldTowCombatOverlayAutoSubmitDialogs } from "../bootstrap/register-settings.js";
+import { SELF_ROLL_CONTEXT } from "../runtime/action-runtime-constants.js";
+import { towCombatOverlayEnsurePromiseClose } from "./attack-service.js";
 import {
   towCombatOverlayEscapeHtml,
   towCombatOverlayScheduleSoon,
   towCombatOverlayToElement
 } from "./core-service.js";
-import { getTowCombatOverlaySystemAdapter } from "./system-adapter/system-adapter.js";
+import { getTowCombatOverlaySystemAdapter } from "../system-adapter/system-adapter.js";
 
 function towCombatOverlayHasLoreText(value) {
   return typeof value === "string" && value.length > 0;
@@ -46,6 +47,7 @@ function towCombatOverlayArmAutoSubmitCastingDialog(actor, spell) {
     const sameActor = app?.actor?.id === actor.id;
     const sameSpell = app?.spell?.id === spell.id;
     if (!sameActor || !sameSpell) return;
+    towCombatOverlayEnsurePromiseClose(app);
 
     const element = towCombatOverlayToElement(app?.element);
     if (element) {

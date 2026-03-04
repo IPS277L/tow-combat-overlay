@@ -1,12 +1,12 @@
-import { registerTowCombatOverlayPublicApis } from "./register-public-apis.js";
-import { TOW_ACTIONS_VERSION } from "./action-runtime-constants.js";
+import { registerTowCombatOverlayPublicApis } from "../bootstrap/register-public-apis.js";
+import { TOW_ACTIONS_VERSION } from "../runtime/action-runtime-constants.js";
 import {
   towCombatOverlayEscapeHtml,
   towCombatOverlayIsShiftHeld,
   towCombatOverlayScheduleSoon,
   towCombatOverlayToElement
 } from "./core-service.js";
-import { getTowCombatOverlaySystemAdapter } from "./system-adapter/system-adapter.js";
+import { getTowCombatOverlaySystemAdapter } from "../system-adapter/system-adapter.js";
 
 function getTowActionsApiBindings() {
   return {

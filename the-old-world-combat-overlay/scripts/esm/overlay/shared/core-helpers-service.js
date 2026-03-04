@@ -1,4 +1,4 @@
-import { getTowCombatOverlayOverlayRuntimeConstants } from "../overlay-runtime-constants.js";
+import { getTowCombatOverlayOverlayRuntimeConstants } from "../../runtime/overlay-runtime-constants.js";
 import { hideStatusTooltip, showOverlayTooltip } from "./shared-service.js";
 
 const {

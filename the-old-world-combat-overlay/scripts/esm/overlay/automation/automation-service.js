@@ -6,17 +6,17 @@ import {
   FLOW_CARD_FONT_SIZE,
   MODULE_KEY,
   OPPOSED_LINK_WAIT_MS
-} from "../overlay-runtime-constants.js";
-import { getTowCombatOverlayActionsApi } from "../register-public-apis.js";
+} from "../../runtime/overlay-runtime-constants.js";
+import { getTowCombatOverlayActionsApi } from "../../bootstrap/register-public-apis.js";
 import {
   shouldTowCombatOverlayAutoApplyDamage,
   shouldTowCombatOverlayAutoChooseStaggerWound,
   shouldTowCombatOverlayAutoDefence
-} from "../register-settings.js";
+} from "../../bootstrap/register-settings.js";
 import {
   towCombatOverlayApplyActorDamage,
   towCombatOverlayEnsureTowActions
-} from "./actions-bridge-service.js";
+} from "../shared/actions-bridge-service.js";
 
 export function armDefaultStaggerChoiceWound(durationMs = AUTO_STAGGER_PATCH_MS) {
   if (!shouldTowCombatOverlayAutoChooseStaggerWound()) {
