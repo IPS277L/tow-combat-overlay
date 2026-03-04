@@ -72,8 +72,15 @@ export function towCombatOverlayQueueActorOverlayResync(actor) {
     for (const timer of existing) clearTimeout(timer);
   }
 
-  const timers = ACTOR_OVERLAY_RESYNC_DELAYS_MS.map((delayMs) => setTimeout(() => {
+  const timers = ACTOR_OVERLAY_RESYNC_DELAYS_MS.map((delayMs, index) => setTimeout(() => {
     towCombatOverlayRefreshActorOverlays(actor);
+    const liveState = game[MODULE_KEY];
+    const liveTimers = liveState?.actorOverlayResyncTimers?.get?.(key);
+    if (!Array.isArray(liveTimers)) return;
+    liveTimers[index] = null;
+    if (liveTimers.every((timer) => timer == null)) {
+      liveState.actorOverlayResyncTimers.delete(key);
+    }
   }, delayMs));
   state.actorOverlayResyncTimers.set(key, timers);
 }

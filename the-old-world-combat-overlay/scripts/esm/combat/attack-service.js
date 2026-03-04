@@ -56,8 +56,9 @@ export function towCombatOverlayArmAutoSubmitDialog({ hookName, matches, submitE
     return;
   }
 
-  Hooks.once(hookName, (app) => {
+  const hookId = Hooks.on(hookName, (app) => {
     if (!matches(app)) return;
+    Hooks.off(hookName, hookId);
     towCombatOverlayEnsurePromiseClose(app);
 
     const element = towCombatOverlayToElement(app?.element);

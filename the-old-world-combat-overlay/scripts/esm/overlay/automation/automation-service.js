@@ -18,6 +18,25 @@ import {
   towCombatOverlayEnsureTowActions
 } from "../shared/actions-bridge-service.js";
 
+function getDialogActionList(config) {
+  return Array.isArray(config?.buttons)
+    ? config.buttons.map((button) => String(button?.action ?? ""))
+    : Object.values(config?.buttons ?? {}).map((button) => String(button?.action ?? ""));
+}
+
+function isLikelyStaggerChoiceDialog(config) {
+  const title = String(config?.window?.title ?? "").toLowerCase();
+  const content = String(config?.content ?? "").toLowerCase();
+  const actions = getDialogActionList(config);
+  const hasExpectedChoices = actions.includes("wound")
+    && (actions.includes("prone") || actions.includes("give"));
+  if (!hasExpectedChoices) return false;
+
+  return title.includes("stagger")
+    || content.includes("stagger")
+    || content.includes("choose from the following options");
+}
+
 export function armDefaultStaggerChoiceWound(durationMs = AUTO_STAGGER_PATCH_MS) {
   if (!shouldTowCombatOverlayAutoChooseStaggerWound()) {
     return () => {};
@@ -29,25 +48,23 @@ export function armDefaultStaggerChoiceWound(durationMs = AUTO_STAGGER_PATCH_MS)
 
   if (!state.staggerWaitPatch) {
     const originalWait = DialogApi.wait.bind(DialogApi);
-    state.staggerWaitPatch = { originalWait, refs: 0 };
+    state.staggerWaitPatch = { originalWait, refs: 0, activeUntil: 0 };
 
     DialogApi.wait = async (config, options) => {
-      const title = String(config?.window?.title ?? "");
-      const content = String(config?.content ?? "");
-      const actions = Array.isArray(config?.buttons)
-        ? config.buttons.map((button) => String(button?.action ?? ""))
-        : Object.values(config?.buttons ?? {}).map((button) => String(button?.action ?? ""));
-      const hasStaggerChoices = actions.includes("wound")
-        && (actions.includes("prone") || actions.includes("give"));
-      const likelyStaggerText = title.toLowerCase().includes("stagger")
-        || content.toLowerCase().includes("stagger")
-        || content.toLowerCase().includes("choose from the following options");
-      if (hasStaggerChoices || likelyStaggerText) return "wound";
+      const patchState = state.staggerWaitPatch;
+      if (!patchState || patchState.refs <= 0 || Date.now() > Number(patchState.activeUntil ?? 0)) {
+        return originalWait(config, options);
+      }
+      if (isLikelyStaggerChoiceDialog(config)) return "wound";
       return state.staggerWaitPatch.originalWait(config, options);
     };
   }
 
   state.staggerWaitPatch.refs += 1;
+  state.staggerWaitPatch.activeUntil = Math.max(
+    Number(state.staggerWaitPatch.activeUntil ?? 0),
+    Date.now() + Math.max(0, Number(durationMs) || 0)
+  );
   let restored = false;
   const restore = () => {
     if (restored) return;
