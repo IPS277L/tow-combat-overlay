@@ -1,5 +1,6 @@
 import { shouldTowCombatOverlayAutoSubmitDialogs } from "../bootstrap/register-settings.js";
 import { SELF_ROLL_CONTEXT } from "../runtime/action-runtime-constants.js";
+import { getTowCombatOverlayConstants } from "../runtime/constants.js";
 import { towCombatOverlayEnsurePromiseClose } from "./attack-service.js";
 import {
   towCombatOverlayEscapeHtml,
@@ -7,6 +8,12 @@ import {
   towCombatOverlayToElement
 } from "./core-service.js";
 import { getTowCombatOverlaySystemAdapter } from "../system-adapter/system-adapter.js";
+
+const {
+  logPrefix: MODULE_LOG_PREFIX,
+  notifications: MODULE_NOTIFICATIONS,
+  dialogs: MODULE_DIALOGS
+} = getTowCombatOverlayConstants();
 
 function towCombatOverlayHasLoreText(value) {
   return typeof value === "string" && value.length > 0;
@@ -57,7 +64,7 @@ function towCombatOverlayArmAutoSubmitCastingDialog(actor, spell) {
 
     towCombatOverlayScheduleSoon(async () => {
       if (typeof app?.submit !== "function") {
-        console.error("[the-old-world-combat-overlay] CastingDialog.submit() is unavailable.");
+        console.error(`${MODULE_LOG_PREFIX} CastingDialog.submit() is unavailable.`);
         if (element) {
           element.style.visibility = "";
           element.style.pointerEvents = "";
@@ -106,9 +113,9 @@ export function towCombatOverlayRenderSpellSelector(actor, spells) {
   const content = `<div style="display:flex; flex-direction:column; gap:6px;">${buttonMarkup}</div>`;
 
   const selectorDialog = new Dialog({
-    title: `${actor.name} - Spells`,
+    title: MODULE_DIALOGS.spellSelectorTitle.replace("{actorName}", actor.name),
     content,
-    buttons: { close: { label: "Close" } },
+    buttons: { close: { label: MODULE_DIALOGS.closeLabel } },
     render: (html) => {
       html.find(".spell-btn").on("click", async (event) => {
         const chosen = actor.items.get(event.currentTarget.dataset.id);
@@ -143,7 +150,7 @@ export async function towCombatOverlayCastActor(actor, { manual = false } = {}) 
 export async function towCombatOverlayRunCastingForControlled({ manual = false } = {}) {
   const tokens = canvas.tokens.controlled;
   if (!tokens.length) {
-    ui.notifications.warn("Select at least one token.");
+    ui.notifications.warn(MODULE_NOTIFICATIONS.selectAtLeastOneToken);
     return;
   }
 

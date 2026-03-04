@@ -19,6 +19,7 @@ import {
   PreciseTextClass,
   TOKEN_CONTROL_PAD
 } from "../../runtime/overlay-runtime-constants.js";
+import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
 import { getTowCombatOverlayActionsApi } from "../../bootstrap/register-public-apis.js";
 import {
   towCombatOverlayBindTooltipHandlers,
@@ -40,7 +41,7 @@ import {
   towCombatOverlayRemoveWound
 } from "../layout/wound-state-service.js";
 import { towCombatOverlayClearDisplayObject } from "../layout/token-layout-service.js";
-import { towCombatOverlayEnsureTowActions } from "../shared/actions-bridge-service.js";
+import { towCombatOverlayEnsureActionsApi } from "../shared/actions-bridge-service.js";
 import {
   createTowCombatOverlayAutomationCoordinator,
   towCombatOverlayAutomation
@@ -51,6 +52,8 @@ import {
   towCombatOverlayGetIconValueStyle,
   towCombatOverlayTuneOverlayText
 } from "./control-style-service.js";
+
+const { tooltips: MODULE_TOOLTIPS } = getTowCombatOverlayConstants();
 
 function getOverlayControlsAutomationRef() {
   return towCombatOverlayAutomation ?? createTowCombatOverlayAutomationCoordinator();
@@ -226,10 +229,7 @@ export function towCombatOverlayCreateWoundControlUI(tokenObject) {
     await towCombatOverlayRemoveWound(actor);
   });
   countHitBox.on("contextmenu", towCombatOverlayPreventPointerDefault);
-  towCombatOverlayBindTooltipHandlers(countHitBox, () => ({
-    title: "Wounds",
-    description: "Left-click adds 1 wound. Right-click removes 1 wound."
-  }));
+  towCombatOverlayBindTooltipHandlers(countHitBox, () => MODULE_TOOLTIPS.wounds);
 
   attackHitBox.on("pointerdown", async (event) => {
     towCombatOverlayPreventPointerDefault(event);
@@ -238,7 +238,7 @@ export function towCombatOverlayCreateWoundControlUI(tokenObject) {
     const sourceToken = tokenObject;
     const sourceActor = towCombatOverlayGetActorFromToken(sourceToken);
     if (!sourceActor) return;
-    if (!(await towCombatOverlayEnsureTowActions())) return;
+    if (!(await towCombatOverlayEnsureActionsApi())) return;
 
     const pointerDownShift = towCombatOverlayIsShiftModifier(event);
     const origin = {
@@ -321,37 +321,31 @@ export function towCombatOverlayCreateWoundControlUI(tokenObject) {
     canvas.stage.on("pointerupoutside", finishDrag);
   });
   attackHitBox.on("contextmenu", towCombatOverlayPreventPointerDefault);
-  towCombatOverlayBindTooltipHandlers(attackHitBox, () => ({
-    title: "Attack",
-    description: "Attack roll. Left-click attacks. Drag to a target for quick targeting. Hold Shift for manual mode."
-  }));
+  towCombatOverlayBindTooltipHandlers(attackHitBox, () => MODULE_TOOLTIPS.attack);
 
   defenceHitBox.on("pointerdown", async (event) => {
     towCombatOverlayPreventPointerDefault(event);
     if (towCombatOverlayGetMouseButton(event) !== 0) return;
     const actor = towCombatOverlayGetActorFromToken(tokenObject);
     if (!actor) return;
-    if (!(await towCombatOverlayEnsureTowActions())) return;
+    if (!(await towCombatOverlayEnsureActionsApi())) return;
     const actionsApi = getTowCombatOverlayActionsApi();
     await actionsApi.defenceActor(actor, { manual: actionsApi.isShiftHeld() });
   });
   defenceHitBox.on("contextmenu", towCombatOverlayPreventPointerDefault);
-  towCombatOverlayBindTooltipHandlers(defenceHitBox, () => ({
-    title: "Defence",
-    description: "Defence roll. Left-click defends. Hold Shift for manual mode."
-  }));
+  towCombatOverlayBindTooltipHandlers(defenceHitBox, () => MODULE_TOOLTIPS.defence);
 
   container.addChild(countHitBox, countIcon, countText, attackHitBox, defenceHitBox, attackIcon, defenceIcon);
-  container._countText = countText;
-  container._countIcon = countIcon;
-  container._countHitBox = countHitBox;
-  container._attackHitBox = attackHitBox;
-  container._defenceHitBox = defenceHitBox;
-  container._attackIcon = attackIcon;
-  container._defenceIcon = defenceIcon;
+  container[KEYS.woundUiCountText] = countText;
+  container[KEYS.woundUiCountIcon] = countIcon;
+  container[KEYS.woundUiCountHitBox] = countHitBox;
+  container[KEYS.woundUiAttackHitBox] = attackHitBox;
+  container[KEYS.woundUiDefenceHitBox] = defenceHitBox;
+  container[KEYS.woundUiAttackIcon] = attackIcon;
+  container[KEYS.woundUiDefenceIcon] = defenceIcon;
 
   tokenObject.addChild(container);
-  tokenObject[KEYS.woundUI] = container;
+  tokenObject[KEYS.woundUi] = container;
   return container;
 }
 
@@ -360,55 +354,55 @@ export function towCombatOverlayUpdateWoundControlUI(tokenObject) {
 
   const count = towCombatOverlayGetWoundCount(tokenObject.document);
   if (count === null || count === undefined) {
-    const ui = tokenObject[KEYS.woundUI];
+    const ui = tokenObject[KEYS.woundUi];
     if (!ui) return;
     towCombatOverlayClearDisplayObject(ui);
-    delete tokenObject[KEYS.woundUI];
+    delete tokenObject[KEYS.woundUi];
     return;
   }
 
-  const existingUi = tokenObject[KEYS.woundUI];
+  const existingUi = tokenObject[KEYS.woundUi];
   const hasBrokenTextStyle = !!existingUi && (
-    !existingUi._countText ||
-    !existingUi._countIcon ||
-    !existingUi._attackIcon ||
-    !existingUi._defenceIcon ||
-    existingUi._countText.destroyed ||
-    existingUi._countIcon.destroyed ||
-    existingUi._attackIcon.destroyed ||
-    existingUi._defenceIcon.destroyed ||
-    !existingUi._countText.style
+    !existingUi[KEYS.woundUiCountText] ||
+    !existingUi[KEYS.woundUiCountIcon] ||
+    !existingUi[KEYS.woundUiAttackIcon] ||
+    !existingUi[KEYS.woundUiDefenceIcon] ||
+    existingUi[KEYS.woundUiCountText].destroyed ||
+    existingUi[KEYS.woundUiCountIcon].destroyed ||
+    existingUi[KEYS.woundUiAttackIcon].destroyed ||
+    existingUi[KEYS.woundUiDefenceIcon].destroyed ||
+    !existingUi[KEYS.woundUiCountText].style
   );
   const staleUi = !!existingUi && (
     existingUi.destroyed ||
     existingUi.parent == null ||
     existingUi.parent !== tokenObject ||
     hasBrokenTextStyle ||
-    existingUi._attackHitBox?.destroyed ||
-    existingUi._defenceHitBox?.destroyed ||
-    existingUi._countHitBox?.destroyed
+    existingUi[KEYS.woundUiAttackHitBox]?.destroyed ||
+    existingUi[KEYS.woundUiDefenceHitBox]?.destroyed ||
+    existingUi[KEYS.woundUiCountHitBox]?.destroyed
   );
   if (staleUi) {
     towCombatOverlayClearDisplayObject(existingUi);
-    delete tokenObject[KEYS.woundUI];
+    delete tokenObject[KEYS.woundUi];
   }
 
-  const ui = (!tokenObject[KEYS.woundUI] || tokenObject[KEYS.woundUI].destroyed)
+  const ui = (!tokenObject[KEYS.woundUi] || tokenObject[KEYS.woundUi].destroyed)
     ? towCombatOverlayCreateWoundControlUI(tokenObject)
-    : tokenObject[KEYS.woundUI];
+    : tokenObject[KEYS.woundUi];
   const actor = towCombatOverlayGetActorFromToken(tokenObject);
   const overlayScale = towCombatOverlayGetTokenOverlayScale(tokenObject);
   const edgePad = towCombatOverlayGetOverlayEdgePadPx(tokenObject) ?? TOKEN_CONTROL_PAD;
   const inverseScale = (overlayScale > 0) ? (1 / overlayScale) : 1;
   ui.scale.set(overlayScale);
 
-  const countText = ui._countText;
-  const countIcon = ui._countIcon;
-  const countHitBox = ui._countHitBox;
-  const attackHitBox = ui._attackHitBox;
-  const defenceHitBox = ui._defenceHitBox;
-  const attackIcon = ui._attackIcon;
-  const defenceIcon = ui._defenceIcon;
+  const countText = ui[KEYS.woundUiCountText];
+  const countIcon = ui[KEYS.woundUiCountIcon];
+  const countHitBox = ui[KEYS.woundUiCountHitBox];
+  const attackHitBox = ui[KEYS.woundUiAttackHitBox];
+  const defenceHitBox = ui[KEYS.woundUiDefenceHitBox];
+  const attackIcon = ui[KEYS.woundUiAttackIcon];
+  const defenceIcon = ui[KEYS.woundUiDefenceIcon];
   towCombatOverlayTuneOverlayText(countText);
   countText.text = `${count}`;
 
@@ -464,10 +458,10 @@ export function towCombatOverlayUpdateWoundControlUI(tokenObject) {
 
 export function towCombatOverlayClearAllWoundControls() {
   towCombatOverlayForEachSceneToken((token) => {
-    const ui = token[KEYS.woundUI];
+    const ui = token[KEYS.woundUi];
     if (!ui) return;
     towCombatOverlayClearDisplayObject(ui);
-    delete token[KEYS.woundUI];
+    delete token[KEYS.woundUi];
   });
 
   const orphaned = [];

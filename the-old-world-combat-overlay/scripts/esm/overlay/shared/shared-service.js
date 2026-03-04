@@ -10,6 +10,9 @@ import {
   STATUS_TOOLTIP_PAD_X,
   STATUS_TOOLTIP_PAD_Y
 } from "../../runtime/overlay-runtime-constants.js";
+import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
+
+const { tooltips: MODULE_TOOLTIPS } = getTowCombatOverlayConstants();
 
 function getActorTypeLabel(actor) {
   const systemType = String(actor?.system?.type ?? "").trim();
@@ -62,16 +65,23 @@ export function getTypeTooltipData(actor) {
   const typeKey = systemType || fallbackType;
   const npcTypeLabelKey = game.oldworld?.config?.npcType?.[typeKey] ?? null;
   const typeLabel = npcTypeLabelKey ? game.i18n.localize(npcTypeLabelKey) : getActorTypeLabel(actor);
+  const hasThresholds = actor?.type === "npc" && actor.system?.hasThresholds === true;
 
   if (typeKey === "minion") {
-    return { title: typeLabel, description: "Minions are defeated at 1 wound." };
+    return { title: typeLabel, description: MODULE_TOOLTIPS.actorType.minionDescription };
   }
-  if (["brute", "champion", "monstrosity"].includes(typeKey)) {
+  if (typeKey === "champion") {
+    return { title: typeLabel, description: MODULE_TOOLTIPS.actorType.championDescription };
+  }
+  if (hasThresholds) {
     const cap = getMaxWoundLimit(actor);
     const capText = Number.isFinite(cap) ? ` Defeated at ${cap} wounds.` : "";
-    return { title: typeLabel, description: `Threshold-based NPC type.${capText}` };
+    return { title: typeLabel, description: `${MODULE_TOOLTIPS.actorType.thresholdDescription}${capText}` };
   }
-  return { title: typeLabel, description: "Actor type." };
+  if (actor?.type === "npc") {
+    return { title: typeLabel, description: MODULE_TOOLTIPS.actorType.standardNpcDescription };
+  }
+  return { title: typeLabel, description: MODULE_TOOLTIPS.actorType.defaultDescription };
 }
 
 function ensureStatusTooltip() {

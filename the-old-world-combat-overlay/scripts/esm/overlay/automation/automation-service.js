@@ -15,7 +15,7 @@ import {
 } from "../../bootstrap/register-settings.js";
 import {
   towCombatOverlayApplyActorDamage,
-  towCombatOverlayEnsureTowActions
+  towCombatOverlayEnsureActionsApi
 } from "../shared/actions-bridge-service.js";
 
 function getDialogActionList(config) {
@@ -114,7 +114,7 @@ export function armAutoDefenceForOpposed(sourceToken, targetToken, { sourceBefor
     }
 
     cleanup(hookId);
-    if (!(await towCombatOverlayEnsureTowActions())) return;
+    if (!(await towCombatOverlayEnsureActionsApi())) return;
 
     const started = Date.now();
     while (Date.now() - started < OPPOSED_LINK_WAIT_MS) {

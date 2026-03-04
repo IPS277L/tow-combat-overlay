@@ -1,4 +1,4 @@
-import { getTowCombatOverlayModuleConstants } from "../runtime/constants.js";
+import { getTowCombatOverlayConstants } from "../runtime/constants.js";
 
 function ensureTowCombatOverlayApiObject(hostObject, key) {
   if (!hostObject || !key) return null;
@@ -22,7 +22,7 @@ export function registerTowCombatOverlayPublicApis({
   actionsApi = null,
   overlayApi = null
 } = {}) {
-  const { moduleId } = getTowCombatOverlayModuleConstants();
+  const { apiKeys, moduleId } = getTowCombatOverlayConstants();
   const moduleState = game?.modules?.get?.(moduleId) ?? null;
   const moduleApi = moduleState
     ? ensureTowCombatOverlayApiObject(moduleState, "api")
@@ -31,26 +31,26 @@ export function registerTowCombatOverlayPublicApis({
   if (actionsApi) {
     const sharedActionsApi = resolveTowCombatOverlaySharedApiObject({
       moduleApi,
-      moduleKey: "towActions"
+      moduleKey: apiKeys.actions
     });
     Object.assign(sharedActionsApi, actionsApi);
-    if (moduleApi) moduleApi.towActions = sharedActionsApi;
+    if (moduleApi) moduleApi[apiKeys.actions] = sharedActionsApi;
   }
 
   if (overlayApi) {
     const sharedOverlayApi = resolveTowCombatOverlaySharedApiObject({
       moduleApi,
-      moduleKey: "towOverlay"
+      moduleKey: apiKeys.overlay
     });
     Object.assign(sharedOverlayApi, overlayApi);
-    if (moduleApi) moduleApi.towOverlay = sharedOverlayApi;
+    if (moduleApi) moduleApi[apiKeys.overlay] = sharedOverlayApi;
   }
 
   return moduleApi;
 }
 
 export function getTowCombatOverlayModuleApi() {
-  const { moduleId } = getTowCombatOverlayModuleConstants();
+  const { moduleId } = getTowCombatOverlayConstants();
   return game?.modules?.get?.(moduleId)?.api ?? null;
 }
 
@@ -65,9 +65,9 @@ export function getTowCombatOverlayPublicApi(apiKey) {
 }
 
 export function getTowCombatOverlayActionsApi() {
-  return getTowCombatOverlayPublicApi("towActions");
+  return getTowCombatOverlayPublicApi(getTowCombatOverlayConstants().apiKeys.actions);
 }
 
 export function getTowCombatOverlayOverlayApi() {
-  return getTowCombatOverlayPublicApi("towOverlay");
+  return getTowCombatOverlayPublicApi(getTowCombatOverlayConstants().apiKeys.overlay);
 }

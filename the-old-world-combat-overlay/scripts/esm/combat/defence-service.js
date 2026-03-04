@@ -2,12 +2,18 @@ import {
   DEFAULT_DEFENCE_SKILL,
   SELF_ROLL_CONTEXT,
 } from "../runtime/action-runtime-constants.js";
+import { getTowCombatOverlayConstants } from "../runtime/constants.js";
 import { towCombatOverlayArmAutoSubmitDialog } from "./attack-service.js";
 import {
   towCombatOverlayEscapeHtml,
   towCombatOverlayRenderSelectorRowButton
 } from "./core-service.js";
 import { getTowCombatOverlaySystemAdapter } from "../system-adapter/system-adapter.js";
+
+const {
+  notifications: MODULE_NOTIFICATIONS,
+  dialogs: MODULE_DIALOGS
+} = getTowCombatOverlayConstants();
 
 function towCombatOverlayGetSkillLabel(skill) {
   return game.oldworld?.config?.skills?.[skill] ?? skill;
@@ -69,13 +75,17 @@ export async function towCombatOverlayRollSkill(actor, skill, { autoRoll = false
 async function towCombatOverlayRollCharacteristic(actor, characteristic) {
   const OldWorldTestClass = getTowCombatOverlaySystemAdapter().getOldWorldTestClass();
   if (!OldWorldTestClass) {
-    ui.notifications.error("OldWorldTest roll class is unavailable.");
+    ui.notifications.error(MODULE_NOTIFICATIONS.oldWorldTestClassUnavailable);
     return null;
   }
 
   const target = Number(actor.system?.characteristics?.[characteristic]?.value ?? 0);
   if (!Number.isFinite(target) || target <= 0) {
-    ui.notifications.warn(`${actor.name}: characteristic '${characteristic}' has no valid value.`);
+    ui.notifications.warn(
+      MODULE_NOTIFICATIONS.defence.noCharacteristicValue
+        .replace("{actorName}", actor.name)
+        .replace("{characteristic}", characteristic)
+    );
     return null;
   }
 
@@ -138,25 +148,25 @@ export function towCombatOverlayRenderDefenceSelector(actor, entries) {
 
   const content = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; align-items:start;">
     <div style="display:flex; flex-direction:column; min-width:0; border:1px solid #b9b6aa; border-radius:4px; overflow:hidden;">
-      <div style="padding:4px 6px; font-size:12px; font-weight:700; background:#d9d5c7;">Characteristics</div>
+      <div style="padding:4px 6px; font-size:12px; font-weight:700; background:#d9d5c7;">${MODULE_DIALOGS.defenceCharacteristicsHeader}</div>
       <div style="display:flex; flex-direction:column; gap:4px; padding:6px; overflow-y:auto; overflow-x:hidden; max-height:430px; scrollbar-gutter:stable;">
-        ${characteristicMarkup || '<div style="font-size:12px; opacity:0.7;">No characteristics</div>'}
+        ${characteristicMarkup || `<div style="font-size:12px; opacity:0.7;">${MODULE_DIALOGS.noCharacteristics}</div>`}
       </div>
     </div>
     <div style="display:flex; flex-direction:column; min-width:0; border:1px solid #b9b6aa; border-radius:4px; overflow:hidden;">
-      <div style="padding:4px 6px; font-size:12px; font-weight:700; background:#d9d5c7;">Skills</div>
+      <div style="padding:4px 6px; font-size:12px; font-weight:700; background:#d9d5c7;">${MODULE_DIALOGS.defenceSkillsHeader}</div>
       <div style="display:flex; flex-direction:column; gap:4px; padding:6px; overflow-y:auto; overflow-x:hidden; max-height:430px; scrollbar-gutter:stable;">
-        ${skillMarkup || '<div style="font-size:12px; opacity:0.7;">No skills</div>'}
+        ${skillMarkup || `<div style="font-size:12px; opacity:0.7;">${MODULE_DIALOGS.noSkills}</div>`}
       </div>
     </div>
   </div>`;
 
   const selectorDialog = new Dialog({
-    title: `${actor.name} - Defence Roll`,
+    title: MODULE_DIALOGS.defenceSelectorTitle.replace("{actorName}", actor.name),
     content,
     width: 560,
     height: 560,
-    buttons: { close: { label: "Close" } },
+    buttons: { close: { label: MODULE_DIALOGS.closeLabel } },
     render: (html) => {
       html.find(".skill-btn").on("click", async (event) => {
         const id = event.currentTarget.dataset.id;
@@ -182,7 +192,7 @@ export async function towCombatOverlayDefenceActor(actor, { manual = false } = {
   const skills = towCombatOverlayGetActorSkills(actor);
   const manualEntries = towCombatOverlayGetManualDefenceEntries(actor);
   if (manualEntries.length === 0) {
-    ui.notifications.warn(`${actor.name}: no rollable skills or characteristics found.`);
+    ui.notifications.warn(MODULE_NOTIFICATIONS.defence.noManualEntries.replace("{actorName}", actor.name));
     return;
   }
 
@@ -192,13 +202,18 @@ export async function towCombatOverlayDefenceActor(actor, { manual = false } = {
   }
 
   if (skills.length === 0) {
-    ui.notifications.warn(`${actor.name}: no rollable skills found for default defence roll.`);
+    ui.notifications.warn(MODULE_NOTIFICATIONS.defence.noDefaultSkills.replace("{actorName}", actor.name));
     return;
   }
 
   const skillToRoll = skills.includes(DEFAULT_DEFENCE_SKILL) ? DEFAULT_DEFENCE_SKILL : skills[0];
   if (skillToRoll !== DEFAULT_DEFENCE_SKILL) {
-    ui.notifications.warn(`${actor.name}: '${DEFAULT_DEFENCE_SKILL}' not found, rolled '${skillToRoll}' instead.`);
+    ui.notifications.warn(
+      MODULE_NOTIFICATIONS.defence.fallbackSkill
+        .replace("{actorName}", actor.name)
+        .replace("{defaultSkill}", DEFAULT_DEFENCE_SKILL)
+        .replace("{rolledSkill}", skillToRoll)
+    );
   }
   await towCombatOverlayRollSkill(actor, skillToRoll, { autoRoll: true });
 }
@@ -206,7 +221,7 @@ export async function towCombatOverlayDefenceActor(actor, { manual = false } = {
 export async function towCombatOverlayRunDefenceForControlled({ manual = false } = {}) {
   const tokens = canvas.tokens.controlled;
   if (!tokens.length) {
-    ui.notifications.warn("Select at least one token.");
+    ui.notifications.warn(MODULE_NOTIFICATIONS.selectAtLeastOneToken);
     return;
   }
   for (const token of tokens) {

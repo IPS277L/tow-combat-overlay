@@ -13,6 +13,7 @@ import {
   PreciseTextClass,
   TOKEN_CONTROL_PAD
 } from "../../runtime/overlay-runtime-constants.js";
+import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
 import {
   towCombatOverlayBindTooltipHandlers,
   towCombatOverlayForEachSceneToken,
@@ -21,6 +22,8 @@ import {
 } from "../shared/core-helpers-service.js";
 import { towCombatOverlayClearDisplayObject, towCombatOverlayGetResilienceValue } from "../layout-state-service.js";
 import { getTypeTooltipData } from "../shared/shared-service.js";
+
+const { tooltips: MODULE_TOOLTIPS } = getTowCombatOverlayConstants();
 
 function overlayControlsForEachSceneTokenRef(callback) {
   return towCombatOverlayForEachSceneToken(callback);
@@ -166,7 +169,13 @@ export function towCombatOverlayUpdateNameLabel(tokenObject) {
   }
 
   let labelContainer = tokenObject[KEYS.nameLabel];
-  if (!labelContainer || labelContainer.destroyed || labelContainer.parent !== tokenObject || !labelContainer._nameText || !labelContainer._typeText) {
+  if (
+    !labelContainer ||
+    labelContainer.destroyed ||
+    labelContainer.parent !== tokenObject ||
+    !labelContainer[KEYS.nameLabelNameText] ||
+    !labelContainer[KEYS.nameLabelTypeText]
+  ) {
     if (labelContainer && !labelContainer.destroyed) {
       labelContainer.parent?.removeChild(labelContainer);
       labelContainer.destroy({ children: true });
@@ -189,8 +198,8 @@ export function towCombatOverlayUpdateNameLabel(tokenObject) {
 
     labelContainer.addChild(nameText);
     labelContainer.addChild(typeText);
-    labelContainer._nameText = nameText;
-    labelContainer._typeText = typeText;
+    labelContainer[KEYS.nameLabelNameText] = nameText;
+    labelContainer[KEYS.nameLabelTypeText] = typeText;
     labelContainer[KEYS.nameLabelMarker] = true;
     labelContainer[KEYS.nameLabelTokenId] = tokenObject.id;
 
@@ -198,12 +207,15 @@ export function towCombatOverlayUpdateNameLabel(tokenObject) {
     tokenObject[KEYS.nameLabel] = labelContainer;
   }
 
-  const nameText = labelContainer._nameText;
-  const typeText = labelContainer._typeText;
+  const nameText = labelContainer[KEYS.nameLabelNameText];
+  const typeText = labelContainer[KEYS.nameLabelTypeText];
   towCombatOverlayTuneOverlayText(nameText);
   towCombatOverlayTuneOverlayText(typeText);
-  if (!labelContainer._towTypeTooltipBound) {
-    labelContainer._towTypeTooltipBound = overlayControlsBindTooltipHandlersRef(labelContainer, () => getTypeTooltipData(actor));
+  if (!labelContainer[KEYS.nameLabelTooltipBinding]) {
+    labelContainer[KEYS.nameLabelTooltipBinding] = overlayControlsBindTooltipHandlersRef(
+      labelContainer,
+      () => getTypeTooltipData(actor)
+    );
   }
   nameText.text = tokenName;
   typeText.text = `<${typeLabel}>`;
@@ -286,21 +298,18 @@ export function towCombatOverlayUpdateResilienceLabel(tokenObject) {
     label.addChild(hitBox);
     label.addChild(icon);
     label.addChild(valueText);
-    label._hitBox = hitBox;
-    label._icon = icon;
-    label._valueText = valueText;
+    label[KEYS.resilienceLabelHitBox] = hitBox;
+    label[KEYS.resilienceLabelIcon] = icon;
+    label[KEYS.resilienceLabelValueText] = valueText;
     tokenObject.addChild(label);
     tokenObject[KEYS.resilienceLabel] = label;
 
-    overlayControlsBindTooltipHandlersRef(hitBox, () => ({
-      title: "Resilience",
-      description: "Resilience value used for durability and damage resolution thresholds."
-    }));
+    overlayControlsBindTooltipHandlersRef(hitBox, () => MODULE_TOOLTIPS.resilience);
   }
 
-  const hitBox = label._hitBox;
-  const icon = label._icon;
-  const valueText = label._valueText;
+  const hitBox = label[KEYS.resilienceLabelHitBox];
+  const icon = label[KEYS.resilienceLabelIcon];
+  const valueText = label[KEYS.resilienceLabelValueText];
   if (!hitBox || !icon || !valueText) {
     towCombatOverlayClearDisplayObject(label);
     delete tokenObject[KEYS.resilienceLabel];

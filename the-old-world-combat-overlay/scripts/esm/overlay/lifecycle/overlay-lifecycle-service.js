@@ -2,6 +2,7 @@ import {
   ACTOR_OVERLAY_RESYNC_DELAYS_MS,
   MODULE_KEY
 } from "../../runtime/overlay-runtime-constants.js";
+import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
 import {
   registerTowCombatOverlayHooks,
   unregisterTowCombatOverlayHooks
@@ -35,6 +36,8 @@ import {
   setupStatusPalette,
   towCombatOverlayHideCoreTokenHoverVisuals
 } from "../status/status-palette-service.js";
+
+const { notifications: MODULE_NOTIFICATIONS } = getTowCombatOverlayConstants();
 
 export function towCombatOverlayRefreshTokenOverlay(tokenObject) {
   towCombatOverlayPrimeDeadPresence(towCombatOverlayGetActorFromToken(tokenObject));
@@ -113,7 +116,7 @@ export function towCombatOverlayEnable() {
     lastCanvasScale: Number(canvas?.stage?.scale?.x ?? 1)
   };
   towCombatOverlayRefreshAllOverlays();
-  ui.notifications.info("Overlay enabled: wounds + resilience + status highlights.");
+  ui.notifications.info(MODULE_NOTIFICATIONS.overlayEnabled);
   return true;
 }
 
@@ -155,7 +158,7 @@ export function towCombatOverlayDisable() {
   towCombatOverlayClearAllNameLabels();
   towCombatOverlayClearAllResilienceLabels();
   clearAllStatusOverlays();
-  ui.notifications.info("Overlay disabled.");
+  ui.notifications.info(MODULE_NOTIFICATIONS.overlayDisabled);
   return true;
 }
 

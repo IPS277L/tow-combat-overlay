@@ -1,8 +1,8 @@
-import { getTowCombatOverlayModuleConstants } from "../runtime/constants.js";
+import { getTowCombatOverlayConstants } from "../runtime/constants.js";
 import { syncTowCombatOverlayEnabledSetting } from "./register-module-hooks.js";
 
 export function getTowCombatOverlaySetting(settingKey, fallbackValue = null) {
-  const { moduleId } = getTowCombatOverlayModuleConstants();
+  const { moduleId } = getTowCombatOverlayConstants();
   try {
     return game.settings.get(moduleId, settingKey);
   } catch (_error) {
@@ -15,27 +15,27 @@ export function isTowCombatOverlaySettingEnabled(settingKey, fallbackValue = fal
 }
 
 export function shouldTowCombatOverlayAutoSubmitDialogs() {
-  const { settings } = getTowCombatOverlayModuleConstants();
+  const { settings } = getTowCombatOverlayConstants();
   return isTowCombatOverlaySettingEnabled(settings.enableDialogAutoSubmit, true);
 }
 
 export function shouldTowCombatOverlayAutoDefence() {
-  const { settings } = getTowCombatOverlayModuleConstants();
+  const { settings } = getTowCombatOverlayConstants();
   return isTowCombatOverlaySettingEnabled(settings.enableAutoDefence, true);
 }
 
 export function shouldTowCombatOverlayAutoApplyDamage() {
-  const { settings } = getTowCombatOverlayModuleConstants();
+  const { settings } = getTowCombatOverlayConstants();
   return isTowCombatOverlaySettingEnabled(settings.enableAutoApplyDamage, true);
 }
 
 export function shouldTowCombatOverlayAutoChooseStaggerWound() {
-  const { settings } = getTowCombatOverlayModuleConstants();
+  const { settings } = getTowCombatOverlayConstants();
   return isTowCombatOverlaySettingEnabled(settings.enableStaggerChoiceAutomation, true);
 }
 
 export function registerTowCombatOverlaySettings() {
-  const { moduleId, settings: settingKeys } = getTowCombatOverlayModuleConstants();
+  const { moduleId, settings: settingKeys } = getTowCombatOverlayConstants();
   const settings = [
     {
       key: settingKeys.enableOverlay,

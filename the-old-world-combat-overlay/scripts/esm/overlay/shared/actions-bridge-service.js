@@ -1,26 +1,32 @@
 import { getTowCombatOverlayActionsApi, getTowCombatOverlayPublicApi } from "../../bootstrap/register-public-apis.js";
+import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
 
-export async function towCombatOverlayEnsureTowActionsRuntime() {
-  const api = getTowCombatOverlayPublicApi("towActions");
+const {
+  apiKeys: COMBAT_OVERLAY_API_KEYS,
+  notifications: MODULE_NOTIFICATIONS
+} = getTowCombatOverlayConstants();
+
+export async function towCombatOverlayEnsureActionsApiRuntime() {
+  const api = getTowCombatOverlayPublicApi(COMBAT_OVERLAY_API_KEYS.actions);
   return typeof api?.attackActor === "function" &&
     typeof api?.defenceActor === "function" &&
     typeof api?.isShiftHeld === "function" &&
     typeof api?.systemAdapter === "object";
 }
 
-export async function towCombatOverlayEnsureTowActions() {
-  const ready = await towCombatOverlayEnsureTowActionsRuntime();
-  if (!ready) ui.notifications.error("The Old World Combat Overlay module API is unavailable.");
+export async function towCombatOverlayEnsureActionsApi() {
+  const ready = await towCombatOverlayEnsureActionsApiRuntime();
+  if (!ready) ui.notifications.error(MODULE_NOTIFICATIONS.moduleApiUnavailable);
   return ready;
 }
 
-export function towCombatOverlayGetTowActionsSystemAdapter() {
+export function towCombatOverlayGetActionsSystemAdapter() {
   const api = getTowCombatOverlayActionsApi();
   return api?.systemAdapter ?? null;
 }
 
 export async function towCombatOverlayAddActorCondition(actor, condition, options = {}) {
-  const adapter = towCombatOverlayGetTowActionsSystemAdapter();
+  const adapter = towCombatOverlayGetActionsSystemAdapter();
   if (typeof adapter?.addCondition === "function") {
     return adapter.addCondition(actor, condition, options);
   }
@@ -28,7 +34,7 @@ export async function towCombatOverlayAddActorCondition(actor, condition, option
 }
 
 export async function towCombatOverlayRemoveActorCondition(actor, condition) {
-  const adapter = towCombatOverlayGetTowActionsSystemAdapter();
+  const adapter = towCombatOverlayGetActionsSystemAdapter();
   if (typeof adapter?.removeCondition === "function") {
     return adapter.removeCondition(actor, condition);
   }
@@ -36,7 +42,7 @@ export async function towCombatOverlayRemoveActorCondition(actor, condition) {
 }
 
 export async function towCombatOverlayAddActorWound(actor, options = {}) {
-  const adapter = towCombatOverlayGetTowActionsSystemAdapter();
+  const adapter = towCombatOverlayGetActionsSystemAdapter();
   if (typeof adapter?.addWound === "function") {
     return adapter.addWound(actor, options);
   }
@@ -44,7 +50,7 @@ export async function towCombatOverlayAddActorWound(actor, options = {}) {
 }
 
 export async function towCombatOverlayApplyActorDamage(actor, damage, context = {}) {
-  const adapter = towCombatOverlayGetTowActionsSystemAdapter();
+  const adapter = towCombatOverlayGetActionsSystemAdapter();
   if (typeof adapter?.applyDamage === "function") {
     return adapter.applyDamage(actor, damage, context);
   }

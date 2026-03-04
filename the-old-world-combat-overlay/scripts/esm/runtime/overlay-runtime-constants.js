@@ -1,35 +1,53 @@
-export const MODULE_KEY = "towMacroToggleOverlay";
+export const MODULE_KEY = "towCombatOverlayRuntime";
+export const COMBAT_OVERLAY_API_VERSION = "1.0.0";
 export const PreciseTextClass = foundry.canvas.containers.PreciseText;
 
 export const KEYS = Object.freeze({
-  woundUI: "_towWoundControlUI",
-  woundUiMarker: "_towOverlayWoundUiMarker",
-  woundUiTokenId: "_towOverlayWoundUiTokenId",
-  nameLabel: "_towNameLabel",
-  nameLabelMarker: "_towOverlayNameLabelMarker",
-  nameLabelTokenId: "_towOverlayNameLabelTokenId",
-  resilienceLabel: "_towResilienceLabel",
-  defaultEffectsVisible: "_towDefaultEffectsVisible",
-  statusPaletteLayer: "_towStatusPaletteLayer",
-  statusPaletteBackdrop: "_towStatusPaletteBackdrop",
-  statusPaletteMarker: "_towOverlayStatusPaletteMarker",
-  statusPaletteTokenId: "_towOverlayStatusPaletteTokenId",
-  statusPaletteMetrics: "_towStatusPaletteMetrics",
-  deadVisualState: "_towDeadVisualState",
-  statusIconHandler: "_towStatusIconHandler",
-  statusIconTooltipOverHandler: "_towStatusIconTooltipOverHandler",
-  statusIconTooltipMoveHandler: "_towStatusIconTooltipMoveHandler",
-  statusIconTooltipOutHandler: "_towStatusIconTooltipOutHandler",
-  tokenInteractiveChildrenOriginal: "_towTokenInteractiveChildrenOriginal",
-  tokenHitAreaOriginal: "_towTokenHitAreaOriginal",
-  coreTooltipVisible: "_towCoreTooltipVisible",
-  coreTooltipRenderable: "_towCoreTooltipRenderable",
-  coreNameplateVisible: "_towCoreNameplateVisible",
-  coreNameplateRenderable: "_towCoreNameplateRenderable",
-  coreBorderVisible: "_towCoreBorderVisible",
-  coreBorderAlpha: "_towCoreBorderAlpha",
-  layoutBorder: "_towLayoutBorder",
-  layoutBounds: "_towLayoutBounds"
+  woundUi: "_towCombatOverlayWoundUi",
+  woundUiMarker: "_towCombatOverlayWoundUiMarker",
+  woundUiTokenId: "_towCombatOverlayWoundUiTokenId",
+  woundUiCountText: "_towCombatOverlayWoundUiCountText",
+  woundUiCountIcon: "_towCombatOverlayWoundUiCountIcon",
+  woundUiCountHitBox: "_towCombatOverlayWoundUiCountHitBox",
+  woundUiAttackHitBox: "_towCombatOverlayWoundUiAttackHitBox",
+  woundUiDefenceHitBox: "_towCombatOverlayWoundUiDefenceHitBox",
+  woundUiAttackIcon: "_towCombatOverlayWoundUiAttackIcon",
+  woundUiDefenceIcon: "_towCombatOverlayWoundUiDefenceIcon",
+  nameLabel: "_towCombatOverlayNameLabel",
+  nameLabelMarker: "_towCombatOverlayNameLabelMarker",
+  nameLabelTokenId: "_towCombatOverlayNameLabelTokenId",
+  nameLabelNameText: "_towCombatOverlayNameLabelNameText",
+  nameLabelTypeText: "_towCombatOverlayNameLabelTypeText",
+  nameLabelTooltipBinding: "_towCombatOverlayNameLabelTooltipBinding",
+  resilienceLabel: "_towCombatOverlayResilienceLabel",
+  resilienceLabelHitBox: "_towCombatOverlayResilienceLabelHitBox",
+  resilienceLabelIcon: "_towCombatOverlayResilienceLabelIcon",
+  resilienceLabelValueText: "_towCombatOverlayResilienceLabelValueText",
+  defaultEffectsVisible: "_towCombatOverlayDefaultEffectsVisible",
+  statusPaletteLayer: "_towCombatOverlayStatusPaletteLayer",
+  statusPaletteBackdrop: "_towCombatOverlayStatusPaletteBackdrop",
+  statusPaletteMarker: "_towCombatOverlayStatusPaletteMarker",
+  statusPaletteTokenId: "_towCombatOverlayStatusPaletteTokenId",
+  statusPaletteMetrics: "_towCombatOverlayStatusPaletteMetrics",
+  deadVisualState: "_towCombatOverlayDeadVisualState",
+  statusIconHandler: "_towCombatOverlayStatusIconHandler",
+  statusIconTooltipOverHandler: "_towCombatOverlayStatusIconTooltipOverHandler",
+  statusIconTooltipMoveHandler: "_towCombatOverlayStatusIconTooltipMoveHandler",
+  statusIconTooltipOutHandler: "_towCombatOverlayStatusIconTooltipOutHandler",
+  statusConditionId: "_towCombatOverlayStatusConditionId",
+  statusConditionImg: "_towCombatOverlayStatusConditionImg",
+  statusPaletteBg: "_towCombatOverlayStatusPaletteBg",
+  statusIconSize: "_towCombatOverlayStatusIconSize",
+  tokenInteractiveChildrenOriginal: "_towCombatOverlayTokenInteractiveChildrenOriginal",
+  tokenHitAreaOriginal: "_towCombatOverlayTokenHitAreaOriginal",
+  coreTooltipVisible: "_towCombatOverlayCoreTooltipVisible",
+  coreTooltipRenderable: "_towCombatOverlayCoreTooltipRenderable",
+  coreNameplateVisible: "_towCombatOverlayCoreNameplateVisible",
+  coreNameplateRenderable: "_towCombatOverlayCoreNameplateRenderable",
+  coreBorderVisible: "_towCombatOverlayCoreBorderVisible",
+  coreBorderAlpha: "_towCombatOverlayCoreBorderAlpha",
+  layoutBorder: "_towCombatOverlayLayoutBorder",
+  layoutBounds: "_towCombatOverlayLayoutBounds"
 });
 
 export const STATUS_PALETTE_ICON_SIZE = 20;
@@ -96,7 +114,7 @@ export const STATUS_TOOLTIP_BG_COLOR = 0x0F0C09;
 export const STATUS_TOOLTIP_BG_ALPHA = 0.94;
 export const STATUS_TOOLTIP_BORDER_COLOR = 0xC18B2C;
 export const STATUS_TOOLTIP_BORDER_ALPHA = 0.9;
-export const STATUS_TOOLTIP_DOM_CLASS = "tow-overlay-status-tooltip";
+export const STATUS_TOOLTIP_DOM_CLASS = "tow-combat-overlay-status-tooltip";
 export const OVERLAY_TEXT_RESOLUTION_MIN = 3;
 export const OVERLAY_TEXT_RESOLUTION_MAX = 8;
 export const OVERLAY_CONTROL_ICON_TINT = 0xFFF4D8;
@@ -202,7 +220,7 @@ export function getStatusPaletteBackdropStyle(iconSize) {
   };
 }
 
-export function getTowCombatOverlayOverlayRuntimeConstants() {
+export function getTowCombatOverlayRuntimeConstants() {
   return Object.freeze({
     moduleKey: MODULE_KEY,
     keys: KEYS,

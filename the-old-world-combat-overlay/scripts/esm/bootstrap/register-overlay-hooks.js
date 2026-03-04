@@ -1,4 +1,6 @@
-import { getTowCombatOverlayOverlayRuntimeConstants } from "../runtime/overlay-runtime-constants.js";
+import { getTowCombatOverlayRuntimeConstants } from "../runtime/overlay-runtime-constants.js";
+import { WOUND_ITEM_TYPE } from "../runtime/overlay-runtime-constants.js";
+import { getTowCombatOverlayConstants } from "../runtime/constants.js";
 import {
   towCombatOverlayHideCoreTokenHoverVisuals,
   towCombatOverlayQueueActorOverlayResync,
@@ -12,9 +14,8 @@ import {
   towCombatOverlayUpdateCustomLayoutBorderVisibility
 } from "../overlay/layout-state-service.js";
 
-const { moduleKey: MODULE_KEY } = getTowCombatOverlayOverlayRuntimeConstants();
-const WOUND_ITEM_TYPE = "wound";
-
+const { moduleKey: MODULE_KEY } = getTowCombatOverlayRuntimeConstants();
+const { logPrefix: MODULE_LOG_PREFIX } = getTowCombatOverlayConstants();
 function resolveTowCombatOverlayHookBindings() {
   const bindings = {
     refreshAllOverlays: towCombatOverlayRefreshAllOverlays,
@@ -30,7 +31,7 @@ function resolveTowCombatOverlayHookBindings() {
     .filter(([, value]) => typeof value !== "function")
     .map(([key]) => key);
   if (missing.length) {
-    throw new Error(`[the-old-world-combat-overlay] Missing required overlay hook bindings: ${missing.join(", ")}`);
+    throw new Error(`${MODULE_LOG_PREFIX} Missing required overlay hook bindings: ${missing.join(", ")}`);
   }
   return bindings;
 }

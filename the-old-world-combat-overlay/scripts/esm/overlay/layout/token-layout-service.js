@@ -30,7 +30,7 @@ export function towCombatOverlayUpdateTokenOverlayHitArea(tokenObject) {
     { x: tokenObject.w, y: tokenObject.h }
   ];
   const overlayChildren = [
-    tokenObject[KEYS.woundUI],
+    tokenObject[KEYS.woundUi],
     tokenObject[KEYS.nameLabel],
     tokenObject[KEYS.resilienceLabel],
     tokenObject[KEYS.statusPaletteLayer]

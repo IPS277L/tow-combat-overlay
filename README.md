@@ -29,6 +29,7 @@ Current note:
 - use the module API at your own risk
 - public API versioning and compatibility guarantees are not supported at the moment
 - the legacy `game.towActions` / `game.towOverlay` globals are no longer exposed
+- the current module API keys are `combatOverlayActions` and `combatOverlay`
 
 ## Notes
 
@@ -54,4 +55,10 @@ Current note:
   - `the-old-world-combat-overlay/scripts/esm/overlay/controls-service.js`
   - `the-old-world-combat-overlay/scripts/esm/overlay/overlay-service.js`
   - `the-old-world-combat-overlay/scripts/esm/overlay/layout-state-service.js`
-- The main remaining technical debt is still overlay complexity and behavior coupling, even though the file layout is now much easier to navigate.
+- Runtime naming is now standardized around `towCombatOverlay` and shared constants:
+  - module API keys use `combatOverlayActions` and `combatOverlay`
+  - common notifications, dialog labels, and tooltip copy are centralized in `the-old-world-combat-overlay/scripts/esm/runtime/constants.js`
+  - internal overlay expando keys are centralized in `the-old-world-combat-overlay/scripts/esm/runtime/overlay-runtime-constants.js`
+- Foundry 13 dialog dismiss handling is patched so wrapped system dialogs return a promise from `close()`.
+- Overlay tooltip text now reflects actual WHTOW behavior more accurately, including explicit champion wording and threshold-based NPC handling derived from system state.
+- The main remaining technical debt is overlay behavior complexity rather than file layout or naming consistency.

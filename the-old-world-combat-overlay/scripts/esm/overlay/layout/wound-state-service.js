@@ -4,6 +4,7 @@ import {
   MODULE_KEY,
   WOUND_ITEM_TYPE
 } from "../../runtime/overlay-runtime-constants.js";
+import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
 import {
   towCombatOverlayCanEditActor,
   towCombatOverlayWarnNoPermission
@@ -14,6 +15,8 @@ import {
   towCombatOverlayRemoveActorCondition
 } from "../shared/actions-bridge-service.js";
 import { runActorOpLock } from "../shared/shared-service.js";
+
+const { logPrefix: MODULE_LOG_PREFIX } = getTowCombatOverlayConstants();
 
 export function towCombatOverlayGetWoundCount(tokenDocument) {
   const actor = tokenDocument?.actor;
@@ -99,7 +102,7 @@ export function towCombatOverlayQueueDeadSyncFromWounds(actor) {
   if (typeof debounced !== "function") {
     debounced = foundry.utils.debounce((latestActor) => {
       void towCombatOverlaySyncNpcDeadFromWounds(latestActor).catch((error) => {
-        console.error("[overlay-toggle] Failed to sync dead condition from wounds.", error);
+        console.error(`${MODULE_LOG_PREFIX} Failed to sync dead condition from wounds.`, error);
       });
     }, DEAD_SYNC_DEBOUNCE_MS);
     state.deadSyncTimers.set(actorKey, debounced);
@@ -132,7 +135,7 @@ export async function towCombatOverlaySyncWoundsFromDeadState(actor) {
         await actor.createEmbeddedDocuments("Item", [{ type: WOUND_ITEM_TYPE, name: "Wound" }]);
       }
     }).catch((error) => {
-      console.error("[overlay-toggle] Failed to sync wounds from dead condition.", error);
+      console.error(`${MODULE_LOG_PREFIX} Failed to sync wounds from dead condition.`, error);
     });
     return;
   }
@@ -149,7 +152,7 @@ export async function towCombatOverlaySyncWoundsFromDeadState(actor) {
       await actor.deleteEmbeddedDocuments("Item", [toDelete.id]);
     }
   }).catch((error) => {
-    console.error("[overlay-toggle] Failed to clear wounds after removing dead condition.", error);
+    console.error(`${MODULE_LOG_PREFIX} Failed to clear wounds after removing dead condition.`, error);
   });
 }
 

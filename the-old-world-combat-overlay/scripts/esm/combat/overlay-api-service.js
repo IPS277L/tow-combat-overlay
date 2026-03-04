@@ -1,4 +1,6 @@
 import { registerTowCombatOverlayPublicApis } from "../bootstrap/register-public-apis.js";
+import { getTowCombatOverlayConstants } from "../runtime/constants.js";
+import { COMBAT_OVERLAY_API_VERSION } from "../runtime/overlay-runtime-constants.js";
 import {
   towCombatOverlayDisable,
   towCombatOverlayEnable,
@@ -9,9 +11,9 @@ import {
   towCombatOverlayToggle
 } from "../overlay/overlay-service.js";
 
-const TOW_OVERLAY_VERSION = "1.0.0";
+const { apiKeys: COMBAT_OVERLAY_API_KEYS } = getTowCombatOverlayConstants();
 
-function getTowOverlayApiBindings() {
+function getTowCombatOverlayApiBindings() {
   return {
     isEnabled: towCombatOverlayIsEnabled,
     enable: towCombatOverlayEnable,
@@ -23,10 +25,10 @@ function getTowOverlayApiBindings() {
   };
 }
 
-export function createTowOverlayApi(overrides = {}) {
-  const bindings = getTowOverlayApiBindings();
+export function createTowCombatOverlayApi(overrides = {}) {
+  const bindings = getTowCombatOverlayApiBindings();
   return {
-    version: TOW_OVERLAY_VERSION,
+    version: COMBAT_OVERLAY_API_VERSION,
     isEnabled: bindings.isEnabled,
     enable: bindings.enable,
     disable: bindings.disable,
@@ -38,11 +40,11 @@ export function createTowOverlayApi(overrides = {}) {
   };
 }
 
-export function registerTowOverlayApi(apiOverrides = {}) {
-  const nextApi = createTowOverlayApi(apiOverrides);
+export function registerTowCombatOverlayApi(apiOverrides = {}) {
+  const nextApi = createTowCombatOverlayApi(apiOverrides);
   const targetApi = registerTowCombatOverlayPublicApis({
     overlayApi: nextApi
-  })?.towOverlay ?? nextApi;
+  })?.[COMBAT_OVERLAY_API_KEYS.overlay] ?? nextApi;
 
   return targetApi;
 }

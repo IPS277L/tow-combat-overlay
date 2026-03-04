@@ -1,7 +1,7 @@
 import { towCombatOverlayEnsurePromiseClose } from "../combat/attack-service.js";
-import { registerTowOverlayApi } from "../combat/overlay-api-service.js";
-import { getTowCombatOverlayModuleConstants } from "../runtime/constants.js";
-import { registerTowCombatOverlayActionsApi } from "./register-actions-api.js";
+import { registerTowCombatOverlayApi } from "../combat/overlay-api-service.js";
+import { getTowCombatOverlayConstants } from "../runtime/constants.js";
+import { registerTowCombatOverlayActionsRuntimeApi } from "./register-actions-api.js";
 import {
   registerTowCombatOverlayHooks,
   unregisterTowCombatOverlayHooks
@@ -13,7 +13,7 @@ import {
 } from "./register-settings.js";
 
 export function syncTowCombatOverlayEnabledSetting() {
-  const { settings } = getTowCombatOverlayModuleConstants();
+  const { settings } = getTowCombatOverlayConstants();
   const overlayApi = getTowCombatOverlayOverlayApi();
   if (!overlayApi) return false;
 
@@ -36,8 +36,8 @@ export function syncTowCombatOverlayEnabledSetting() {
 }
 
 function registerTowCombatOverlayRuntimeApis() {
-  registerTowCombatOverlayActionsApi();
-  registerTowOverlayApi();
+  registerTowCombatOverlayActionsRuntimeApi();
+  registerTowCombatOverlayApi();
 }
 
 export function registerTowCombatOverlayModuleHooks() {

@@ -1,4 +1,5 @@
-import { getTowCombatOverlayOverlayRuntimeConstants } from "../../runtime/overlay-runtime-constants.js";
+import { getTowCombatOverlayRuntimeConstants } from "../../runtime/overlay-runtime-constants.js";
+import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
 import { hideStatusTooltip, showOverlayTooltip } from "./shared-service.js";
 
 const {
@@ -10,14 +11,16 @@ const {
   overlayScaleExpLarge: OVERLAY_SCALE_EXP_LARGE,
   overlayEdgePadMinFactor: OVERLAY_EDGE_PAD_MIN_FACTOR,
   overlayEdgePadExp: OVERLAY_EDGE_PAD_EXP
-} = getTowCombatOverlayOverlayRuntimeConstants();
+} = getTowCombatOverlayRuntimeConstants();
+const { notifications: MODULE_NOTIFICATIONS } = getTowCombatOverlayConstants();
 
 export function towCombatOverlayCanEditActor(actor) {
   return actor?.isOwner === true;
 }
 
 export function towCombatOverlayWarnNoPermission(actor) {
-  ui.notifications.warn(`No permission to edit ${actor?.name ?? "actor"}.`);
+  const actorName = actor?.name ?? "actor";
+  ui.notifications.warn(MODULE_NOTIFICATIONS.noPermissionToEditActor.replace("{actorName}", actorName));
 }
 
 export function towCombatOverlayGetActorFromToken(tokenObject) {

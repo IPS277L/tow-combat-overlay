@@ -223,7 +223,7 @@ function stylePaletteSprite(sprite, actor, conditionId, activeStatuses = null) {
   const active = statuses.has(String(conditionId ?? ""));
   const key = String(conditionId ?? "").toLowerCase();
   const iconSrc = normalizeIconSrc(getIconSrc(sprite));
-  const conditionImgSrc = normalizeIconSrc(sprite?._towConditionImg ?? "");
+  const conditionImgSrc = normalizeIconSrc(sprite?.[KEYS.statusConditionImg] ?? "");
   const specialKind = key.includes("stagger") || conditionImgSrc.includes("staggered.svg") || iconSrc.includes("staggered.svg")
     ? "staggered"
     : key.includes("dead") || conditionImgSrc.includes("dead.svg") || iconSrc.includes("dead.svg")
@@ -231,23 +231,25 @@ function stylePaletteSprite(sprite, actor, conditionId, activeStatuses = null) {
       : null;
 
   const clearSpecialBg = () => {
-    const bg = sprite._towPaletteBg;
+    const bg = sprite[KEYS.statusPaletteBg];
     if (!bg) return;
     bg.parent?.removeChild(bg);
     bg.destroy();
-    delete sprite._towPaletteBg;
+    delete sprite[KEYS.statusPaletteBg];
   };
 
   const applySpecialBg = (color, alpha) => {
-    let bg = sprite._towPaletteBg;
+    let bg = sprite[KEYS.statusPaletteBg];
     if (!bg || bg.destroyed) {
       bg = new PIXI.Graphics();
       bg.eventMode = "none";
-      sprite._towPaletteBg = bg;
+      sprite[KEYS.statusPaletteBg] = bg;
       const parent = sprite.parent;
       if (parent) parent.addChildAt(bg, Math.min(1, parent.children.length));
     }
-    const size = Number.isFinite(Number(sprite._towIconSize)) ? Number(sprite._towIconSize) : STATUS_PALETTE_ICON_SIZE;
+    const size = Number.isFinite(Number(sprite[KEYS.statusIconSize]))
+      ? Number(sprite[KEYS.statusIconSize])
+      : STATUS_PALETTE_ICON_SIZE;
     const bgStyle = getStatusSpecialBgStyle(size, alpha);
     bg.clear();
     bg.lineStyle({ width: bgStyle.outlineWidth, color: STATUS_PALETTE_SPECIAL_BG_OUTLINE, alpha: bgStyle.outlineAlpha, alignment: 0.5 });
@@ -298,7 +300,9 @@ export function setupStatusPalette(tokenObject) {
   const iconSize = Math.max(6, Math.round((OVERLAY_FONT_SIZE + 2) * overlayScale));
   const iconGap = Math.max(1, Math.round(STATUS_PALETTE_ICON_GAP * (iconSize / STATUS_PALETTE_ICON_SIZE)));
   let layer = tokenObject[KEYS.statusPaletteLayer];
-  const iconChildrenCount = layer ? (layer.children?.filter((child) => child?._towConditionId).length ?? 0) : 0;
+  const iconChildrenCount = layer
+    ? (layer.children?.filter((child) => child?.[KEYS.statusConditionId]).length ?? 0)
+    : 0;
   const shouldRebuild = !layer || layer.destroyed || layer.parent !== tokenObject || iconChildrenCount !== expectedCount || tokenObject[KEYS.statusPaletteMetrics]?.iconSize !== iconSize || tokenObject[KEYS.statusPaletteMetrics]?.iconGap !== iconGap;
 
   if (shouldRebuild) {
@@ -321,9 +325,9 @@ export function setupStatusPalette(tokenObject) {
       sprite.eventMode = "static";
       sprite.interactive = true;
       sprite.cursor = towCombatOverlayCanEditActor(actor) ? "pointer" : "default";
-      sprite._towConditionId = condition.id;
-      sprite._towConditionImg = condition.img;
-      sprite._towIconSize = iconSize;
+      sprite[KEYS.statusConditionId] = condition.id;
+      sprite[KEYS.statusConditionImg] = condition.img;
+      sprite[KEYS.statusIconSize] = iconSize;
       const col = i % columns;
       const row = Math.floor(i / columns);
       sprite.position.set(col * (iconSize + iconGap), row * (iconSize + iconGap));
@@ -352,9 +356,9 @@ export function setupStatusPalette(tokenObject) {
   drawStatusPaletteBackdrop(layer, { iconSize, totalWidth, totalHeight });
   layer.visible = tokenObject.visible;
   const activeStatuses = getActorStatusSet(actor);
-  for (const sprite of layer.children?.filter((child) => child?._towConditionId) ?? []) {
+  for (const sprite of layer.children?.filter((child) => child?.[KEYS.statusConditionId]) ?? []) {
     sprite.cursor = towCombatOverlayCanEditActor(actor) ? "pointer" : "default";
-    stylePaletteSprite(sprite, actor, sprite._towConditionId, activeStatuses);
+    stylePaletteSprite(sprite, actor, sprite[KEYS.statusConditionId], activeStatuses);
   }
 }
 

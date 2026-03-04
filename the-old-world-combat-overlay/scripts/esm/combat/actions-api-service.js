@@ -1,5 +1,6 @@
 import { registerTowCombatOverlayPublicApis } from "../bootstrap/register-public-apis.js";
-import { TOW_ACTIONS_VERSION } from "../runtime/action-runtime-constants.js";
+import { COMBAT_OVERLAY_ACTIONS_API_VERSION } from "../runtime/action-runtime-constants.js";
+import { getTowCombatOverlayConstants } from "../runtime/constants.js";
 import {
   towCombatOverlayEscapeHtml,
   towCombatOverlayIsShiftHeld,
@@ -8,7 +9,9 @@ import {
 } from "./core-service.js";
 import { getTowCombatOverlaySystemAdapter } from "../system-adapter/system-adapter.js";
 
-function getTowActionsApiBindings() {
+const { apiKeys: COMBAT_OVERLAY_API_KEYS } = getTowCombatOverlayConstants();
+
+function getTowCombatOverlayActionsApiBindings() {
   return {
     isShiftHeld: towCombatOverlayIsShiftHeld,
     escapeHtml: towCombatOverlayEscapeHtml,
@@ -18,10 +21,10 @@ function getTowActionsApiBindings() {
   };
 }
 
-export function createTowActionsApi(overrides = {}) {
-  const bindings = getTowActionsApiBindings();
+export function createTowCombatOverlayActionsApi(overrides = {}) {
+  const bindings = getTowCombatOverlayActionsApiBindings();
   return {
-    version: TOW_ACTIONS_VERSION,
+    version: COMBAT_OVERLAY_ACTIONS_API_VERSION,
     isShiftHeld: bindings.isShiftHeld,
     escapeHtml: bindings.escapeHtml,
     toElement: bindings.toElement,
@@ -31,11 +34,11 @@ export function createTowActionsApi(overrides = {}) {
   };
 }
 
-export function registerTowActionsApi(apiOverrides = {}) {
-  const nextApi = createTowActionsApi(apiOverrides);
+export function registerTowCombatOverlayActionsApi(apiOverrides = {}) {
+  const nextApi = createTowCombatOverlayActionsApi(apiOverrides);
   const targetApi = registerTowCombatOverlayPublicApis({
     actionsApi: nextApi
-  })?.towActions ?? nextApi;
+  })?.[COMBAT_OVERLAY_API_KEYS.actions] ?? nextApi;
 
   return targetApi;
 }

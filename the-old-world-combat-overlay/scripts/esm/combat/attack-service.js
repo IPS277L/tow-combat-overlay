@@ -10,10 +10,17 @@ import {
   towCombatOverlayWaitForChatMessage
 } from "./core-service.js";
 import { shouldTowCombatOverlayAutoSubmitDialogs } from "../bootstrap/register-settings.js";
+import { getTowCombatOverlayConstants } from "../runtime/constants.js";
 import { getTowCombatOverlaySystemAdapter } from "../system-adapter/system-adapter.js";
 
+const {
+  logPrefix: MODULE_LOG_PREFIX,
+  notifications: MODULE_NOTIFICATIONS,
+  dialogs: MODULE_DIALOGS
+} = getTowCombatOverlayConstants();
+
 export function towCombatOverlayEnsurePromiseClose(app) {
-  if (!app || app._towPromiseCloseWrapped || typeof app.close !== "function") return app;
+  if (!app || app._towCombatOverlayPromiseCloseWrapped || typeof app.close !== "function") return app;
   const originalClose = app.close;
   app.close = function wrappedTowPromiseClose(...args) {
     try {
@@ -22,7 +29,7 @@ export function towCombatOverlayEnsurePromiseClose(app) {
       return Promise.reject(error);
     }
   };
-  app._towPromiseCloseWrapped = true;
+  app._towCombatOverlayPromiseCloseWrapped = true;
   return app;
 }
 
@@ -69,7 +76,7 @@ export function towCombatOverlayArmAutoSubmitDialog({ hookName, matches, submitE
 
     towCombatOverlayScheduleSoon(async () => {
       if (typeof app?.submit !== "function") {
-        console.error(`[the-old-world-combat-overlay] ${submitErrorMessage}`);
+        console.error(`${MODULE_LOG_PREFIX} ${submitErrorMessage}`);
         if (element) {
           element.style.visibility = "";
           element.style.pointerEvents = "";
@@ -126,17 +133,17 @@ export function towCombatOverlayRenderAttackSelector(actor, attacks, { onFastAut
     .join("");
 
   const content = `<div style="display:flex; flex-direction:column; min-width:0; border:1px solid #b9b6aa; border-radius:4px; overflow:hidden;">
-    <div style="padding:4px 6px; font-size:12px; font-weight:700; background:#d9d5c7;">Attacks</div>
+    <div style="padding:4px 6px; font-size:12px; font-weight:700; background:#d9d5c7;">${MODULE_DIALOGS.attackListHeader}</div>
     <div style="display:flex; flex-direction:column; gap:4px; padding:6px; overflow-y:auto; overflow-x:hidden; max-height:430px; scrollbar-gutter:stable;">
-      ${buttonMarkup || '<div style="font-size:12px; opacity:0.7;">No attacks</div>'}
+      ${buttonMarkup || `<div style="font-size:12px; opacity:0.7;">${MODULE_DIALOGS.noAttacks}</div>`}
     </div>
   </div>`;
   const selectorDialog = new Dialog({
-    title: `${actor.name} - Weapon Attacks`,
+    title: MODULE_DIALOGS.attackSelectorTitle.replace("{actorName}", actor.name),
     content,
     width: 560,
     height: 560,
-    buttons: { close: { label: "Close" } },
+    buttons: { close: { label: MODULE_DIALOGS.closeLabel } },
     render: (html) => {
       html.find(".attack-btn").on("click", async (event) => {
         const chosen = actor.items.get(event.currentTarget.dataset.id);
@@ -148,7 +155,7 @@ export function towCombatOverlayRenderAttackSelector(actor, attacks, { onFastAut
           try {
             await onFastAuto({ actor, ability: chosen });
           } catch (error) {
-            console.error("[the-old-world-combat-overlay] onFastAuto callback failed.", error);
+            console.error(`${MODULE_LOG_PREFIX} onFastAuto callback failed.`, error);
           }
         }
 
@@ -176,7 +183,7 @@ export async function towCombatOverlayAttackActor(actor, { manual = false, onFas
 export async function towCombatOverlayRunAttackForControlled({ manual = false } = {}) {
   const tokens = canvas.tokens.controlled;
   if (!tokens.length) {
-    ui.notifications.warn("Select at least one token.");
+    ui.notifications.warn(MODULE_NOTIFICATIONS.selectAtLeastOneToken);
     return;
   }
   for (const token of tokens) {

@@ -1,9 +1,9 @@
-import { registerTowActionsApi } from "../combat/actions-api-service.js";
+import { registerTowCombatOverlayActionsApi } from "../combat/actions-api-service.js";
 import { getTowCombatOverlayActionServices } from "./register-action-services.js";
 
-export function registerTowCombatOverlayActionsApi() {
+export function registerTowCombatOverlayActionsRuntimeApi() {
   const services = getTowCombatOverlayActionServices();
-  return registerTowActionsApi({
+  return registerTowCombatOverlayActionsApi({
     attackActor: services.attackActor,
     castActor: services.castActor,
     defenceActor: services.defenceActor,
@@ -13,4 +13,4 @@ export function registerTowCombatOverlayActionsApi() {
   });
 }
 
-export const registerTowCombatOverlayActionsFromGlobals = registerTowCombatOverlayActionsApi;
+export const registerTowCombatOverlayActionsFromGlobals = registerTowCombatOverlayActionsRuntimeApi;
