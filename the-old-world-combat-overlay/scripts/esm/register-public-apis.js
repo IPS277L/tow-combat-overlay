@@ -45,6 +45,8 @@ export function registerTowCombatOverlayPublicApis({
     Object.assign(sharedOverlayApi, overlayApi);
     if (moduleApi) moduleApi.towOverlay = sharedOverlayApi;
   }
+
+  return moduleApi;
 }
 
 export function getTowCombatOverlayModuleApi() {
@@ -68,11 +70,4 @@ export function getTowCombatOverlayActionsApi() {
 
 export function getTowCombatOverlayOverlayApi() {
   return getTowCombatOverlayPublicApi("towOverlay");
-}
-
-export function syncTowCombatOverlayPublicApisFromGlobals() {
-  registerTowCombatOverlayPublicApis({
-    actionsApi: getTowCombatOverlayActionsApi(),
-    overlayApi: getTowCombatOverlayOverlayApi()
-  });
 }

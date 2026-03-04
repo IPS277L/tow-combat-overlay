@@ -5,7 +5,7 @@ import {
   registerTowCombatOverlayHooks,
   unregisterTowCombatOverlayHooks
 } from "./register-overlay-hooks.js";
-import { getTowCombatOverlayOverlayApi, syncTowCombatOverlayPublicApisFromGlobals } from "./register-public-apis.js";
+import { getTowCombatOverlayOverlayApi } from "./register-public-apis.js";
 import {
   isTowCombatOverlaySettingEnabled,
   registerTowCombatOverlaySettings
@@ -47,7 +47,6 @@ export function registerTowCombatOverlayModuleHooks() {
 
   Hooks.once("ready", () => {
     registerTowCombatOverlayRuntimeApis();
-    syncTowCombatOverlayPublicApisFromGlobals();
     syncTowCombatOverlayEnabledSetting();
   });
 }

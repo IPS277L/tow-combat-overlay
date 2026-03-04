@@ -9,7 +9,6 @@ import {
   towCombatOverlayToggle
 } from "./overlay/overlay-service.js";
 
-const TOW_OVERLAY_API_KEY = "towOverlay";
 const TOW_OVERLAY_VERSION = "1.0.0";
 
 function getTowOverlayApiBindings() {
@@ -41,15 +40,9 @@ export function createTowOverlayApi(overrides = {}) {
 
 export function registerTowOverlayApi(apiOverrides = {}) {
   const nextApi = createTowOverlayApi(apiOverrides);
-  const targetApi = (game[TOW_OVERLAY_API_KEY] && typeof game[TOW_OVERLAY_API_KEY] === "object")
-    ? game[TOW_OVERLAY_API_KEY]
-    : {};
-  Object.assign(targetApi, nextApi);
-  game[TOW_OVERLAY_API_KEY] = targetApi;
-
-  registerTowCombatOverlayPublicApis({
-    overlayApi: targetApi
-  });
+  const targetApi = registerTowCombatOverlayPublicApis({
+    overlayApi: nextApi
+  })?.towOverlay ?? nextApi;
 
   return targetApi;
 }

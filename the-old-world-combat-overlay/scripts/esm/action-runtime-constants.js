@@ -1,4 +1,3 @@
-export const TOW_ACTIONS_KEY = "towActions";
 export const TOW_ACTIONS_VERSION = "1.0.0";
 export const SHIFT_KEY = foundry.helpers.interaction.KeyboardManager.MODIFIER_KEYS.SHIFT;
 export const DEFAULT_DEFENCE_SKILL = "defence";
