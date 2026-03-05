@@ -272,7 +272,7 @@ function stylePaletteSprite(sprite, actor, conditionId, activeStatuses = null) {
   clearSpecialBg();
 }
 
-function drawStatusPaletteBackdrop(layer, { iconSize, totalWidth, totalHeight }) {
+function drawStatusPaletteBackdrop(layer, { iconSize, totalWidth, totalHeight, backdropStyle = null }) {
   let backdrop = layer[KEYS.statusPaletteBackdrop];
   if (!backdrop || backdrop.destroyed || backdrop.parent !== layer) {
     if (backdrop && !backdrop.destroyed) backdrop.destroy();
@@ -281,7 +281,7 @@ function drawStatusPaletteBackdrop(layer, { iconSize, totalWidth, totalHeight })
     layer.addChildAt(backdrop, 0);
     layer[KEYS.statusPaletteBackdrop] = backdrop;
   }
-  const style = getStatusPaletteBackdropStyle(iconSize);
+  const style = backdropStyle ?? getStatusPaletteBackdropStyle(iconSize);
   backdrop.clear();
   backdrop.beginFill(STATUS_PALETTE_BACKDROP_COLOR, style.fillAlpha);
   backdrop.drawRoundedRect(-style.padX, -style.padY, Math.max(2, totalWidth + (style.padX * 2)), Math.max(2, totalHeight + (style.padY * 2)), style.radius);
@@ -352,8 +352,13 @@ export function setupStatusPalette(tokenObject) {
   const totalRows = Math.ceil(expectedCount / columns);
   const totalWidth = (columns * iconSize) + ((columns - 1) * iconGap);
   const totalHeight = (totalRows * iconSize) + ((totalRows - 1) * iconGap);
-  layer.position.set(Math.round((tokenObject.w - totalWidth) / 2), Math.round(tokenObject.h + towCombatOverlayGetOverlayEdgePadPx(tokenObject)));
-  drawStatusPaletteBackdrop(layer, { iconSize, totalWidth, totalHeight });
+  const edgePad = towCombatOverlayGetOverlayEdgePadPx(tokenObject);
+  const backdropStyle = getStatusPaletteBackdropStyle(iconSize);
+  layer.position.set(
+    Math.round((tokenObject.w - totalWidth) / 2),
+    Math.round(tokenObject.h + edgePad + backdropStyle.padY)
+  );
+  drawStatusPaletteBackdrop(layer, { iconSize, totalWidth, totalHeight, backdropStyle });
   layer.visible = tokenObject.visible;
   const activeStatuses = getActorStatusSet(actor);
   for (const sprite of layer.children?.filter((child) => child?.[KEYS.statusConditionId]) ?? []) {

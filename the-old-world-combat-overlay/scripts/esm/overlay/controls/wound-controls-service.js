@@ -15,12 +15,18 @@ import {
   ICON_SRC_DEF,
   ICON_SRC_WOUND,
   KEYS,
+  OVERLAY_CONTROL_ROW_GAP_PX,
   OVERLAY_FONT_SIZE,
   PreciseTextClass,
   TOKEN_CONTROL_PAD
 } from "../../runtime/overlay-runtime-constants.js";
 import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
 import { getTowCombatOverlayActionsApi } from "../../bootstrap/register-public-apis.js";
+import {
+  adjustTowCombatOverlayActorRollModifierDice,
+  cycleTowCombatOverlayActorRollState,
+  getTowCombatOverlayActorRollModifierState
+} from "../../combat/roll-modifier-service.js";
 import {
   towCombatOverlayBindTooltipHandlers,
   towCombatOverlayCanEditActor,
@@ -57,6 +63,12 @@ const { tooltips: MODULE_TOOLTIPS } = getTowCombatOverlayConstants();
 
 function getOverlayControlsAutomationRef() {
   return towCombatOverlayAutomation ?? createTowCombatOverlayAutomationCoordinator();
+}
+
+function getRollModifierStateTint(rollState) {
+  if (rollState === "grim") return 0x802c2f;
+  if (rollState === "glorious") return 0x407e41;
+  return 0xFFFFFF;
 }
 
 function getDragLineStyle(sourceToken) {
@@ -202,6 +214,11 @@ export function towCombatOverlayCreateWoundControlUI(tokenObject) {
 
   const attackIcon = towCombatOverlayCreateOverlayIconSprite(ICON_SRC_ATK, OVERLAY_FONT_SIZE + 2);
   const defenceIcon = towCombatOverlayCreateOverlayIconSprite(ICON_SRC_DEF, OVERLAY_FONT_SIZE + 2);
+  const actionSeparatorText = new PreciseTextClass("/", towCombatOverlayGetIconValueStyle());
+  towCombatOverlayTuneOverlayText(actionSeparatorText);
+  if (actionSeparatorText.style) actionSeparatorText.style.fontSize = OVERLAY_FONT_SIZE + 11;
+  actionSeparatorText.anchor.set(0, 0.5);
+  actionSeparatorText.eventMode = "none";
 
   const attackHitBox = new PIXI.Graphics();
   attackHitBox.eventMode = "static";
@@ -214,6 +231,23 @@ export function towCombatOverlayCreateWoundControlUI(tokenObject) {
   defenceHitBox.interactive = true;
   defenceHitBox.buttonMode = true;
   defenceHitBox.cursor = "pointer";
+
+  const modifierText = new PreciseTextClass("", towCombatOverlayGetIconValueStyle());
+  towCombatOverlayTuneOverlayText(modifierText);
+  if (modifierText.style) modifierText.style.fill = "#FFF4D8";
+  modifierText.anchor.set(0, 0.5);
+  modifierText.eventMode = "none";
+  const modifierSignText = new PreciseTextClass("+", towCombatOverlayGetIconValueStyle());
+  towCombatOverlayTuneOverlayText(modifierSignText);
+  if (modifierSignText.style) modifierSignText.style.fill = "#FFF4D8";
+  modifierSignText.anchor.set(0, 0.5);
+  modifierSignText.eventMode = "none";
+
+  const modifierHitBox = new PIXI.Graphics();
+  modifierHitBox.eventMode = "static";
+  modifierHitBox.interactive = true;
+  modifierHitBox.buttonMode = true;
+  modifierHitBox.cursor = "pointer";
 
   countHitBox.on("pointerdown", async (event) => {
     towCombatOverlayPreventPointerDefault(event);
@@ -335,14 +369,50 @@ export function towCombatOverlayCreateWoundControlUI(tokenObject) {
   defenceHitBox.on("contextmenu", towCombatOverlayPreventPointerDefault);
   towCombatOverlayBindTooltipHandlers(defenceHitBox, () => MODULE_TOOLTIPS.defence);
 
-  container.addChild(countHitBox, countIcon, countText, attackHitBox, defenceHitBox, attackIcon, defenceIcon);
+  modifierHitBox.on("pointerdown", async (event) => {
+    towCombatOverlayPreventPointerDefault(event);
+    if (towCombatOverlayGetMouseButton(event) !== 0) return;
+    const actor = towCombatOverlayGetActorFromToken(tokenObject);
+    if (!towCombatOverlayCanEditActor(actor)) return;
+    if (towCombatOverlayIsShiftModifier(event)) {
+      await cycleTowCombatOverlayActorRollState(actor, 1);
+      return;
+    }
+    await adjustTowCombatOverlayActorRollModifierDice(actor, 1);
+  });
+  modifierHitBox.on("rightdown", async (event) => {
+    towCombatOverlayPreventPointerDefault(event);
+    const actor = towCombatOverlayGetActorFromToken(tokenObject);
+    if (!towCombatOverlayCanEditActor(actor)) return;
+    await adjustTowCombatOverlayActorRollModifierDice(actor, -1);
+  });
+  modifierHitBox.on("contextmenu", towCombatOverlayPreventPointerDefault);
+  towCombatOverlayBindTooltipHandlers(modifierHitBox, () => MODULE_TOOLTIPS.rollModifier);
+
+  container.addChild(
+    countHitBox,
+    countIcon,
+    countText,
+    attackHitBox,
+    defenceHitBox,
+    attackIcon,
+    actionSeparatorText,
+    defenceIcon,
+    modifierHitBox,
+    modifierSignText,
+    modifierText
+  );
   container[KEYS.woundUiCountText] = countText;
   container[KEYS.woundUiCountIcon] = countIcon;
   container[KEYS.woundUiCountHitBox] = countHitBox;
   container[KEYS.woundUiAttackHitBox] = attackHitBox;
   container[KEYS.woundUiDefenceHitBox] = defenceHitBox;
   container[KEYS.woundUiAttackIcon] = attackIcon;
+  container[KEYS.woundUiActionSeparatorText] = actionSeparatorText;
   container[KEYS.woundUiDefenceIcon] = defenceIcon;
+  container[KEYS.woundUiModifierSignText] = modifierSignText;
+  container[KEYS.woundUiModifierText] = modifierText;
+  container[KEYS.woundUiModifierHitBox] = modifierHitBox;
 
   tokenObject.addChild(container);
   tokenObject[KEYS.woundUi] = container;
@@ -366,11 +436,17 @@ export function towCombatOverlayUpdateWoundControlUI(tokenObject) {
     !existingUi[KEYS.woundUiCountText] ||
     !existingUi[KEYS.woundUiCountIcon] ||
     !existingUi[KEYS.woundUiAttackIcon] ||
+    !existingUi[KEYS.woundUiActionSeparatorText] ||
     !existingUi[KEYS.woundUiDefenceIcon] ||
+    !existingUi[KEYS.woundUiModifierSignText] ||
+    !existingUi[KEYS.woundUiModifierText] ||
     existingUi[KEYS.woundUiCountText].destroyed ||
     existingUi[KEYS.woundUiCountIcon].destroyed ||
     existingUi[KEYS.woundUiAttackIcon].destroyed ||
+    existingUi[KEYS.woundUiActionSeparatorText].destroyed ||
     existingUi[KEYS.woundUiDefenceIcon].destroyed ||
+    existingUi[KEYS.woundUiModifierSignText].destroyed ||
+    existingUi[KEYS.woundUiModifierText].destroyed ||
     !existingUi[KEYS.woundUiCountText].style
   );
   const staleUi = !!existingUi && (
@@ -380,7 +456,8 @@ export function towCombatOverlayUpdateWoundControlUI(tokenObject) {
     hasBrokenTextStyle ||
     existingUi[KEYS.woundUiAttackHitBox]?.destroyed ||
     existingUi[KEYS.woundUiDefenceHitBox]?.destroyed ||
-    existingUi[KEYS.woundUiCountHitBox]?.destroyed
+    existingUi[KEYS.woundUiCountHitBox]?.destroyed ||
+    existingUi[KEYS.woundUiModifierHitBox]?.destroyed
   );
   if (staleUi) {
     towCombatOverlayClearDisplayObject(existingUi);
@@ -402,57 +479,135 @@ export function towCombatOverlayUpdateWoundControlUI(tokenObject) {
   const attackHitBox = ui[KEYS.woundUiAttackHitBox];
   const defenceHitBox = ui[KEYS.woundUiDefenceHitBox];
   const attackIcon = ui[KEYS.woundUiAttackIcon];
+  const actionSeparatorText = ui[KEYS.woundUiActionSeparatorText];
   const defenceIcon = ui[KEYS.woundUiDefenceIcon];
+  const modifierSignText = ui[KEYS.woundUiModifierSignText];
+  const modifierText = ui[KEYS.woundUiModifierText];
+  const modifierHitBox = ui[KEYS.woundUiModifierHitBox];
   towCombatOverlayTuneOverlayText(countText);
   countText.text = `${count}`;
+  towCombatOverlayTuneOverlayText(actionSeparatorText);
+  towCombatOverlayTuneOverlayText(modifierSignText);
+  towCombatOverlayTuneOverlayText(modifierText);
+  const rollModifier = getTowCombatOverlayActorRollModifierState(actor);
+  const modifierSign = rollModifier.diceModifier >= 0 ? "+" : "-";
+  const modifierValue = `${Math.abs(rollModifier.diceModifier)}d10`;
+  const modifierTint = getRollModifierStateTint(rollModifier.rollState);
+  if (modifierSignText.text !== modifierSign) modifierSignText.text = modifierSign;
+  if (modifierText.text !== modifierValue) {
+    modifierText.text = modifierValue;
+  }
+  if (typeof modifierSignText.tint !== "undefined" && modifierSignText.tint !== modifierTint) modifierSignText.tint = modifierTint;
+  if (typeof modifierText.tint !== "undefined" && modifierText.tint !== modifierTint) modifierText.tint = modifierTint;
 
-  const padX = 3;
-  const padY = 2;
-  const rowGap = Math.max(18, countText.height + 4);
+  const padX = 0;
+  const padY = 0;
+  const modifierSignSlotWidth = 15;
+  const modifierOffsetX = -2;
+  const modifierOffsetY = 0;
+  const rowGap = OVERLAY_CONTROL_ROW_GAP_PX;
   const rightBottomY = rowGap / 2;
-  const leftTopY = -(rowGap / 2);
-  const leftBottomY = leftTopY + rowGap;
+  const actionY = Math.round(-rowGap / 2);
+  const modifierY = Math.round(rowGap / 2);
 
   const countGap = 4;
   countIcon.position.set(0, Math.round(rightBottomY - (countIcon.height / 2)));
   countText.position.set(Math.round(countIcon.width + countGap), Math.round(rightBottomY));
-  const countBlockWidth = countIcon.width + countGap + countText.width;
-  const countBlockHeight = Math.max(countIcon.height, countText.height);
+  const countIconBounds = countIcon.getLocalBounds();
+  const countTextBounds = countText.getLocalBounds();
+  const countHitLeft = Math.min(countIcon.x + countIconBounds.x, countText.x + countTextBounds.x);
+  const countHitTop = Math.min(countIcon.y + countIconBounds.y, countText.y + countTextBounds.y);
+  const countHitRight = Math.max(
+    countIcon.x + countIconBounds.x + countIconBounds.width,
+    countText.x + countTextBounds.x + countTextBounds.width
+  );
+  const countHitBottom = Math.max(
+    countIcon.y + countIconBounds.y + countIconBounds.height,
+    countText.y + countTextBounds.y + countTextBounds.height
+  );
   towCombatOverlayDrawHitBoxRect(
     countHitBox,
-    -padX,
-    rightBottomY - (countBlockHeight / 2) - padY,
-    countBlockWidth + (padX * 2),
-    countBlockHeight + (padY * 2)
+    Math.round(countHitLeft - padX),
+    Math.round(countHitTop - padY),
+    Math.round(Math.max(1, (countHitRight - countHitLeft) + (padX * 2))),
+    Math.round(Math.max(1, (countHitBottom - countHitTop) + (padY * 2)))
   );
 
   ui.position.set(Math.round(tokenObject.w + edgePad), Math.round(tokenObject.h / 2));
 
-  const leftX = -((tokenObject.w + (edgePad * 2)) * inverseScale);
-  attackIcon.position.set(Math.round(leftX - attackIcon.width), Math.round(leftTopY - (attackIcon.height / 2)));
-  defenceIcon.position.set(Math.round(leftX - defenceIcon.width), Math.round(leftBottomY - (defenceIcon.height / 2)));
+  const leftRightEdgeX = (-edgePad - ui.position.x) * inverseScale;
+  const actionGap = 1;
+  const actionBlockWidth = attackIcon.width + actionGap + actionSeparatorText.width + actionGap + defenceIcon.width;
+  const actionBlockLeft = Math.round(leftRightEdgeX - actionBlockWidth);
+  const attackIconNudgeX = 2;
+  attackIcon.position.set(actionBlockLeft + attackIconNudgeX, Math.round(actionY - (attackIcon.height / 2)));
+  actionSeparatorText.position.set(
+    Math.round(actionBlockLeft + attackIcon.width + actionGap),
+    Math.round(actionY)
+  );
+  defenceIcon.position.set(
+    Math.round(actionSeparatorText.x + actionSeparatorText.width + actionGap),
+    Math.round(actionY - (defenceIcon.height / 2))
+  );
+  const signBounds = modifierSignText.getLocalBounds();
+  const valueBounds = modifierText.getLocalBounds();
+  const visualLeft = Math.min(signBounds.x, modifierSignSlotWidth + valueBounds.x);
+  const modifierLabelLeft = Math.round(actionBlockLeft + attackIconNudgeX - visualLeft);
+  modifierSignText.position.set(modifierLabelLeft + modifierOffsetX, Math.round(modifierY + modifierOffsetY));
+  modifierText.position.set(modifierLabelLeft + modifierSignSlotWidth + modifierOffsetX, Math.round(modifierY + modifierOffsetY));
 
-  if (overlayScale > 0) {
-    const targetLeftRightEdge = (-edgePad - ui.position.x) / overlayScale;
-    const currentLeftRightEdge = Math.max(
-      Number(attackIcon.x ?? 0) + Number(attackIcon.width ?? 0),
-      Number(defenceIcon.x ?? 0) + Number(defenceIcon.width ?? 0)
-    );
-    const leftDelta = Math.round(targetLeftRightEdge - currentLeftRightEdge);
-    if (leftDelta !== 0) {
-      attackIcon.x += leftDelta;
-      defenceIcon.x += leftDelta;
-    }
-  }
-
-  towCombatOverlayDrawHitBoxRect(attackHitBox, attackIcon.x - padX, attackIcon.y - padY, attackIcon.width + (padX * 2), attackIcon.height + (padY * 2));
-  towCombatOverlayDrawHitBoxRect(defenceHitBox, defenceIcon.x - padX, defenceIcon.y - padY, defenceIcon.width + (padX * 2), defenceIcon.height + (padY * 2));
+  const actionHitPadX = 0;
+  const actionHitPadY = 0;
+  const attackBounds = attackIcon.getLocalBounds();
+  const defenceBounds = defenceIcon.getLocalBounds();
+  towCombatOverlayDrawHitBoxRect(
+    attackHitBox,
+    attackIcon.x + attackBounds.x - actionHitPadX,
+    attackIcon.y + attackBounds.y - actionHitPadY,
+    Math.max(1, attackBounds.width + (actionHitPadX * 2)),
+    Math.max(1, attackBounds.height + (actionHitPadY * 2))
+  );
+  towCombatOverlayDrawHitBoxRect(
+    defenceHitBox,
+    defenceIcon.x + defenceBounds.x - actionHitPadX,
+    defenceIcon.y + defenceBounds.y - actionHitPadY,
+    Math.max(1, defenceBounds.width + (actionHitPadX * 2)),
+    Math.max(1, defenceBounds.height + (actionHitPadY * 2))
+  );
+  const modifierSignBounds = modifierSignText.getLocalBounds();
+  const modifierValueBounds = modifierText.getLocalBounds();
+  const modifierHitLeft = Math.min(
+    modifierSignText.x + modifierSignBounds.x,
+    modifierText.x + modifierValueBounds.x
+  );
+  const modifierHitRight = Math.max(
+    modifierSignText.x + modifierSignBounds.x + modifierSignBounds.width,
+    modifierText.x + modifierValueBounds.x + modifierValueBounds.width
+  );
+  const modifierHitTop = Math.min(
+    modifierSignText.y + modifierSignBounds.y,
+    modifierText.y + modifierValueBounds.y
+  );
+  const modifierHitBottom = Math.max(
+    modifierSignText.y + modifierSignBounds.y + modifierSignBounds.height,
+    modifierText.y + modifierValueBounds.y + modifierValueBounds.height
+  );
+  towCombatOverlayDrawHitBoxRect(
+    modifierHitBox,
+    Math.round(modifierHitLeft - padX),
+    Math.round(modifierHitTop - padY),
+    Math.round(Math.max(1, (modifierHitRight - modifierHitLeft) + (padX * 2))),
+    Math.round(Math.max(1, (modifierHitBottom - modifierHitTop) + (padY * 2)))
+  );
 
   const editable = towCombatOverlayCanEditActor(actor);
   countText.alpha = editable ? 1 : 0.45;
   countIcon.alpha = editable ? 1 : 0.45;
   attackIcon.alpha = 1;
+  actionSeparatorText.alpha = 1;
   defenceIcon.alpha = 1;
+  modifierSignText.alpha = editable ? 1 : 0.45;
+  modifierText.alpha = editable ? 1 : 0.45;
   ui.visible = tokenObject.visible;
 }
 

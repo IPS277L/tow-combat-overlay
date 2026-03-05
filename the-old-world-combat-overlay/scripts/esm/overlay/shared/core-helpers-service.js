@@ -104,7 +104,9 @@ export function towCombatOverlayGetMouseButton(event) {
   return event.button ?? event.data?.button ?? event.nativeEvent?.button ?? 0;
 }
 
-export function towCombatOverlayIsShiftModifier() {
+export function towCombatOverlayIsShiftModifier(event) {
+  const nativeShift = event?.shiftKey ?? event?.nativeEvent?.shiftKey ?? event?.data?.originalEvent?.shiftKey;
+  if (nativeShift === true) return true;
   const shiftKey = foundry.helpers?.interaction?.KeyboardManager?.MODIFIER_KEYS?.SHIFT
     ?? KeyboardManager?.MODIFIER_KEYS?.SHIFT;
   if (!shiftKey) return false;

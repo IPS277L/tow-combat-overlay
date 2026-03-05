@@ -12,7 +12,11 @@ export const KEYS = Object.freeze({
   woundUiAttackHitBox: "_towCombatOverlayWoundUiAttackHitBox",
   woundUiDefenceHitBox: "_towCombatOverlayWoundUiDefenceHitBox",
   woundUiAttackIcon: "_towCombatOverlayWoundUiAttackIcon",
+  woundUiActionSeparatorText: "_towCombatOverlayWoundUiActionSeparatorText",
   woundUiDefenceIcon: "_towCombatOverlayWoundUiDefenceIcon",
+  woundUiModifierSignText: "_towCombatOverlayWoundUiModifierSignText",
+  woundUiModifierText: "_towCombatOverlayWoundUiModifierText",
+  woundUiModifierHitBox: "_towCombatOverlayWoundUiModifierHitBox",
   nameLabel: "_towCombatOverlayNameLabel",
   nameLabelMarker: "_towCombatOverlayNameLabelMarker",
   nameLabelTokenId: "_towCombatOverlayNameLabelTokenId",
@@ -82,6 +86,7 @@ export const LAYOUT_BORDER_ALPHA = 1;
 export const LAYOUT_BORDER_WIDTH = 2;
 export const LAYOUT_BORDER_RADIUS = 6;
 export const OVERLAY_FONT_SIZE = 22;
+export const OVERLAY_CONTROL_ROW_GAP_PX = 32;
 export const DRAG_START_THRESHOLD_PX = 8;
 export const DRAG_LINE_OUTER_COLOR = 0x1A0909;
 export const DRAG_LINE_OUTER_ALPHA = 0.85;

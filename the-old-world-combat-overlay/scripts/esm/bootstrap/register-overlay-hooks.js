@@ -15,7 +15,11 @@ import {
 } from "../overlay/layout-state-service.js";
 
 const { moduleKey: MODULE_KEY } = getTowCombatOverlayRuntimeConstants();
-const { logPrefix: MODULE_LOG_PREFIX } = getTowCombatOverlayConstants();
+const {
+  flags: MODULE_FLAGS,
+  logPrefix: MODULE_LOG_PREFIX,
+  moduleId: MODULE_ID
+} = getTowCombatOverlayConstants();
 function resolveTowCombatOverlayHookBindings() {
   const bindings = {
     refreshAllOverlays: towCombatOverlayRefreshAllOverlays,
@@ -77,6 +81,15 @@ export function registerTowCombatOverlayHooks() {
       bindings.queueActorOverlayResync(item.parent);
       bindings.queueDeadSyncFromWounds(item.parent);
     }),
+    updateActor: Hooks.on("updateActor", (actor, changed) => {
+      const moduleFlagChanges = changed?.flags?.[MODULE_ID];
+      if (!moduleFlagChanges) return;
+      const removeKey = `-=${MODULE_FLAGS.actorRollModifier}`;
+      const hasRollModifierChange = (MODULE_FLAGS.actorRollModifier in moduleFlagChanges) || (removeKey in moduleFlagChanges);
+      if (!hasRollModifierChange) return;
+      bindings.refreshActorOverlays(actor);
+      bindings.queueActorOverlayResync(actor);
+    }),
     createActiveEffect: Hooks.on("createActiveEffect", (effect) => bindings.refreshActorOverlays(effect?.parent)),
     updateActiveEffect: Hooks.on("updateActiveEffect", (effect) => bindings.refreshActorOverlays(effect?.parent)),
     deleteActiveEffect: Hooks.on("deleteActiveEffect", (effect) => bindings.refreshActorOverlays(effect?.parent))
@@ -92,6 +105,7 @@ export function unregisterTowCombatOverlayHooks(hookIds) {
   Hooks.off("createItem", hookIds.createItem);
   Hooks.off("updateItem", hookIds.updateItem);
   Hooks.off("deleteItem", hookIds.deleteItem);
+  Hooks.off("updateActor", hookIds.updateActor);
   Hooks.off("createActiveEffect", hookIds.createActiveEffect);
   Hooks.off("updateActiveEffect", hookIds.updateActiveEffect);
   Hooks.off("deleteActiveEffect", hookIds.deleteActiveEffect);

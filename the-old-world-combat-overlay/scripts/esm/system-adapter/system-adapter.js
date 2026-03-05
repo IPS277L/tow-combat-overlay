@@ -4,12 +4,12 @@ const { notifications: MODULE_NOTIFICATIONS } = getTowCombatOverlayConstants();
 
 function createTowCombatOverlaySystemAdapter() {
   return {
-    setupAbilityTest(actor, ability) {
+    setupAbilityTest(actor, ability, context = {}, options = {}) {
       if (!actor || typeof actor.setupAbilityTest !== "function") {
         ui.notifications.error(MODULE_NOTIFICATIONS.apiUnavailable.abilityTest);
         return null;
       }
-      return actor.setupAbilityTest(ability);
+      return actor.setupAbilityTest(ability, context, options);
     },
 
     setupSkillTest(actor, skill, context = {}) {

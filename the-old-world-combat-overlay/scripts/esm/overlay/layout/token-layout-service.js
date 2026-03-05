@@ -23,12 +23,13 @@ export function towCombatOverlayEnsureTokenOverlayInteractivity(tokenObject) {
 
 export function towCombatOverlayUpdateTokenOverlayHitArea(tokenObject) {
   if (!tokenObject || tokenObject.destroyed) return;
-  const points = [
+  const tokenCornerPoints = [
     { x: 0, y: 0 },
     { x: tokenObject.w, y: 0 },
     { x: 0, y: tokenObject.h },
     { x: tokenObject.w, y: tokenObject.h }
   ];
+  const points = [...tokenCornerPoints];
   const overlayChildren = [
     tokenObject[KEYS.woundUi],
     tokenObject[KEYS.nameLabel],
@@ -62,6 +63,15 @@ export function towCombatOverlayUpdateTokenOverlayHitArea(tokenObject) {
     maxY = Math.max(maxY, p.y);
   }
   if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) return;
+
+  // Keep overlay zone/border horizontally symmetric around token center.
+  const centerX = Number(tokenObject.w ?? 0) / 2;
+  const leftExtent = Math.max(0, centerX - minX);
+  const rightExtent = Math.max(0, maxX - centerX);
+  const halfWidth = Math.max(leftExtent, rightExtent);
+  minX = centerX - halfWidth;
+  maxX = centerX + halfWidth;
+
   const pad = 3;
   const hitBounds = {
     x: minX - pad,

@@ -6,6 +6,9 @@ const MODULE_CONSTANTS = Object.freeze({
     actions: "combatOverlayActions",
     overlay: "combatOverlay"
   }),
+  flags: Object.freeze({
+    actorRollModifier: "actorRollModifier"
+  }),
   notifications: Object.freeze({
     selectAtLeastOneToken: "Select at least one token.",
     noPermissionToEditActor: "No permission to edit {actorName}.",
@@ -28,6 +31,10 @@ const MODULE_CONSTANTS = Object.freeze({
       noManualEntries: "{actorName}: no rollable skills or characteristics found.",
       noDefaultSkills: "{actorName}: no rollable skills found for default defence roll.",
       fallbackSkill: "{actorName}: '{defaultSkill}' not found, rolled '{rolledSkill}' instead."
+    }),
+    casting: Object.freeze({
+      noLore: "{actorName}: '{spellName}' has no lore, cannot open Casting Test.",
+      noSpells: "{actorName}: no castable spells found in Magic tab."
     })
   }),
   dialogs: Object.freeze({
@@ -42,6 +49,13 @@ const MODULE_CONSTANTS = Object.freeze({
     noCharacteristics: "No characteristics",
     noSkills: "No skills"
   }),
+  labels: Object.freeze({
+    rollState: Object.freeze({
+      normal: "Common",
+      grim: "Grim",
+      glorious: "Glorious"
+    })
+  }),
   tooltips: Object.freeze({
     wounds: Object.freeze({
       title: "Wounds",
@@ -54,6 +68,10 @@ const MODULE_CONSTANTS = Object.freeze({
     defence: Object.freeze({
       title: "Defence",
       description: "Defence roll. Left-click defends. Hold Shift for manual mode."
+    }),
+    rollModifier: Object.freeze({
+      title: "Roll Modifier",
+      description: "Left-click adds 1 bonus die. Right-click adds 1 penalty die. Shift + left-click cycles Common, Glorious, and Grim."
     }),
     resilience: Object.freeze({
       title: "Resilience",

@@ -1,5 +1,6 @@
 import {
   ACTOR_OVERLAY_RESYNC_DELAYS_MS,
+  KEYS,
   MODULE_KEY
 } from "../../runtime/overlay-runtime-constants.js";
 import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
@@ -39,7 +40,54 @@ import {
 
 const { notifications: MODULE_NOTIFICATIONS } = getTowCombatOverlayConstants();
 
+function setTowCombatOverlayTokenVisualVisibility(tokenObject, visible) {
+  if (!tokenObject || tokenObject.destroyed) return;
+  const safeVisible = !!visible;
+  const parts = [
+    tokenObject[KEYS.woundUi],
+    tokenObject[KEYS.nameLabel],
+    tokenObject[KEYS.resilienceLabel],
+    tokenObject[KEYS.statusPaletteLayer],
+    tokenObject[KEYS.layoutBorder]
+  ];
+  for (const part of parts) {
+    if (!part || part.destroyed) continue;
+    part.visible = safeVisible;
+  }
+}
+
+function hasTowCombatOverlayPreviewClone(tokenObject) {
+  const previewChildren = tokenObject?.layer?.preview?.children;
+  if (!Array.isArray(previewChildren) || previewChildren.length === 0) return false;
+  return previewChildren.some((previewToken) => previewToken?._original === tokenObject && !previewToken?.destroyed);
+}
+
+function scheduleTowCombatOverlayPreviewRestore(tokenObject) {
+  if (!tokenObject || tokenObject.destroyed) return;
+  const state = game[MODULE_KEY];
+  if (!state) return;
+  if (!(state.previewRestoreTimers instanceof Map)) state.previewRestoreTimers = new Map();
+  const key = tokenObject.id ?? tokenObject.document?.id;
+  if (!key) return;
+  const existing = state.previewRestoreTimers.get(key);
+  if (existing) clearTimeout(existing);
+  const timer = setTimeout(() => {
+    const liveState = game[MODULE_KEY];
+    liveState?.previewRestoreTimers?.delete?.(key);
+    if (!tokenObject || tokenObject.destroyed || hasTowCombatOverlayPreviewClone(tokenObject)) return;
+    setTowCombatOverlayTokenVisualVisibility(tokenObject, tokenObject.visible !== false);
+    towCombatOverlayRefreshTokenOverlay(tokenObject);
+  }, 140);
+  state.previewRestoreTimers.set(key, timer);
+}
+
 export function towCombatOverlayRefreshTokenOverlay(tokenObject) {
+  if (hasTowCombatOverlayPreviewClone(tokenObject)) {
+    setTowCombatOverlayTokenVisualVisibility(tokenObject, false);
+    scheduleTowCombatOverlayPreviewRestore(tokenObject);
+    return;
+  }
+  setTowCombatOverlayTokenVisualVisibility(tokenObject, tokenObject.visible !== false);
   towCombatOverlayPrimeDeadPresence(towCombatOverlayGetActorFromToken(tokenObject));
   towCombatOverlayEnsureTokenOverlayInteractivity(tokenObject);
   hideDefaultStatusPanelForOverlay(tokenObject);
@@ -107,6 +155,7 @@ export function towCombatOverlayEnable() {
     recentTargets: new Map(),
     autoApplyArmed: new Set(),
     actorOverlayResyncTimers: new Map(),
+    previewRestoreTimers: new Map(),
     deadSyncTimers: new Map(),
     deadToWoundSyncTimers: new Map(),
     deadPresenceByActor: new Map(),
@@ -130,6 +179,10 @@ export function towCombatOverlayDisable() {
       for (const timer of timers) clearTimeout(timer);
     }
     state.actorOverlayResyncTimers.clear();
+  }
+  if (state?.previewRestoreTimers instanceof Map) {
+    for (const timer of state.previewRestoreTimers.values()) clearTimeout(timer);
+    state.previewRestoreTimers.clear();
   }
   if (state?.deadSyncTimers instanceof Map) {
     for (const entry of state.deadSyncTimers.values()) {

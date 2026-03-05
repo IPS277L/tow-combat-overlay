@@ -2,6 +2,7 @@ import { shouldTowCombatOverlayAutoSubmitDialogs } from "../bootstrap/register-s
 import { SELF_ROLL_CONTEXT } from "../runtime/action-runtime-constants.js";
 import { getTowCombatOverlayConstants } from "../runtime/constants.js";
 import { towCombatOverlayEnsurePromiseClose } from "./attack-service.js";
+import { createTowCombatOverlayRollContext } from "./roll-modifier-service.js";
 import {
   towCombatOverlayEscapeHtml,
   towCombatOverlayScheduleSoon,
@@ -89,7 +90,7 @@ export async function towCombatOverlaySetupCastingTest(actor, spell, { autoRoll 
     towCombatOverlayArmAutoSubmitCastingDialog(actor, spell);
   }
 
-  return getTowCombatOverlaySystemAdapter().setupCastingTest(actor, { lore, spell }, SELF_ROLL_CONTEXT);
+  return getTowCombatOverlaySystemAdapter().setupCastingTest(actor, { lore, spell }, createTowCombatOverlayRollContext(actor, SELF_ROLL_CONTEXT));
 }
 
 export function towCombatOverlayRenderSpellSelector(actor, spells) {

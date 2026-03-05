@@ -7,6 +7,7 @@ import {
   OVERLAY_CONTROL_ICON_OUTLINE_COLOR,
   OVERLAY_CONTROL_ICON_OUTLINE_THICKNESS,
   OVERLAY_CONTROL_ICON_TINT,
+  OVERLAY_CONTROL_ROW_GAP_PX,
   OVERLAY_FONT_SIZE,
   OVERLAY_TEXT_RESOLUTION_MAX,
   OVERLAY_TEXT_RESOLUTION_MIN,
@@ -319,23 +320,33 @@ export function towCombatOverlayUpdateResilienceLabel(tokenObject) {
   valueText.text = `${resilience}`;
   towCombatOverlayTuneOverlayText(valueText);
   const gap = 4;
-  const padX = 3;
-  const padY = 2;
+  const padX = 0;
+  const padY = 0;
   icon.position.set(0, Math.round(-icon.height / 2));
   valueText.position.set(Math.round(icon.width + gap), 0);
-  const blockWidth = icon.width + gap + valueText.width;
-  const blockHeight = Math.max(icon.height, valueText.height);
+  const iconBounds = icon.getLocalBounds();
+  const valueBounds = valueText.getLocalBounds();
+  const hitLeft = Math.min(icon.x + iconBounds.x, valueText.x + valueBounds.x);
+  const hitTop = Math.min(icon.y + iconBounds.y, valueText.y + valueBounds.y);
+  const hitRight = Math.max(
+    icon.x + iconBounds.x + iconBounds.width,
+    valueText.x + valueBounds.x + valueBounds.width
+  );
+  const hitBottom = Math.max(
+    icon.y + iconBounds.y + iconBounds.height,
+    valueText.y + valueBounds.y + valueBounds.height
+  );
   towCombatOverlayDrawHitBoxRect(
     hitBox,
-    -padX,
-    Math.round(-(blockHeight / 2) - padY),
-    Math.round(blockWidth + (padX * 2)),
-    Math.round(blockHeight + (padY * 2))
+    Math.round(hitLeft - padX),
+    Math.round(hitTop - padY),
+    Math.round(Math.max(1, (hitRight - hitLeft) + (padX * 2))),
+    Math.round(Math.max(1, (hitBottom - hitTop) + (padY * 2)))
   );
 
   const overlayScale = overlayControlsGetTokenOverlayScaleRef(tokenObject);
   const edgePad = overlayControlsGetOverlayEdgePadPxRef(tokenObject);
-  const rowGap = Math.max(18, Math.max(icon.height, valueText.height) + 4);
+  const rowGap = OVERLAY_CONTROL_ROW_GAP_PX;
   const rightTopY = (tokenObject.h / 2) - ((rowGap * overlayScale) / 2);
   label.position.set(Math.round(tokenObject.w + edgePad), Math.round(rightTopY));
   label.scale.set(overlayScale);

@@ -11,6 +11,7 @@ import {
 } from "./core-service.js";
 import { shouldTowCombatOverlayAutoSubmitDialogs } from "../bootstrap/register-settings.js";
 import { getTowCombatOverlayConstants } from "../runtime/constants.js";
+import { createTowCombatOverlayRollContext } from "./roll-modifier-service.js";
 import { getTowCombatOverlaySystemAdapter } from "../system-adapter/system-adapter.js";
 
 const {
@@ -98,14 +99,15 @@ function towCombatOverlayArmAutoSubmitAbilityDialog(actor, ability) {
 
 export async function towCombatOverlaySetupAbilityTestWithDamage(actor, ability, { autoRoll = false } = {}) {
   towCombatOverlayArmDamageAppend(actor, ability);
+  const rollContext = createTowCombatOverlayRollContext(actor);
 
   let testRef;
 
   if (autoRoll) {
     towCombatOverlayArmAutoSubmitAbilityDialog(actor, ability);
-    testRef = await getTowCombatOverlaySystemAdapter().setupAbilityTest(actor, ability);
+    testRef = await getTowCombatOverlaySystemAdapter().setupAbilityTest(actor, ability, rollContext);
   } else {
-    testRef = await getTowCombatOverlaySystemAdapter().setupAbilityTest(actor, ability);
+    testRef = await getTowCombatOverlaySystemAdapter().setupAbilityTest(actor, ability, rollContext);
   }
 
   if (!testRef) return null;

@@ -3,6 +3,11 @@ import {
   SELF_ROLL_CONTEXT,
 } from "../runtime/action-runtime-constants.js";
 import { getTowCombatOverlayConstants } from "../runtime/constants.js";
+import {
+  createTowCombatOverlayRollContext,
+  getTowCombatOverlayActorRollState,
+  getTowCombatOverlayActorRollModifierFields
+} from "./roll-modifier-service.js";
 import { towCombatOverlayArmAutoSubmitDialog } from "./attack-service.js";
 import {
   towCombatOverlayEscapeHtml,
@@ -69,7 +74,7 @@ function towCombatOverlayArmAutoSubmitSkillDialog(actor, skill) {
 
 export async function towCombatOverlayRollSkill(actor, skill, { autoRoll = false } = {}) {
   if (autoRoll) towCombatOverlayArmAutoSubmitSkillDialog(actor, skill);
-  return getTowCombatOverlaySystemAdapter().setupSkillTest(actor, skill, SELF_ROLL_CONTEXT);
+  return getTowCombatOverlaySystemAdapter().setupSkillTest(actor, skill, createTowCombatOverlayRollContext(actor, SELF_ROLL_CONTEXT));
 }
 
 async function towCombatOverlayRollCharacteristic(actor, characteristic) {
@@ -95,11 +100,8 @@ async function towCombatOverlayRollCharacteristic(actor, characteristic) {
     characteristic,
     target,
     dice: target,
-    bonus: 0,
-    penalty: 0,
-    glorious: 0,
-    grim: 0,
-    state: "normal",
+    ...getTowCombatOverlayActorRollModifierFields(actor),
+    state: getTowCombatOverlayActorRollState(actor),
     loseTies: false,
     rollMode: game.settings.get("core", "rollMode"),
     speaker: CONFIG.ChatMessage.documentClass.getSpeaker({ actor }),
