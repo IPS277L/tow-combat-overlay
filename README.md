@@ -4,8 +4,7 @@ FoundryVTT module for combat overlay and automation helpers for Warhammer: The O
 
 ## Layout
 
-- `the-old-world-combat-overlay/`
-  - Release/package root for FoundryVTT.
+- Repository root is the FoundryVTT package root:
   - `module.json`
   - `scripts/`
   - `styles/`
@@ -14,7 +13,10 @@ FoundryVTT module for combat overlay and automation helpers for Warhammer: The O
   - `lang/`
 
 - `oldworld-foundryvtt/`
-  - Git submodule for the WHTOW system reference used by this module.
+  - Local WHTOW system reference checkout used by this module for API/source-of-truth checks.
+  - Ignored by git and not included in this repository release artifacts.
+  - Optional local setup:
+    - `git clone git@github.com:IPS277L/OldWorld-FoundryVTT.git oldworld-foundryvtt`
 
 - `docs/`
   - Local project notes and migration records.
@@ -34,31 +36,31 @@ Current note:
 ## Notes
 
 - Legacy macro source, generated macro bundles, and macro build tooling have been removed.
-- The runtime is native ESM and is bootstrapped from `the-old-world-combat-overlay/scripts/main.js`.
+- The runtime is native ESM and is bootstrapped from `scripts/main.js`.
 - The ESM runtime is now grouped by concern:
-  - `the-old-world-combat-overlay/scripts/esm/bootstrap/`
-  - `the-old-world-combat-overlay/scripts/esm/combat/`
-  - `the-old-world-combat-overlay/scripts/esm/runtime/`
-  - `the-old-world-combat-overlay/scripts/esm/overlay/`
-  - `the-old-world-combat-overlay/scripts/esm/system-adapter/`
+  - `scripts/esm/bootstrap/`
+  - `scripts/esm/combat/`
+  - `scripts/esm/runtime/`
+  - `scripts/esm/overlay/`
+  - `scripts/esm/system-adapter/`
 - The overlay runtime is also grouped internally by concern:
-  - `the-old-world-combat-overlay/scripts/esm/overlay/controls/`
-  - `the-old-world-combat-overlay/scripts/esm/overlay/layout/`
-  - `the-old-world-combat-overlay/scripts/esm/overlay/lifecycle/`
-  - `the-old-world-combat-overlay/scripts/esm/overlay/status/`
-  - `the-old-world-combat-overlay/scripts/esm/overlay/shared/`
-  - `the-old-world-combat-overlay/scripts/esm/overlay/automation/`
+  - `scripts/esm/overlay/controls/`
+  - `scripts/esm/overlay/layout/`
+  - `scripts/esm/overlay/lifecycle/`
+  - `scripts/esm/overlay/status/`
+  - `scripts/esm/overlay/shared/`
+  - `scripts/esm/overlay/automation/`
 - The overlay/action runtime is registered through the module API only, but that API should currently be treated as provisional and unsupported for compatibility purposes.
-- Repo-only files such as `.gitignore`, `.gitmodules`, docs, and the system submodule remain outside the release/package root.
-- The package manifest at `the-old-world-combat-overlay/module.json` is the only supported runtime entrypoint.
+- Repo-only files such as `.gitignore` and `docs/` remain outside runtime logic.
+- The package manifest at `module.json` is the only supported runtime entrypoint.
 - The top-level overlay barrels are still the stable overlay import surface:
-  - `the-old-world-combat-overlay/scripts/esm/overlay/controls-service.js`
-  - `the-old-world-combat-overlay/scripts/esm/overlay/overlay-service.js`
-  - `the-old-world-combat-overlay/scripts/esm/overlay/layout-state-service.js`
+  - `scripts/esm/overlay/controls-service.js`
+  - `scripts/esm/overlay/overlay-service.js`
+  - `scripts/esm/overlay/layout-state-service.js`
 - Runtime naming is now standardized around `towCombatOverlay` and shared constants:
   - module API keys use `combatOverlayActions` and `combatOverlay`
-  - common notifications, dialog labels, and tooltip copy are centralized in `the-old-world-combat-overlay/scripts/esm/runtime/constants.js`
-  - internal overlay expando keys are centralized in `the-old-world-combat-overlay/scripts/esm/runtime/overlay-runtime-constants.js`
+  - common notifications, dialog labels, and tooltip copy are centralized in `scripts/esm/runtime/constants.js`
+  - internal overlay expando keys are centralized in `scripts/esm/runtime/overlay-runtime-constants.js`
 - Foundry 13 dialog dismiss handling is patched so wrapped system dialogs return a promise from `close()`.
 - Overlay tooltip text now reflects actual WHTOW behavior more accurately, including explicit champion wording and threshold-based NPC handling derived from system state.
 - The main remaining technical debt is overlay behavior complexity rather than file layout or naming consistency.
