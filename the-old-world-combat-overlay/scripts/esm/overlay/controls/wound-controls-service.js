@@ -18,7 +18,11 @@ import {
   OVERLAY_CONTROL_ROW_GAP_PX,
   OVERLAY_FONT_SIZE,
   PreciseTextClass,
-  TOKEN_CONTROL_PAD
+  ROLL_MODIFIER_GLORIOUS_TINT,
+  ROLL_MODIFIER_GRIM_TINT,
+  TOKEN_CONTROL_PAD,
+  WOUND_CONTROL_LEFT_GROUP_INSET_PX,
+  WOUND_CONTROL_MODIFIER_SIGN_SLOT_WIDTH
 } from "../../runtime/overlay-runtime-constants.js";
 import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
 import { getTowCombatOverlayActionsApi } from "../../bootstrap/register-public-apis.js";
@@ -66,8 +70,8 @@ function getOverlayControlsAutomationRef() {
 }
 
 function getRollModifierStateTint(rollState) {
-  if (rollState === "grim") return 0x802c2f;
-  if (rollState === "glorious") return 0x407e41;
+  if (rollState === "grim") return ROLL_MODIFIER_GRIM_TINT;
+  if (rollState === "glorious") return ROLL_MODIFIER_GLORIOUS_TINT;
   return 0xFFFFFF;
 }
 
@@ -214,7 +218,7 @@ export function towCombatOverlayCreateWoundControlUI(tokenObject) {
 
   const attackIcon = towCombatOverlayCreateOverlayIconSprite(ICON_SRC_ATK, OVERLAY_FONT_SIZE + 2);
   const defenceIcon = towCombatOverlayCreateOverlayIconSprite(ICON_SRC_DEF, OVERLAY_FONT_SIZE + 2);
-  const actionSeparatorText = new PreciseTextClass("/", towCombatOverlayGetIconValueStyle());
+  const actionSeparatorText = new PreciseTextClass("·", towCombatOverlayGetIconValueStyle());
   towCombatOverlayTuneOverlayText(actionSeparatorText);
   if (actionSeparatorText.style) actionSeparatorText.style.fontSize = OVERLAY_FONT_SIZE + 11;
   actionSeparatorText.anchor.set(0, 0.5);
@@ -502,7 +506,7 @@ export function towCombatOverlayUpdateWoundControlUI(tokenObject) {
 
   const padX = 0;
   const padY = 0;
-  const modifierSignSlotWidth = 15;
+  const modifierSignSlotWidth = WOUND_CONTROL_MODIFIER_SIGN_SLOT_WIDTH;
   const modifierOffsetX = -2;
   const modifierOffsetY = 0;
   const rowGap = OVERLAY_CONTROL_ROW_GAP_PX;
@@ -536,10 +540,11 @@ export function towCombatOverlayUpdateWoundControlUI(tokenObject) {
   ui.position.set(Math.round(tokenObject.w + edgePad), Math.round(tokenObject.h / 2));
 
   const leftRightEdgeX = (-edgePad - ui.position.x) * inverseScale;
-  const actionGap = 1;
+  const leftGroupInsetPx = WOUND_CONTROL_LEFT_GROUP_INSET_PX;
+  const actionGap = 0;
   const actionBlockWidth = attackIcon.width + actionGap + actionSeparatorText.width + actionGap + defenceIcon.width;
-  const actionBlockLeft = Math.round(leftRightEdgeX - actionBlockWidth);
-  const attackIconNudgeX = 2;
+  const actionBlockLeft = Math.round(leftRightEdgeX - actionBlockWidth + leftGroupInsetPx);
+  const attackIconNudgeX = 0;
   attackIcon.position.set(actionBlockLeft + attackIconNudgeX, Math.round(actionY - (attackIcon.height / 2)));
   actionSeparatorText.position.set(
     Math.round(actionBlockLeft + attackIcon.width + actionGap),

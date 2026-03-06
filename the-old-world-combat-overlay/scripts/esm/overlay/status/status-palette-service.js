@@ -20,12 +20,14 @@ import { clearStatusTooltip, hideStatusTooltip, runActorOpLock } from "../shared
 import {
   towCombatOverlayBindTooltipHandlers,
   towCombatOverlayCanEditActor,
+  towCombatOverlayClampNumber,
   towCombatOverlayForEachSceneToken,
   towCombatOverlayGetActorFromToken,
   towCombatOverlayGetMouseButton,
   towCombatOverlayGetOverlayEdgePadPx,
   towCombatOverlayGetTokenOverlayScale,
   towCombatOverlayPreventPointerDefault,
+  towCombatOverlayRoundTo,
   towCombatOverlayWarnNoPermission
 } from "../shared/core-helpers-service.js";
 import {
@@ -288,6 +290,63 @@ function drawStatusPaletteBackdrop(layer, { iconSize, totalWidth, totalHeight, b
   backdrop.endFill();
 }
 
+function getStatusPaletteLayoutForToken(tokenObject, expectedCount) {
+  const columns = Math.max(1, Math.ceil(Number(expectedCount ?? 0) / STATUS_PALETTE_ROWS));
+  const overlayScale = towCombatOverlayGetTokenOverlayScale(tokenObject);
+  const minSize = 4;
+  const maxSize = 96;
+  const baseSize = Math.max(minSize, (OVERLAY_FONT_SIZE + 2) * overlayScale);
+  const tokenWidth = Number(tokenObject?.w ?? NaN);
+  const hasTokenWidth = Number.isFinite(tokenWidth) && tokenWidth > 0;
+
+  const getMetrics = (size) => {
+    const iconSize = towCombatOverlayRoundTo(towCombatOverlayClampNumber(size, minSize, maxSize), 2);
+    const iconGap = towCombatOverlayRoundTo(Math.max(0, STATUS_PALETTE_ICON_GAP * (iconSize / STATUS_PALETTE_ICON_SIZE)), 2);
+    const totalWidth = (columns * iconSize) + ((columns - 1) * iconGap);
+    const backdropStyle = getStatusPaletteBackdropStyle(iconSize);
+    const renderedWidth = totalWidth + (backdropStyle.padX * 2);
+    return { iconSize, iconGap, totalWidth, renderedWidth, backdropStyle };
+  };
+
+  if (!hasTokenWidth) {
+    const fallback = getMetrics(baseSize);
+    return { columns, iconSize: fallback.iconSize, iconGap: fallback.iconGap };
+  }
+
+  let iconSize = towCombatOverlayClampNumber(baseSize, minSize, maxSize);
+  for (let i = 0; i < 5; i++) {
+    const current = getMetrics(iconSize);
+    const availableContentWidth = Math.max(1, tokenWidth - (current.backdropStyle.padX * 2));
+    const nextSize = (availableContentWidth - ((columns - 1) * current.iconGap)) / columns;
+    const clampedNext = towCombatOverlayClampNumber(nextSize, minSize, maxSize);
+    if (!Number.isFinite(clampedNext)) break;
+    if (Math.abs(clampedNext - iconSize) < 0.05) {
+      iconSize = clampedNext;
+      break;
+    }
+    iconSize = clampedNext;
+  }
+
+  let fitted = getMetrics(iconSize);
+  if (fitted.renderedWidth > tokenWidth) {
+    let probe = iconSize;
+    for (let i = 0; i < 40; i++) {
+      probe = towCombatOverlayClampNumber(probe - 0.25, minSize, maxSize);
+      const candidate = getMetrics(probe);
+      if (candidate.renderedWidth <= tokenWidth || probe <= minSize) {
+        fitted = candidate;
+        break;
+      }
+    }
+  }
+
+  return {
+    columns,
+    iconSize: towCombatOverlayRoundTo(fitted.iconSize, 2),
+    iconGap: towCombatOverlayRoundTo(fitted.iconGap, 2)
+  };
+}
+
 export function setupStatusPalette(tokenObject) {
   if (!tokenObject || tokenObject.destroyed) return;
   const actor = towCombatOverlayGetActorFromToken(tokenObject);
@@ -296,9 +355,7 @@ export function setupStatusPalette(tokenObject) {
   if (!conditions.length) return clearStatusPalette(tokenObject);
 
   const expectedCount = conditions.length;
-  const overlayScale = towCombatOverlayGetTokenOverlayScale(tokenObject);
-  const iconSize = Math.max(6, Math.round((OVERLAY_FONT_SIZE + 2) * overlayScale));
-  const iconGap = Math.max(1, Math.round(STATUS_PALETTE_ICON_GAP * (iconSize / STATUS_PALETTE_ICON_SIZE)));
+  const { columns, iconSize, iconGap } = getStatusPaletteLayoutForToken(tokenObject, expectedCount);
   let layer = tokenObject[KEYS.statusPaletteLayer];
   const iconChildrenCount = layer
     ? (layer.children?.filter((child) => child?.[KEYS.statusConditionId]).length ?? 0)
@@ -316,7 +373,6 @@ export function setupStatusPalette(tokenObject) {
     tokenObject.addChild(layer);
     tokenObject[KEYS.statusPaletteLayer] = layer;
 
-    const columns = Math.max(1, Math.ceil(expectedCount / STATUS_PALETTE_ROWS));
     for (let i = 0; i < conditions.length; i++) {
       const condition = conditions[i];
       const sprite = PIXI.Sprite.from(condition.img);
@@ -348,14 +404,15 @@ export function setupStatusPalette(tokenObject) {
     tokenObject[KEYS.statusPaletteMetrics] = { iconSize, iconGap };
   }
 
-  const columns = Math.max(1, Math.ceil(expectedCount / STATUS_PALETTE_ROWS));
   const totalRows = Math.ceil(expectedCount / columns);
   const totalWidth = (columns * iconSize) + ((columns - 1) * iconGap);
   const totalHeight = (totalRows * iconSize) + ((totalRows - 1) * iconGap);
   const edgePad = towCombatOverlayGetOverlayEdgePadPx(tokenObject);
   const backdropStyle = getStatusPaletteBackdropStyle(iconSize);
+  const renderedWidth = totalWidth + (backdropStyle.padX * 2);
+  layer.scale.set(1);
   layer.position.set(
-    Math.round((tokenObject.w - totalWidth) / 2),
+    Math.round(((tokenObject.w - renderedWidth) / 2) + backdropStyle.padX),
     Math.round(tokenObject.h + edgePad + backdropStyle.padY)
   );
   drawStatusPaletteBackdrop(layer, { iconSize, totalWidth, totalHeight, backdropStyle });

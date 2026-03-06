@@ -82,6 +82,7 @@ function scheduleTowCombatOverlayPreviewRestore(tokenObject) {
 }
 
 export function towCombatOverlayRefreshTokenOverlay(tokenObject) {
+  hideDefaultStatusPanelForOverlay(tokenObject);
   if (hasTowCombatOverlayPreviewClone(tokenObject)) {
     setTowCombatOverlayTokenVisualVisibility(tokenObject, false);
     scheduleTowCombatOverlayPreviewRestore(tokenObject);
@@ -90,7 +91,6 @@ export function towCombatOverlayRefreshTokenOverlay(tokenObject) {
   setTowCombatOverlayTokenVisualVisibility(tokenObject, tokenObject.visible !== false);
   towCombatOverlayPrimeDeadPresence(towCombatOverlayGetActorFromToken(tokenObject));
   towCombatOverlayEnsureTokenOverlayInteractivity(tokenObject);
-  hideDefaultStatusPanelForOverlay(tokenObject);
   towCombatOverlayHideCoreTokenHoverVisuals(tokenObject);
   setupStatusPalette(tokenObject);
   towCombatOverlayUpdateWoundControlUI(tokenObject);

@@ -10,6 +10,7 @@ const {
   overlayScaleExpSmall: OVERLAY_SCALE_EXP_SMALL,
   overlayScaleExpLarge: OVERLAY_SCALE_EXP_LARGE,
   overlayEdgePadMinFactor: OVERLAY_EDGE_PAD_MIN_FACTOR,
+  overlayEdgePadMaxFactor: OVERLAY_EDGE_PAD_MAX_FACTOR,
   overlayEdgePadExp: OVERLAY_EDGE_PAD_EXP
 } = getTowCombatOverlayRuntimeConstants();
 const { notifications: MODULE_NOTIFICATIONS } = getTowCombatOverlayConstants();
@@ -76,7 +77,10 @@ export function towCombatOverlayGetTokenOverlayScale(tokenObject) {
 export function towCombatOverlayGetOverlayEdgePad(tokenObject) {
   const overlayScale = towCombatOverlayGetTokenOverlayScale(tokenObject);
   const scaledFactor = Math.pow(Math.max(overlayScale, 0.001), OVERLAY_EDGE_PAD_EXP);
-  const factor = Math.max(OVERLAY_EDGE_PAD_MIN_FACTOR, Math.min(1, scaledFactor));
+  const factor = Math.max(
+    OVERLAY_EDGE_PAD_MIN_FACTOR,
+    Math.min(OVERLAY_EDGE_PAD_MAX_FACTOR, scaledFactor)
+  );
   return TOKEN_CONTROL_PAD * factor;
 }
 

@@ -74,19 +74,20 @@ export const STATUS_PALETTE_SPECIAL_BG_OUTLINE_ALPHA = 0.72;
 export const STATUS_PALETTE_SPECIAL_BG_STAGGERED_ALPHA = 0.58;
 export const STATUS_PALETTE_SPECIAL_BG_DEAD_ALPHA = 0.62;
 export const STATUS_PALETTE_BACKDROP_COLOR = 0xFFF4D8;
-export const STATUS_PALETTE_BACKDROP_FILL_ALPHA = 0.22;
-export const STATUS_PALETTE_BACKDROP_BORDER_COLOR = 0xE0C27B;
-export const STATUS_PALETTE_BACKDROP_BORDER_ALPHA = 0.46;
-export const STATUS_PALETTE_BACKDROP_BORDER_WIDTH = 1;
+export const STATUS_PALETTE_BACKDROP_FILL_ALPHA = 0.17;
 export const STATUS_PALETTE_BACKDROP_RADIUS = 6;
 export const STATUS_PALETTE_BACKDROP_PAD_X = 4;
 export const STATUS_PALETTE_BACKDROP_PAD_Y = 3;
-export const LAYOUT_BORDER_COLOR = 0xE39A1A;
-export const LAYOUT_BORDER_ALPHA = 1;
-export const LAYOUT_BORDER_WIDTH = 2;
+export const LAYOUT_BORDER_COLOR = 0xC6B89A;
+export const LAYOUT_BORDER_ALPHA = 0.85;
+export const LAYOUT_BORDER_WIDTH = 1.6;
 export const LAYOUT_BORDER_RADIUS = 6;
 export const OVERLAY_FONT_SIZE = 22;
-export const OVERLAY_CONTROL_ROW_GAP_PX = 32;
+export const OVERLAY_CONTROL_ROW_GAP_PX = 30;
+export const WOUND_CONTROL_LEFT_GROUP_INSET_PX = 5;
+export const WOUND_CONTROL_MODIFIER_SIGN_SLOT_WIDTH = 13;
+export const ROLL_MODIFIER_GRIM_TINT = 0x802C2F;
+export const ROLL_MODIFIER_GLORIOUS_TINT = 0x407E41;
 export const DRAG_START_THRESHOLD_PX = 8;
 export const DRAG_LINE_OUTER_COLOR = 0x1A0909;
 export const DRAG_LINE_OUTER_ALPHA = 0.85;
@@ -131,7 +132,8 @@ export const OVERLAY_SCALE_MIN = 0.26;
 export const OVERLAY_SCALE_MAX = 1.75;
 export const OVERLAY_SCALE_EXP_SMALL = 0.85;
 export const OVERLAY_SCALE_EXP_LARGE = 0.75;
-export const OVERLAY_EDGE_PAD_MIN_FACTOR = 0.58;
+export const OVERLAY_EDGE_PAD_MIN_FACTOR = 0.42;
+export const OVERLAY_EDGE_PAD_MAX_FACTOR = 1.45;
 export const OVERLAY_EDGE_PAD_EXP = 0.65;
 export const LAYOUT_BORDER_SCALE_EXP = 1.15;
 export const LAYOUT_BORDER_RADIUS_SCALE_EXP = 0.96;
@@ -218,10 +220,8 @@ export function getStatusPaletteBackdropStyle(iconSize) {
   return {
     padX: roundTo(clampNumber(STATUS_PALETTE_BACKDROP_PAD_X * Math.pow(iconScale, 0.95), 2.2, 9)),
     padY: roundTo(clampNumber(STATUS_PALETTE_BACKDROP_PAD_Y * Math.pow(iconScale, 0.95), 1.8, 7)),
-    borderWidth: roundTo(clampNumber(STATUS_PALETTE_BACKDROP_BORDER_WIDTH * Math.pow(iconScale, 1.05), 0.45, 1.8)),
     radius: roundTo(clampNumber(STATUS_PALETTE_BACKDROP_RADIUS * Math.pow(iconScale, 0.98), 2.8, 10)),
-    fillAlpha: roundTo(clampNumber(STATUS_PALETTE_BACKDROP_FILL_ALPHA * (0.84 + (iconScale * 0.16)), 0.14, 0.34)),
-    borderAlpha: roundTo(clampNumber(STATUS_PALETTE_BACKDROP_BORDER_ALPHA * (0.9 + (iconScale * 0.1)), 0.32, 0.62))
+    fillAlpha: roundTo(clampNumber(STATUS_PALETTE_BACKDROP_FILL_ALPHA * (0.84 + (iconScale * 0.16)), 0.14, 0.34))
   };
 }
 
@@ -236,6 +236,7 @@ export function getTowCombatOverlayRuntimeConstants() {
     overlayScaleExpSmall: OVERLAY_SCALE_EXP_SMALL,
     overlayScaleExpLarge: OVERLAY_SCALE_EXP_LARGE,
     overlayEdgePadMinFactor: OVERLAY_EDGE_PAD_MIN_FACTOR,
+    overlayEdgePadMaxFactor: OVERLAY_EDGE_PAD_MAX_FACTOR,
     overlayEdgePadExp: OVERLAY_EDGE_PAD_EXP
   });
 }

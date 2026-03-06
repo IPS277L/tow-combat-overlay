@@ -350,6 +350,8 @@ export function towCombatOverlayUpdateResilienceLabel(tokenObject) {
   const rightTopY = (tokenObject.h / 2) - ((rowGap * overlayScale) / 2);
   label.position.set(Math.round(tokenObject.w + edgePad), Math.round(rightTopY));
   label.scale.set(overlayScale);
+  icon.alpha = 1;
+  valueText.alpha = 1;
   label.visible = tokenObject.visible;
 }
 
