@@ -1,79 +1,66 @@
-# Macros Repo
+# The Old World Combat Overlay
 
-This folder is structured as a standalone macros repository.
+FoundryVTT module for combat overlay and automation helpers for Warhammer: The Old World Roleplaying Game.
 
 ## Layout
 
-- `macros/overlay/`
-  - User-facing macro entrypoints.
-  - `overlay-toggle.js`
-  - `spell-cast.js`
+- Repository root is the FoundryVTT package root:
+  - `module.json`
+  - `scripts/`
+  - `styles/`
+  - `templates/`
+  - `packs/`
+  - `lang/`
 
-- `macros/src/actions/`
-  - Editable source of truth for actions library.
-  - `00-core.js`
-  - `10-attack-flow.js`
-  - `20-defence-flow.js`
-  - `30-api.js`
+- `oldworld-foundryvtt/`
+  - Local WHTOW system reference checkout used by this module for API/source-of-truth checks.
+  - Ignored by git and not included in this repository release artifacts.
+  - Optional local setup:
+    - `git clone git@github.com:IPS277L/OldWorld-FoundryVTT.git oldworld-foundryvtt`
 
-- `macros/src/overlay/`
-  - Editable source of truth for overlay library.
-  - `00-header-and-combat.js`
-  - `10-layout-and-state.js`
-  - `20-controls.js`
-  - `30-status-and-api.js`
+- `docs/`
+  - Local project notes and migration records.
 
-- `macros/libs/`
-  - Generated monolithic libraries (compatibility macros for Foundry import).
-  - `tow-actions-lib-v1.js`
-  - `tow-overlay-lib-v1.js`
+## Runtime
 
-- `macros/libs/actions-runtime/`
-  - Generated runtime-decoupled action macros.
-  - Part macros + loader macro register `game.towActions`.
+- Module API:
+  - `game.modules.get("the-old-world-combat-overlay")?.api`
 
-- `macros/libs/overlay-runtime/`
-  - Generated runtime-decoupled overlay macros.
-  - Part macros + loader macro register `game.towOverlay`.
+Current note:
+- the module API is the only live integration entrypoint exposed by the module runtime
+- use the module API at your own risk
+- public API versioning and compatibility guarantees are not supported at the moment
+- the legacy `game.towActions` / `game.towOverlay` globals are no longer exposed
+- the current module API keys are `combatOverlayActions` and `combatOverlay`
 
-- `macros/tools/`
-  - Local build tooling.
-  - `build-actions-lib.sh`
-  - `build-actions-runtime-libs.mjs`
-  - `build-overlay-lib.sh`
-  - `build-overlay-runtime-libs.mjs`
+## Notes
 
-## Build
-
-- Rebuild all artifacts:
-  - `bash macros/tools/build-all.sh`
-
-- Rebuild actions artifacts:
-  - `bash macros/tools/build-actions-lib.sh`
-
-- Rebuild overlay artifacts:
-  - `bash macros/tools/build-overlay-lib.sh`
-
-## Runtime Macro Names
-
-- Actions monolith:
-  - `tow-actions-lib-v1`
-  - fallback: `tow-actions-lib`
-
-- Overlay monolith:
-  - `tow-overlay-lib-v1`
-  - fallback: `tow-overlay-lib`
-
-- Actions runtime-decoupled:
-  - `tow-actions-runtime-part-00-core-v1`
-  - `tow-actions-runtime-part-10-attack-flow-v1`
-  - `tow-actions-runtime-part-20-defence-flow-v1`
-  - `tow-actions-runtime-part-30-api-v1`
-  - `tow-actions-runtime-loader-v1`
-
-- Overlay runtime-decoupled:
-  - `tow-overlay-runtime-part-00-header-and-combat-v1`
-  - `tow-overlay-runtime-part-10-layout-and-state-v1`
-  - `tow-overlay-runtime-part-20-controls-v1`
-  - `tow-overlay-runtime-part-30-status-and-api-v1`
-  - `tow-overlay-runtime-loader-v1`
+- Legacy macro source, generated macro bundles, and macro build tooling have been removed.
+- The runtime is native ESM and is bootstrapped from `scripts/main.js`.
+- The ESM runtime is now grouped by concern:
+  - `scripts/esm/bootstrap/`
+  - `scripts/esm/combat/`
+  - `scripts/esm/runtime/`
+  - `scripts/esm/overlay/`
+  - `scripts/esm/system-adapter/`
+- The overlay runtime is also grouped internally by concern:
+  - `scripts/esm/overlay/controls/`
+  - `scripts/esm/overlay/layout/`
+  - `scripts/esm/overlay/lifecycle/`
+  - `scripts/esm/overlay/status/`
+  - `scripts/esm/overlay/shared/`
+  - `scripts/esm/overlay/automation/`
+- The overlay/action runtime is registered through the module API only, but that API should currently be treated as provisional and unsupported for compatibility purposes.
+- Repo-only files such as `.gitignore` and `docs/` remain outside runtime logic.
+- The package manifest at `module.json` is the only supported runtime entrypoint.
+- The top-level overlay barrels are still the stable overlay import surface:
+  - `scripts/esm/overlay/controls-service.js`
+  - `scripts/esm/overlay/overlay-service.js`
+  - `scripts/esm/overlay/layout-state-service.js`
+- Runtime naming is now standardized around `towCombatOverlay` and shared constants:
+  - module API keys use `combatOverlayActions` and `combatOverlay`
+  - common notifications, dialog labels, and tooltip copy are centralized in `scripts/esm/runtime/constants.js`
+  - internal overlay expando keys are centralized in `scripts/esm/runtime/overlay-runtime-constants.js`
+- Foundry 13 dialog dismiss handling is patched so wrapped system dialogs return a promise from `close()`.
+- Overlay tooltip text now reflects actual WHTOW behavior more accurately, including explicit champion wording and threshold-based NPC handling derived from system state.
+- The main remaining technical debt is overlay behavior complexity rather than file layout or naming consistency.

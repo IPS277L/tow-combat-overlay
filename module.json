@@ -1,0 +1,29 @@
+{
+  "id": "the-old-world-combat-overlay",
+  "title": "The Old World Combat Overlay",
+  "description": "Combat overlay and automation helpers for Warhammer: The Old World Roleplaying Game.",
+  "version": "0.1.0",
+  "compatibility": {
+    "minimum": 13,
+    "verified": 13,
+    "maximum": 13
+  },
+  "esmodules": [
+    "scripts/main.js"
+  ],
+  "styles": [],
+  "packs": [],
+  "languages": [],
+  "relationships": {
+    "systems": [
+      {
+        "id": "whtow",
+        "type": "system",
+        "compatibility": {
+          "minimum": "1.0.5",
+          "verified": "1.0.5"
+        }
+      }
+    ]
+  }
+}
