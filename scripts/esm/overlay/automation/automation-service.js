@@ -1,4 +1,4 @@
-﻿import {
+import {
   AUTO_APPLY_WAIT_MS,
   AUTO_DEFENCE_WAIT_MS,
   AUTO_STAGGER_PATCH_MS,

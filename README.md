@@ -1,4 +1,4 @@
-﻿# The Old World Combat Overlay
+# The Old World Combat Overlay
 
 FoundryVTT module for combat overlay and automation helpers for Warhammer: The Old World Roleplaying Game.
 

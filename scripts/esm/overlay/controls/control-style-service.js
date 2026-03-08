@@ -1,4 +1,4 @@
-﻿import {
+import {
   ICON_SRC_RES,
   KEYS,
   NAME_TYPE_STACK_OVERLAP_PX,

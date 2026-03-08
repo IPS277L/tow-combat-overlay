@@ -1,4 +1,4 @@
-﻿function localizeTowCombatOverlayText(key, fallback) {
+function localizeTowCombatOverlayText(key, fallback) {
   const value = game?.i18n?.localize?.(key);
   return (typeof value === "string" && value !== key) ? value : fallback;
 }

@@ -1,4 +1,4 @@
-﻿import { registerTowCombatOverlayActionsApi } from "../combat/actions-api-service.js";
+import { registerTowCombatOverlayActionsApi } from "../combat/actions-api-service.js";
 import { getTowCombatOverlayActionServices } from "./register-action-services.js";
 
 export function registerTowCombatOverlayActionsRuntimeApi() {

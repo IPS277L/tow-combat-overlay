@@ -1,4 +1,4 @@
-﻿import {
+import {
   towCombatOverlayAttackActor,
   towCombatOverlayRunAttackForControlled
 } from "../combat/attack-service.js";

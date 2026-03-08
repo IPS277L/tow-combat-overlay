@@ -1,4 +1,4 @@
-﻿void import("./esm/bootstrap/register-module-hooks.js").then(({
+void import("./esm/bootstrap/register-module-hooks.js").then(({
   registerTowCombatOverlayModuleHooks
 }) => {
     if (typeof registerTowCombatOverlayModuleHooks !== "function") {

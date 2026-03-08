@@ -1,4 +1,4 @@
-﻿import { towCombatOverlayEnsurePromiseClose } from "../combat/attack-service.js";
+import { towCombatOverlayEnsurePromiseClose } from "../combat/attack-service.js";
 import { registerTowCombatOverlayApi } from "../combat/overlay-api-service.js";
 import { getTowCombatOverlayConstants } from "../runtime/constants.js";
 import { registerTowCombatOverlayActionsRuntimeApi } from "./register-actions-api.js";

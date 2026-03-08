@@ -1,4 +1,4 @@
-﻿import { getTowCombatOverlayConstants } from "../runtime/constants.js";
+import { getTowCombatOverlayConstants } from "../runtime/constants.js";
 import { syncTowCombatOverlayEnabledSetting } from "./register-module-hooks.js";
 
 export function getTowCombatOverlaySetting(settingKey, fallbackValue = null) {

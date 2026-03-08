@@ -1,4 +1,4 @@
-﻿import {
+import {
   towCombatOverlayApplyDialogClass,
   towCombatOverlayBindClick,
   towCombatOverlayGetAttackMeta,

@@ -1,4 +1,4 @@
-﻿import { getTowCombatOverlayRuntimeConstants } from "../runtime/overlay-runtime-constants.js";
+import { getTowCombatOverlayRuntimeConstants } from "../runtime/overlay-runtime-constants.js";
 import { WOUND_ITEM_TYPE } from "../runtime/overlay-runtime-constants.js";
 import { getTowCombatOverlayConstants } from "../runtime/constants.js";
 import {

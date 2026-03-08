@@ -1,4 +1,4 @@
-﻿import {
+import {
   DEFAULT_DEFENCE_SKILL,
   SELF_ROLL_CONTEXT,
 } from "../runtime/action-runtime-constants.js";
