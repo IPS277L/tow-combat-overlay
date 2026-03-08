@@ -157,8 +157,16 @@ export function towCombatOverlayDrawHitBoxRect(graphics, x, y, width, height) {
 export function towCombatOverlayUpdateNameLabel(tokenObject) {
   if (!tokenObject || tokenObject.destroyed) return;
 
-  const tokenName = tokenObject.document?.name ?? tokenObject.name ?? "";
   const actor = tokenObject.document?.actor ?? null;
+  const actorName = String(actor?.name ?? "").trim();
+  const nameplateName = String(tokenObject.nameplate?.text ?? "").trim();
+  const documentName = String(tokenObject.document?.name ?? "").trim();
+  const fallbackName = String(
+    tokenObject.name
+      ?? actorName
+      ?? ""
+  ).trim();
+  const tokenName = actorName || nameplateName || documentName || fallbackName;
   const typeLabel = towCombatOverlayGetActorTypeLabel(actor).toLowerCase();
   if (!tokenName) {
     const labelContainer = tokenObject[KEYS.nameLabel];

@@ -20,6 +20,7 @@ const {
   logPrefix: MODULE_LOG_PREFIX,
   moduleId: MODULE_ID
 } = getTowCombatOverlayConstants();
+
 function resolveTowCombatOverlayHookBindings() {
   const bindings = {
     refreshAllOverlays: towCombatOverlayRefreshAllOverlays,
@@ -83,12 +84,19 @@ export function registerTowCombatOverlayHooks() {
     }),
     updateActor: Hooks.on("updateActor", (actor, changed) => {
       const moduleFlagChanges = changed?.flags?.[MODULE_ID];
-      if (!moduleFlagChanges) return;
       const removeKey = `-=${MODULE_FLAGS.actorRollModifier}`;
-      const hasRollModifierChange = (MODULE_FLAGS.actorRollModifier in moduleFlagChanges) || (removeKey in moduleFlagChanges);
-      if (!hasRollModifierChange) return;
+      const hasRollModifierChange = !!moduleFlagChanges && (
+        (MODULE_FLAGS.actorRollModifier in moduleFlagChanges) ||
+        (removeKey in moduleFlagChanges)
+      );
+      const hasNameOrTypeChange =
+        ("name" in (changed ?? {})) ||
+        ("type" in (changed ?? {})) ||
+        !!changed?.system?.type ||
+        ("name" in (changed?.prototypeToken ?? {}));
+      if (!hasRollModifierChange && !hasNameOrTypeChange) return;
       bindings.refreshActorOverlays(actor);
-      bindings.queueActorOverlayResync(actor);
+      if (hasRollModifierChange) bindings.queueActorOverlayResync(actor);
     }),
     createActiveEffect: Hooks.on("createActiveEffect", (effect) => bindings.refreshActorOverlays(effect?.parent)),
     updateActiveEffect: Hooks.on("updateActiveEffect", (effect) => bindings.refreshActorOverlays(effect?.parent)),
