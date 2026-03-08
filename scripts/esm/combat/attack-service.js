@@ -1,4 +1,4 @@
-import {
+﻿import {
   towCombatOverlayApplyDialogClass,
   towCombatOverlayBindClick,
   towCombatOverlayGetAttackMeta,
@@ -135,7 +135,7 @@ export async function towCombatOverlayRenderAttackSelector(actor, attacks, { onF
     rows.map((row) => towCombatOverlayRenderSelectorRowButton(row))
   )).join("");
 
-  const content = await towCombatOverlayRenderTemplate("modules/the-old-world-combat-overlay/templates/combat/attack-selector.hbs", {
+  const content = await towCombatOverlayRenderTemplate("modules/tow-combat-overlay/templates/combat/attack-selector.hbs", {
     attackListHeader: MODULE_DIALOGS.attackListHeader,
     noAttacks: MODULE_DIALOGS.noAttacks,
     buttonMarkup

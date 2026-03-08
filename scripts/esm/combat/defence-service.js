@@ -1,4 +1,4 @@
-import {
+﻿import {
   DEFAULT_DEFENCE_SKILL,
   SELF_ROLL_CONTEXT,
 } from "../runtime/action-runtime-constants.js";
@@ -154,7 +154,7 @@ export async function towCombatOverlayRenderDefenceSelector(actor, entries) {
     skillEntries.map((entry) => towCombatOverlayRenderSelectorRowButton(buildRowData(entry)))
   )).join("");
 
-  const content = await towCombatOverlayRenderTemplate("modules/the-old-world-combat-overlay/templates/combat/defence-selector.hbs", {
+  const content = await towCombatOverlayRenderTemplate("modules/tow-combat-overlay/templates/combat/defence-selector.hbs", {
     defenceCharacteristicsHeader: MODULE_DIALOGS.defenceCharacteristicsHeader,
     defenceSkillsHeader: MODULE_DIALOGS.defenceSkillsHeader,
     noCharacteristics: MODULE_DIALOGS.noCharacteristics,

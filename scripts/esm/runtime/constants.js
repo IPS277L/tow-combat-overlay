@@ -1,12 +1,12 @@
-function localizeTowCombatOverlayText(key, fallback) {
+﻿function localizeTowCombatOverlayText(key, fallback) {
   const value = game?.i18n?.localize?.(key);
   return (typeof value === "string" && value !== key) ? value : fallback;
 }
 
 const MODULE_CONSTANTS_BASE = Object.freeze({
-  moduleId: "the-old-world-combat-overlay",
+  moduleId: "tow-combat-overlay",
   moduleName: "The Old World Combat Overlay",
-  logPrefix: "[the-old-world-combat-overlay]",
+  logPrefix: "[tow-combat-overlay]",
   apiKeys: Object.freeze({
     actions: "combatOverlayActions",
     overlay: "combatOverlay"

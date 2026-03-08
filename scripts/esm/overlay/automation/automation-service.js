@@ -1,4 +1,4 @@
-import {
+﻿import {
   AUTO_APPLY_WAIT_MS,
   AUTO_DEFENCE_WAIT_MS,
   AUTO_STAGGER_PATCH_MS,
@@ -306,17 +306,17 @@ async function postFlowSeparatorCard(opposed, { sourceStatusHints = [], targetSt
   const namesModel = getFlowNamesModel(attackerName, defenderName);
   const sourceStatusMarkup = (await Promise.all(
     toStatusItems(sourceStatusLabels).map((item) => towCombatOverlayRenderTemplate(
-      "modules/the-old-world-combat-overlay/templates/chat/rows/status-chip.hbs",
+      "modules/tow-combat-overlay/templates/chat/rows/status-chip.hbs",
       item
     ))
   )).join("");
   const targetStatusMarkup = (await Promise.all(
     toStatusItems(targetStatusLabels).map((item) => towCombatOverlayRenderTemplate(
-      "modules/the-old-world-combat-overlay/templates/chat/rows/status-chip.hbs",
+      "modules/tow-combat-overlay/templates/chat/rows/status-chip.hbs",
       item
     ))
   )).join("");
-  const content = await towCombatOverlayRenderTemplate("modules/the-old-world-combat-overlay/templates/chat/flow-separator.hbs", {
+  const content = await towCombatOverlayRenderTemplate("modules/tow-combat-overlay/templates/chat/flow-separator.hbs", {
     attackerName: namesModel.attackerName,
     defenderName: namesModel.defenderName,
     namesStacked: namesModel.needsStacked,

@@ -1,4 +1,4 @@
-import { getTowCombatOverlayConstants } from "../runtime/constants.js";
+﻿import { getTowCombatOverlayConstants } from "../runtime/constants.js";
 
 const { notifications: MODULE_NOTIFICATIONS } = getTowCombatOverlayConstants();
 

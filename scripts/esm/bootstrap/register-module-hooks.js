@@ -1,4 +1,4 @@
-import { towCombatOverlayEnsurePromiseClose } from "../combat/attack-service.js";
+﻿import { towCombatOverlayEnsurePromiseClose } from "../combat/attack-service.js";
 import { registerTowCombatOverlayApi } from "../combat/overlay-api-service.js";
 import { getTowCombatOverlayConstants } from "../runtime/constants.js";
 import { registerTowCombatOverlayActionsRuntimeApi } from "./register-actions-api.js";
@@ -14,9 +14,9 @@ import {
 
 function ensureTowCombatOverlayStylesheetLoaded() {
   const explicitHrefs = [
-    "modules/the-old-world-combat-overlay/styles/dialog-base.css",
-    "modules/the-old-world-combat-overlay/styles/dialog-selectors.css",
-    "modules/the-old-world-combat-overlay/styles/chat-cards.css"
+    "modules/tow-combat-overlay/styles/dialog-base.css",
+    "modules/tow-combat-overlay/styles/dialog-selectors.css",
+    "modules/tow-combat-overlay/styles/chat-cards.css"
   ];
   const links = Array.from(document.querySelectorAll("link[rel='stylesheet']"));
   const loadedHrefs = new Set(

@@ -1,4 +1,4 @@
-import {
+﻿import {
   DEAD_SYNC_DEBOUNCE_MS,
   DEAD_TO_WOUND_SYNC_DEBOUNCE_MS,
   MODULE_KEY,

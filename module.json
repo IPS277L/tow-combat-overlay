@@ -1,27 +1,33 @@
-{
-  "id": "the-old-world-combat-overlay",
-  "title": "The Old World Combat Overlay",
-  "description": "Combat overlay and automation helpers for Warhammer: The Old World Roleplaying Game.",
+﻿{
+  "id": "tow-combat-overlay",
+  "title": "Warhammer: The Old World - Combat Overlay",
+  "description": "<p>Combat overlay and automation helpers for Warhammer: The Old World Roleplaying Game.</p>",
   "version": "0.1.0",
   "compatibility": {
-    "minimum": 13,
-    "verified": 13,
-    "maximum": 13
+    "minimum": "13",
+    "verified": "13",
+    "maximum": "13"
   },
   "esmodules": [
     "scripts/main.js"
   ],
   "styles": [
-    "styles/dialog-base.css",
-    "styles/dialog-selectors.css",
-    "styles/chat-cards.css"
+    {
+      "src": "styles/dialog-base.css"
+    },
+    {
+      "src": "styles/dialog-selectors.css"
+    },
+    {
+      "src": "styles/chat-cards.css"
+    }
   ],
-  "packs": [],
   "languages": [
     {
       "lang": "en",
       "name": "English",
-      "path": "lang/en.json"
+      "path": "lang/en.json",
+      "flags": {}
     }
   ],
   "relationships": {
@@ -34,6 +40,22 @@
           "verified": "1.0.5"
         }
       }
+    ],
+    "recommends": [
+      {
+        "id": "tow-core",
+        "type": "module",
+        "compatibility": {}
+      }
     ]
-  }
+  },
+  "authors": [
+    {
+      "name": "IPS277L",
+      "url": "https://github.com/IPS277L",
+      "flags": {}
+    }
+  ],
+  "url": "https://github.com/IPS277L/tow-combat-overlay",
+  "flags": {}
 }

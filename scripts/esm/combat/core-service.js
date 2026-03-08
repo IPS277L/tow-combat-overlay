@@ -1,4 +1,4 @@
-import {
+﻿import {
   ATTACK_CALL_DEDUPE_MS,
   DAMAGE_RENDER_DEDUPE_MS,
   SHIFT_KEY
@@ -184,7 +184,7 @@ export function towCombatOverlayLocalize(key, fallback = "") {
 export async function towCombatOverlayRenderTemplate(path, data = {}) {
   const renderer = foundry?.applications?.handlebars?.renderTemplate;
   if (typeof renderer !== "function") {
-    throw new Error("[the-old-world-combat-overlay] Missing foundry.applications.handlebars.renderTemplate");
+    throw new Error("[tow-combat-overlay] Missing foundry.applications.handlebars.renderTemplate");
   }
   return renderer(path, data);
 }
@@ -233,7 +233,7 @@ export function towCombatOverlayGetAttackMeta(attack) {
 
 export function towCombatOverlayRenderSelectorRowButton(rowData = {}) {
   return towCombatOverlayRenderTemplate(
-    "modules/the-old-world-combat-overlay/templates/combat/rows/selector-row.hbs",
+    "modules/tow-combat-overlay/templates/combat/rows/selector-row.hbs",
     rowData
   );
 }
@@ -293,7 +293,7 @@ async function towCombatOverlayPostSeparateDamageMessage(message, damage) {
   const dedupeKey = `separate:${message.id}`;
   if (!towCombatOverlayMarkDamageRender(dedupe, dedupeKey)) return;
 
-  const content = await towCombatOverlayRenderTemplate("modules/the-old-world-combat-overlay/templates/chat/damage-display.hbs", {
+  const content = await towCombatOverlayRenderTemplate("modules/tow-combat-overlay/templates/chat/damage-display.hbs", {
     damageLabel: towCombatOverlayLocalize("TOWCOMBATOVERLAY.Chat.Damage", "Damage"),
     damage: Number(damage ?? 0)
   });

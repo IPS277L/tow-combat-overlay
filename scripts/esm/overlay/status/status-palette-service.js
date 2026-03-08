@@ -1,4 +1,4 @@
-import {
+﻿import {
   KEYS,
   OVERLAY_FONT_SIZE,
   STATUS_PALETTE_ACTIVE_TINT,

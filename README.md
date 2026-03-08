@@ -1,4 +1,4 @@
-# The Old World Combat Overlay
+﻿# The Old World Combat Overlay
 
 FoundryVTT module for combat overlay and automation helpers for Warhammer: The Old World Roleplaying Game.
 
@@ -24,7 +24,7 @@ FoundryVTT module for combat overlay and automation helpers for Warhammer: The O
 ## Runtime
 
 - Module API:
-  - `game.modules.get("the-old-world-combat-overlay")?.api`
+  - `game.modules.get("tow-combat-overlay")?.api`
 
 Current note:
 - the module API is the only live integration entrypoint exposed by the module runtime
