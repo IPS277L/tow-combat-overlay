@@ -1,0 +1,115 @@
+.chat-message .tow-combat-overlay-chat-card {
+  border-top: 1px solid rgba(130, 110, 80, 0.45);
+  border-bottom: 1px solid rgba(130, 110, 80, 0.45);
+  margin: 4px 0;
+  padding: 7px 8px;
+  text-align: center;
+  letter-spacing: 0.04em;
+  opacity: 0.9;
+  line-height: 1.35;
+  font-size: var(--font-size-16);
+}
+
+.chat-message .tow-combat-overlay-chat-card--damage {
+  padding: 6px 8px;
+}
+
+.chat-message .tow-combat-overlay-flow-card__names {
+  font-size: inherit;
+  text-align: center;
+  font-weight: 700;
+}
+
+.chat-message .tow-combat-overlay-flow-card__names.is-stacked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.2;
+  gap: 1px;
+}
+
+.chat-message .tow-combat-overlay-flow-card__vs {
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.chat-message .tow-combat-overlay-flow-card__line {
+  margin-top: 2px;
+  font-size: inherit;
+  text-align: center;
+}
+
+.chat-message .tow-combat-overlay-flow-card__statuses {
+  margin-top: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: stretch;
+  text-align: left;
+}
+
+.chat-message .tow-combat-overlay-flow-card__status-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.chat-message .tow-combat-overlay-flow-card__status-title {
+  opacity: 0.8;
+  min-width: 56px;
+}
+
+.chat-message .tow-combat-overlay-flow-card__status-list {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.chat-message .tow-combat-overlay-flow-card__tone.is-success {
+  color: #2e7d32;
+}
+
+.chat-message .tow-combat-overlay-flow-card__tone.is-failure {
+  color: #9b1c1c;
+}
+
+.chat-message .tow-combat-overlay-flow-card__tone.is-neutral {
+  color: #6b5e3a;
+}
+
+.chat-message .tow-combat-overlay-flow-card__chip {
+  display: inline-block;
+  margin: 0 2px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  border: 1px solid #8f8468;
+  background: #3a362b;
+  color: #efe8d2;
+  font-size: var(--font-size-12);
+  line-height: 1.4;
+}
+
+.chat-message .tow-combat-overlay-flow-card__chip.is-wound {
+  border-color: #b75b5b;
+  background: #5e1f1f;
+  color: #ffd9d9;
+}
+
+.chat-message .tow-combat-overlay-flow-card__chip.is-staggered {
+  border-color: #c9a447;
+  background: #5a4a18;
+  color: #ffe8a6;
+}
+
+.chat-message .tow-combat-overlay-flow-card__chip.is-prone {
+  border-color: #5f84c6;
+  background: #24344f;
+  color: #d6e6ff;
+}
+
+.chat-message .tow-combat-overlay-flow-card__chip.is-fault {
+  border-color: #a164bf;
+  background: #4b214f;
+  color: #f0d8ff;
+}

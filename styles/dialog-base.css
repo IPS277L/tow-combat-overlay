@@ -1,0 +1,72 @@
+.tow-combat-overlay-dialog .window-content {
+  padding: 8px;
+  background: #e7e3d6;
+  display: flex;
+  flex-direction: column;
+}
+
+.tow-combat-overlay-dialog .window-header {
+  background: linear-gradient(180deg, #3b342a 0%, #231f19 58%, #17140f 100%);
+  border-bottom: 1px solid #0f0d0a;
+  color: #e7dcc0;
+}
+
+.tow-combat-overlay-dialog .window-header .window-title {
+  color: #e7dcc0;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+}
+
+.tow-combat-overlay-dialog .window-header .header-control,
+.tow-combat-overlay-dialog .window-header .header-control i {
+  color: #e7dcc0;
+}
+
+.tow-combat-overlay-dialog .window-header .header-control:hover,
+.tow-combat-overlay-dialog .window-header .header-control:focus {
+  color: #f2e8cc;
+  text-shadow: 0 0 4px rgba(242, 232, 204, 0.28);
+}
+
+.tow-combat-overlay-dialog .dialog-content {
+  margin: 0 0 8px 0;
+}
+
+.tow-combat-overlay-dialog .dialog-buttons {
+  gap: 0;
+  margin-top: 0;
+}
+
+.tow-combat-overlay-dialog .dialog-buttons .dialog-button,
+.tow-combat-overlay-dialog .dialog-buttons button,
+.tow-combat-overlay-dialog .window-footer button,
+.tow-combat-overlay-dialog .form-footer button {
+  width: 100%;
+  min-height: 32px;
+  margin: 0;
+  border: 1px solid #b9b6aa;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+  font-size: 14px;
+  line-height: 1;
+  color: #202020;
+  outline: none;
+}
+
+.tow-combat-overlay-dialog .dialog-buttons .dialog-button:hover,
+.tow-combat-overlay-dialog .dialog-buttons .dialog-button:focus,
+.tow-combat-overlay-dialog .dialog-buttons .dialog-button:active,
+.tow-combat-overlay-dialog .dialog-buttons button:hover,
+.tow-combat-overlay-dialog .dialog-buttons button:focus,
+.tow-combat-overlay-dialog .dialog-buttons button:active,
+.tow-combat-overlay-dialog .window-footer button:hover,
+.tow-combat-overlay-dialog .window-footer button:focus,
+.tow-combat-overlay-dialog .window-footer button:active,
+.tow-combat-overlay-dialog .form-footer button:hover,
+.tow-combat-overlay-dialog .form-footer button:focus,
+.tow-combat-overlay-dialog .form-footer button:active {
+  border-color: #b9b6aa;
+  box-shadow: none;
+  outline: none;
+  color: #202020;
+}

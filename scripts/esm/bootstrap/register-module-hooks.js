@@ -12,6 +12,31 @@ import {
   registerTowCombatOverlaySettings
 } from "./register-settings.js";
 
+function ensureTowCombatOverlayStylesheetLoaded() {
+  const explicitHrefs = [
+    "modules/the-old-world-combat-overlay/styles/dialog-base.css",
+    "modules/the-old-world-combat-overlay/styles/dialog-selectors.css",
+    "modules/the-old-world-combat-overlay/styles/chat-cards.css"
+  ];
+  const links = Array.from(document.querySelectorAll("link[rel='stylesheet']"));
+  const loadedHrefs = new Set(
+    links.map((link) => String(link.getAttribute("href") ?? ""))
+  );
+  let injected = false;
+  for (const explicitHref of explicitHrefs) {
+    const alreadyLoaded = Array.from(loadedHrefs).some((href) => href.includes(explicitHref));
+    if (alreadyLoaded) continue;
+
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = explicitHref;
+    document.head.appendChild(link);
+    loadedHrefs.add(explicitHref);
+    injected = true;
+  }
+  return injected;
+}
+
 export function syncTowCombatOverlayEnabledSetting() {
   const { settings } = getTowCombatOverlayConstants();
   const overlayApi = getTowCombatOverlayOverlayApi();
@@ -42,15 +67,12 @@ function registerTowCombatOverlayRuntimeApis() {
 
 export function registerTowCombatOverlayModuleHooks() {
   Hooks.once("init", () => {
+    ensureTowCombatOverlayStylesheetLoaded();
     registerTowCombatOverlaySettings();
     registerTowCombatOverlayRuntimeApis();
   });
 
   Hooks.on("renderAbilityAttackDialog", (app) => {
-    towCombatOverlayEnsurePromiseClose(app);
-  });
-
-  Hooks.on("renderCastingDialog", (app) => {
     towCombatOverlayEnsurePromiseClose(app);
   });
 
@@ -63,6 +85,7 @@ export function registerTowCombatOverlayModuleHooks() {
   });
 
   Hooks.once("ready", () => {
+    ensureTowCombatOverlayStylesheetLoaded();
     registerTowCombatOverlayRuntimeApis();
     syncTowCombatOverlayEnabledSetting();
   });

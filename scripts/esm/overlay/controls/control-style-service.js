@@ -26,6 +26,15 @@ import { getTypeTooltipData } from "../shared/shared-service.js";
 
 const { tooltips: MODULE_TOOLTIPS } = getTowCombatOverlayConstants();
 
+function formatActorTypeLabel(typeLabel) {
+  const templateKey = "TOWCOMBATOVERLAY.Label.ActorTypeWrapped";
+  const localizedTemplate = game?.i18n?.localize?.(templateKey);
+  const template = (typeof localizedTemplate === "string" && localizedTemplate !== templateKey)
+    ? localizedTemplate
+    : "<{type}>";
+  return template.replace("{type}", String(typeLabel ?? ""));
+}
+
 function overlayControlsForEachSceneTokenRef(callback) {
   return towCombatOverlayForEachSceneToken(callback);
 }
@@ -227,7 +236,7 @@ export function towCombatOverlayUpdateNameLabel(tokenObject) {
     );
   }
   nameText.text = tokenName;
-  typeText.text = `<${typeLabel}>`;
+  typeText.text = formatActorTypeLabel(typeLabel);
   const labelScale = overlayControlsGetTokenOverlayScaleRef(tokenObject);
   const edgePad = overlayControlsGetOverlayEdgePadPxRef(tokenObject);
   const inverseScale = (labelScale > 0) ? (1 / labelScale) : 1;

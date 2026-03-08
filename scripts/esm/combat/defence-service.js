@@ -10,7 +10,10 @@ import {
 } from "./roll-modifier-service.js";
 import { towCombatOverlayArmAutoSubmitDialog } from "./attack-service.js";
 import {
-  towCombatOverlayEscapeHtml,
+  towCombatOverlayApplyDialogClass,
+  towCombatOverlayBindClick,
+  towCombatOverlayOpenSelectorDialog,
+  towCombatOverlayRenderTemplate,
   towCombatOverlayRenderSelectorRowButton
 } from "./core-service.js";
 import { getTowCombatOverlaySystemAdapter } from "../system-adapter/system-adapter.js";
@@ -125,57 +128,56 @@ async function towCombatOverlayRollCharacteristic(actor, characteristic) {
   return test;
 }
 
-export function towCombatOverlayRenderDefenceSelector(actor, entries) {
+export async function towCombatOverlayRenderDefenceSelector(actor, entries) {
   const emphasizedSkills = new Set(["defence", "athletics", "endurance"]);
-  const renderEntryButton = (entry) => {
-    const id = towCombatOverlayEscapeHtml(entry.id);
-    const type = towCombatOverlayEscapeHtml(entry.type);
+  const buildRowData = (entry) => {
     const value = Number(entry.target ?? 0);
     const shouldEmphasize = entry.type === "skill" && emphasizedSkills.has(String(entry.id).toLowerCase());
-    return towCombatOverlayRenderSelectorRowButton({
+    return {
       rowClass: "skill-btn",
-      dataAttrs: `data-type="${type}" data-id="${id}"`,
+      type: entry.type,
+      id: entry.id,
       label: entry.label,
       valueLabel: `T${value}`,
       highlighted: shouldEmphasize,
       compact: true
-    });
+    };
   };
 
   const characteristicEntries = entries.filter((entry) => entry.type === "characteristic");
   const skillEntries = entries.filter((entry) => entry.type === "skill");
 
-  const characteristicMarkup = characteristicEntries.map(renderEntryButton).join("");
-  const skillMarkup = skillEntries.map(renderEntryButton).join("");
+  const characteristicMarkup = (await Promise.all(
+    characteristicEntries.map((entry) => towCombatOverlayRenderSelectorRowButton(buildRowData(entry)))
+  )).join("");
+  const skillMarkup = (await Promise.all(
+    skillEntries.map((entry) => towCombatOverlayRenderSelectorRowButton(buildRowData(entry)))
+  )).join("");
 
-  const content = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; align-items:start;">
-    <div style="display:flex; flex-direction:column; min-width:0; border:1px solid #b9b6aa; border-radius:4px; overflow:hidden;">
-      <div style="padding:4px 6px; font-size:12px; font-weight:700; background:#d9d5c7;">${MODULE_DIALOGS.defenceCharacteristicsHeader}</div>
-      <div style="display:flex; flex-direction:column; gap:4px; padding:6px; overflow-y:auto; overflow-x:hidden; max-height:430px; scrollbar-gutter:stable;">
-        ${characteristicMarkup || `<div style="font-size:12px; opacity:0.7;">${MODULE_DIALOGS.noCharacteristics}</div>`}
-      </div>
-    </div>
-    <div style="display:flex; flex-direction:column; min-width:0; border:1px solid #b9b6aa; border-radius:4px; overflow:hidden;">
-      <div style="padding:4px 6px; font-size:12px; font-weight:700; background:#d9d5c7;">${MODULE_DIALOGS.defenceSkillsHeader}</div>
-      <div style="display:flex; flex-direction:column; gap:4px; padding:6px; overflow-y:auto; overflow-x:hidden; max-height:430px; scrollbar-gutter:stable;">
-        ${skillMarkup || `<div style="font-size:12px; opacity:0.7;">${MODULE_DIALOGS.noSkills}</div>`}
-      </div>
-    </div>
-  </div>`;
+  const content = await towCombatOverlayRenderTemplate("modules/the-old-world-combat-overlay/templates/combat/defence-selector.hbs", {
+    defenceCharacteristicsHeader: MODULE_DIALOGS.defenceCharacteristicsHeader,
+    defenceSkillsHeader: MODULE_DIALOGS.defenceSkillsHeader,
+    noCharacteristics: MODULE_DIALOGS.noCharacteristics,
+    noSkills: MODULE_DIALOGS.noSkills,
+    characteristicMarkup,
+    skillMarkup
+  });
 
-  const selectorDialog = new Dialog({
-    title: MODULE_DIALOGS.defenceSelectorTitle.replace("{actorName}", actor.name),
+  const title = MODULE_DIALOGS.defenceSelectorTitle.replace("{actorName}", actor.name);
+  towCombatOverlayOpenSelectorDialog({
+    title,
     content,
     width: 560,
     height: 560,
-    buttons: { close: { label: MODULE_DIALOGS.closeLabel } },
-    render: (html) => {
-      html.find(".skill-btn").on("click", async (event) => {
+    closeLabel: MODULE_DIALOGS.closeLabel,
+    onRender: (html, dialogApp) => {
+      towCombatOverlayApplyDialogClass(html, "tow-combat-overlay-dialog");
+      towCombatOverlayBindClick(html, ".skill-btn", async (event) => {
         const id = event.currentTarget.dataset.id;
         const type = event.currentTarget.dataset.type;
         if (!id || !type) return;
         const fastRoll = event.shiftKey === true;
-        selectorDialog.close();
+        dialogApp.close();
 
         if (type === "characteristic") {
           await towCombatOverlayRollCharacteristic(actor, id);
@@ -185,8 +187,6 @@ export function towCombatOverlayRenderDefenceSelector(actor, entries) {
       });
     }
   });
-
-  selectorDialog.render(true);
 }
 
 export async function towCombatOverlayDefenceActor(actor, { manual = false } = {}) {
@@ -199,7 +199,7 @@ export async function towCombatOverlayDefenceActor(actor, { manual = false } = {
   }
 
   if (manual) {
-    towCombatOverlayRenderDefenceSelector(actor, manualEntries);
+    await towCombatOverlayRenderDefenceSelector(actor, manualEntries);
     return;
   }
 

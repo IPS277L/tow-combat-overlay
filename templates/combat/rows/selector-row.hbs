@@ -1,0 +1,19 @@
+<button
+  type="button"
+  class="{{rowClass}} tow-combat-overlay-selector__row{{#if highlighted}} is-highlighted{{/if}}{{#if compact}} is-compact{{/if}}"
+  {{#if type}}data-type="{{type}}"{{/if}}
+  {{#if id}}data-id="{{id}}"{{/if}}
+>
+  <span class="tow-combat-overlay-selector__row-main">
+    <span class="tow-combat-overlay-selector__accent"></span>
+    <span class="tow-combat-overlay-selector__label-group">
+      <span class="tow-combat-overlay-selector__label">{{label}}</span>
+      {{#if subLabel}}
+        <span class="tow-combat-overlay-selector__sub-label">{{subLabel}}</span>
+      {{/if}}
+    </span>
+  </span>
+  {{#if valueLabel}}
+    <span class="tow-combat-overlay-selector__value">{{valueLabel}}</span>
+  {{/if}}
+</button>

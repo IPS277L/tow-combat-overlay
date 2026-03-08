@@ -1,0 +1,22 @@
+<div class="tow-combat-overlay-defence-grid">
+  <div class="tow-combat-overlay-panel">
+    <div class="tow-combat-overlay-panel__header">{{defenceCharacteristicsHeader}}</div>
+    <div class="tow-combat-overlay-panel__body">
+      {{#if characteristicMarkup}}
+        {{{characteristicMarkup}}}
+      {{else}}
+        <div class="tow-combat-overlay-panel__empty">{{noCharacteristics}}</div>
+      {{/if}}
+    </div>
+  </div>
+  <div class="tow-combat-overlay-panel">
+    <div class="tow-combat-overlay-panel__header">{{defenceSkillsHeader}}</div>
+    <div class="tow-combat-overlay-panel__body">
+      {{#if skillMarkup}}
+        {{{skillMarkup}}}
+      {{else}}
+        <div class="tow-combat-overlay-panel__empty">{{noSkills}}</div>
+      {{/if}}
+    </div>
+  </div>
+</div>

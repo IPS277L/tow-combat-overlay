@@ -37,6 +37,128 @@ export function towCombatOverlayToElement(appElement) {
   return null;
 }
 
+export function towCombatOverlayApplyDialogClass(renderHtml, className) {
+  if (!renderHtml || !className) return;
+
+  const jqRoot = renderHtml?.closest?.(".app.dialog");
+  if (jqRoot?.addClass) {
+    jqRoot.addClass(className);
+    return;
+  }
+
+  const element = towCombatOverlayToElement(renderHtml);
+  if (!element) return;
+
+  const directLooksLikeDialog = element.classList?.contains("dialog")
+    || element.classList?.contains("application")
+    || element.classList?.contains("window-app");
+  if (directLooksLikeDialog) {
+    element.classList.add(className);
+    return;
+  }
+
+  const dialogRoot = element.closest?.(".app.dialog")
+    ?? element.closest?.(".application.dialog")
+    ?? element.closest?.(".application")
+    ?? null;
+  if (dialogRoot?.classList) dialogRoot.classList.add(className);
+}
+
+export function towCombatOverlayBindClick(renderHtml, selector, handler) {
+  if (!renderHtml || !selector || typeof handler !== "function") return;
+
+  const jqMatches = renderHtml?.find?.(selector);
+  if (jqMatches?.on) {
+    jqMatches.on("click", handler);
+    return;
+  }
+
+  const element = towCombatOverlayToElement(renderHtml);
+  if (!element) return;
+  for (const match of element.querySelectorAll(selector)) {
+    match.addEventListener("click", handler);
+  }
+}
+
+function towCombatOverlayFindRenderedDialogElementByMarker(markerId) {
+  const marker = document.querySelector(`[data-tow-selector-dialog-id="${markerId}"]`);
+  if (!marker) return null;
+  return marker.closest(".app.window-app.dialog")
+    ?? marker.closest(".application.dialog")
+    ?? marker.closest(".application")
+    ?? null;
+}
+
+export function towCombatOverlayOpenSelectorDialog({
+  title,
+  content,
+  width = 560,
+  height = null,
+  closeLabel = null,
+  onRender
+} = {}) {
+  const closeLabelResolved = closeLabel ?? towCombatOverlayLocalize("TOWCOMBATOVERLAY.Dialog.CloseLabel", "Close");
+  const markerId = foundry?.utils?.randomID?.() ?? `tow-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+  const wrappedContent = `<div data-tow-selector-dialog-id="${towCombatOverlayEscapeHtml(markerId)}">${String(content ?? "")}</div>`;
+  const DialogV2Class = foundry?.applications?.api?.DialogV2;
+  if (typeof DialogV2Class === "function") {
+    try {
+      const dialogV2Config = {
+        title,
+        window: {
+          title
+        },
+        content: wrappedContent,
+        width,
+        position: { width },
+        buttons: [
+          {
+            action: "close",
+            label: closeLabelResolved
+          }
+        ]
+      };
+      if (Number.isFinite(Number(height)) && Number(height) > 0) {
+        dialogV2Config.height = Number(height);
+        dialogV2Config.position.height = Number(height);
+      }
+      const dialogV2 = new DialogV2Class(dialogV2Config);
+      dialogV2.render(true);
+      if (typeof onRender === "function") {
+        const bindOnceReady = (attempt = 0) => {
+          const fromApp = towCombatOverlayToElement(dialogV2.element);
+          const root = fromApp ?? towCombatOverlayFindRenderedDialogElementByMarker(markerId);
+          if (root) {
+            if (root.dataset.towSelectorBound === markerId) return;
+            root.dataset.towSelectorBound = markerId;
+            onRender(root, dialogV2);
+            return;
+          }
+          if (attempt >= 30) return;
+          setTimeout(() => bindOnceReady(attempt + 1), 50);
+        };
+        towCombatOverlayScheduleSoon(() => bindOnceReady(0));
+      }
+      return dialogV2;
+    } catch (_error) {
+      // Fall through to V1 Dialog.
+    }
+  }
+
+  const dialogV1 = new Dialog({
+    title,
+    content: wrappedContent,
+    width,
+    ...(Number.isFinite(Number(height)) && Number(height) > 0 ? { height: Number(height) } : {}),
+    buttons: { close: { label: closeLabelResolved } },
+    render: (html) => {
+      if (typeof onRender === "function") onRender(html, dialogV1);
+    }
+  });
+  dialogV1.render(true);
+  return dialogV1;
+}
+
 export function towCombatOverlayScheduleSoon(callback) {
   if (typeof window?.requestAnimationFrame === "function") {
     window.requestAnimationFrame(() => {
@@ -51,6 +173,20 @@ export function towCombatOverlayScheduleSoon(callback) {
 
 export function towCombatOverlayEscapeHtml(value) {
   return foundry.utils.escapeHTML(String(value ?? ""));
+}
+
+export function towCombatOverlayLocalize(key, fallback = "") {
+  const localized = game?.i18n?.localize?.(key);
+  if (typeof localized === "string" && localized !== key) return localized;
+  return String(fallback ?? "");
+}
+
+export async function towCombatOverlayRenderTemplate(path, data = {}) {
+  const renderer = foundry?.applications?.handlebars?.renderTemplate;
+  if (typeof renderer !== "function") {
+    throw new Error("[the-old-world-combat-overlay] Missing foundry.applications.handlebars.renderTemplate");
+  }
+  return renderer(path, data);
 }
 
 function towCombatOverlayIsRangedAttack(attackItem) {
@@ -76,66 +212,30 @@ export function towCombatOverlayGetSortedWeaponAttacks(actor) {
 
 export function towCombatOverlayGetAttackMeta(attack) {
   const skill = attack.system?.attack?.skill;
-  const skillLabel = game.oldworld?.config?.skills?.[skill] ?? skill ?? "Attack";
-  const attackType = attack.system?.isRanged || towCombatOverlayIsRangedAttack(attack) ? "Ranged" : "Melee";
+  const skillLabel = game.oldworld?.config?.skills?.[skill]
+    ?? skill
+    ?? towCombatOverlayLocalize("TOWCOMBATOVERLAY.Label.Attack", "Attack");
+  const isRanged = attack.system?.isRanged || towCombatOverlayIsRangedAttack(attack);
+  const attackType = isRanged
+    ? towCombatOverlayLocalize("TOWCOMBATOVERLAY.Label.Ranged", "Ranged")
+    : towCombatOverlayLocalize("TOWCOMBATOVERLAY.Label.Melee", "Melee");
   const rangeConfig = game.oldworld?.config?.range ?? {};
   const meleeRangeKey = attack.system?.attack?.range?.melee;
   const minRangeKey = attack.system?.attack?.range?.min;
   const maxRangeKey = attack.system?.attack?.range?.max;
-  const rangeLabel = attackType === "Ranged"
+  const rangeLabel = isRanged
     ? `${rangeConfig[minRangeKey] ?? minRangeKey ?? 0}-${rangeConfig[maxRangeKey] ?? maxRangeKey ?? 0}`
     : `${rangeConfig[meleeRangeKey] ?? meleeRangeKey ?? 0}`;
   const damage = Number(attack.system?.damage?.value ?? 0);
-  return `${attackType} | ${rangeLabel} | ${skillLabel} | DMG ${damage}`;
+  const damageLabel = towCombatOverlayLocalize("TOWCOMBATOVERLAY.Label.DamageAbbrev", "DMG");
+  return `${attackType} | ${rangeLabel} | ${skillLabel} | ${damageLabel} ${damage}`;
 }
 
-export function towCombatOverlayRenderSelectorRowButton({
-  rowClass,
-  dataAttrs = "",
-  label,
-  valueLabel = "",
-  subLabel = "",
-  highlighted = false,
-  compact = false
-} = {}) {
-  const safeLabel = towCombatOverlayEscapeHtml(label);
-  const safeValue = towCombatOverlayEscapeHtml(valueLabel);
-  const safeSubLabel = towCombatOverlayEscapeHtml(subLabel);
-
-  const labelColor = highlighted ? "#2c2412" : "#111111";
-  const subLabelColor = highlighted ? "#4d4121" : "#5f5b4b";
-  const buttonBackground = highlighted ? "#e8ddbe" : "#f2f1e8";
-  const buttonBorder = highlighted ? "#8f7c43" : "#bdb9ab";
-  const buttonShadow = highlighted ? "inset 0 0 0 1px rgba(255,255,255,0.35)" : "none";
-  const accentColor = highlighted ? "#6a5623" : "transparent";
-  const accent = `<span style="width:4px; align-self:stretch; border-radius:2px; background:${accentColor}; flex:0 0 auto;"></span>`;
-
-  const hasSubLabel = safeSubLabel.length > 0;
-  const subtitleMarkup = hasSubLabel
-    ? `<span style="font-size:11px; line-height:1.2; color:${subLabelColor}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeSubLabel}</span>`
-    : "";
-
-  const valueMarkup = safeValue
-    ? `<span style="font-size:12px; opacity:0.85; flex:0 0 auto; color:#2f2a1f;">${safeValue}</span>`
-    : "";
-
-  const compactHeight = compact ? "34px" : "";
-  const minHeight = compact ? "34px" : "52px";
-  const padding = compact ? "5px 6px" : "6px";
-
-  return `<button type="button"
-    class="${rowClass}"
-    ${dataAttrs}
-    style="width:100%; box-sizing:border-box; text-align:left; padding:${padding}; min-height:${minHeight}; ${compactHeight ? `height:${compactHeight};` : ""} display:flex; align-items:center; justify-content:space-between; gap:8px; background:${buttonBackground}; border:1px solid ${buttonBorder}; box-shadow:${buttonShadow}; border-radius:3px;">
-    <span style="display:flex; align-items:center; gap:7px; min-width:0; flex:1;">
-      ${accent}
-      <span style="display:flex; flex-direction:column; justify-content:center; min-width:0; gap:1px;">
-        <span style="font-weight:400; color:${labelColor}; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${safeLabel}</span>
-        ${subtitleMarkup}
-      </span>
-    </span>
-    ${valueMarkup}
-  </button>`;
+export function towCombatOverlayRenderSelectorRowButton(rowData = {}) {
+  return towCombatOverlayRenderTemplate(
+    "modules/the-old-world-combat-overlay/templates/combat/rows/selector-row.hbs",
+    rowData
+  );
 }
 
 export async function towCombatOverlayWaitForChatMessage(messageId, timeoutMs = 3000) {
@@ -193,17 +293,10 @@ async function towCombatOverlayPostSeparateDamageMessage(message, damage) {
   const dedupeKey = `separate:${message.id}`;
   if (!towCombatOverlayMarkDamageRender(dedupe, dedupeKey)) return;
 
-  const content = `<div style="
-      border-top: 1px solid rgba(130,110,80,0.45);
-      border-bottom: 1px solid rgba(130,110,80,0.45);
-      margin: 4px 0;
-      padding: 6px 8px;
-      text-align: center;
-      font-size: var(--font-size-16);
-      letter-spacing: 0.04em;
-      opacity: 0.9;">
-      <strong>Damage:</strong> ${Number(damage ?? 0)}
-    </div>`;
+  const content = await towCombatOverlayRenderTemplate("modules/the-old-world-combat-overlay/templates/chat/damage-display.hbs", {
+    damageLabel: towCombatOverlayLocalize("TOWCOMBATOVERLAY.Chat.Damage", "Damage"),
+    damage: Number(damage ?? 0)
+  });
 
   await ChatMessage.create({
     content,

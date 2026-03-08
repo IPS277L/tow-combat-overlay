@@ -5,6 +5,7 @@ import {
   WOUND_ITEM_TYPE
 } from "../../runtime/overlay-runtime-constants.js";
 import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
+import { towCombatOverlayLocalize } from "../../combat/core-service.js";
 import {
   towCombatOverlayCanEditActor,
   towCombatOverlayWarnNoPermission
@@ -17,6 +18,7 @@ import {
 import { runActorOpLock } from "../shared/shared-service.js";
 
 const { logPrefix: MODULE_LOG_PREFIX } = getTowCombatOverlayConstants();
+const WOUND_ITEM_NAME = () => towCombatOverlayLocalize("TOWCOMBATOVERLAY.Item.WoundName", "Wound");
 
 export function towCombatOverlayGetWoundCount(tokenDocument) {
   const actor = tokenDocument?.actor;
@@ -132,7 +134,7 @@ export async function towCombatOverlaySyncWoundsFromDeadState(actor) {
       const missing = Math.max(0, cap - current);
       if (missing <= 0) return;
       for (let i = 0; i < missing; i++) {
-        await actor.createEmbeddedDocuments("Item", [{ type: WOUND_ITEM_TYPE, name: "Wound" }]);
+        await actor.createEmbeddedDocuments("Item", [{ type: WOUND_ITEM_TYPE, name: WOUND_ITEM_NAME() }]);
       }
     }).catch((error) => {
       console.error(`${MODULE_LOG_PREFIX} Failed to sync wounds from dead condition.`, error);
@@ -198,7 +200,7 @@ export async function towCombatOverlayAddWound(actor) {
   if (typeof actor.system?.addWound === "function") {
     await towCombatOverlayAddActorWound(actor, { roll: false });
   } else {
-    await actor.createEmbeddedDocuments("Item", [{ type: WOUND_ITEM_TYPE, name: "Wound" }]);
+    await actor.createEmbeddedDocuments("Item", [{ type: WOUND_ITEM_TYPE, name: WOUND_ITEM_NAME() }]);
   }
 }
 

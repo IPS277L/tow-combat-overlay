@@ -20,14 +20,6 @@ function createTowCombatOverlaySystemAdapter() {
       return actor.setupSkillTest(skill, context);
     },
 
-    setupCastingTest(actor, data, context = {}) {
-      if (!actor || typeof actor.setupCastingTest !== "function") {
-        ui.notifications.error(MODULE_NOTIFICATIONS.apiUnavailable.castingTest);
-        return null;
-      }
-      return actor.setupCastingTest(data, context);
-    },
-
     getOldWorldTestClass() {
       return game.oldworld?.config?.rollClasses?.OldWorldTest ?? null;
     },

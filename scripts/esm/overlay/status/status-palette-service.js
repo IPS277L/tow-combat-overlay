@@ -16,7 +16,13 @@ import {
   getStatusPaletteBackdropStyle,
   getStatusSpecialBgStyle
 } from "../../runtime/overlay-runtime-constants.js";
-import { clearStatusTooltip, hideStatusTooltip, runActorOpLock } from "../shared/shared-service.js";
+import {
+  clearStatusTooltip,
+  hideStatusTooltip,
+  runActorOpLock,
+  towCombatOverlayLocalizeSystemKey,
+  towCombatOverlayResolveConditionLabel
+} from "../shared/shared-service.js";
 import {
   towCombatOverlayBindTooltipHandlers,
   towCombatOverlayCanEditActor,
@@ -83,8 +89,8 @@ function getConditionTooltipData(conditionId) {
   const condition = game.oldworld?.config?.conditions?.[String(conditionId ?? "")] ?? {};
   const rawName = String(condition?.name ?? conditionId ?? "Condition");
   const rawDescription = String(condition?.description ?? "");
-  const name = rawName.startsWith("TOW.") ? game.i18n.localize(rawName) : rawName;
-  const localizedDescription = rawDescription.startsWith("TOW.") ? game.i18n.localize(rawDescription) : rawDescription;
+  const name = rawName.startsWith("TOW.") ? towCombatOverlayLocalizeSystemKey(rawName, towCombatOverlayResolveConditionLabel(conditionId)) : rawName;
+  const localizedDescription = rawDescription.startsWith("TOW.") ? towCombatOverlayLocalizeSystemKey(rawDescription, rawDescription) : rawDescription;
   const shortDescription = localizedDescription ? (localizedDescription.split(/(?<=[.!?])\s+/)[0] ?? localizedDescription).trim() : "";
   return { name: String(name ?? conditionId ?? "Condition"), description: String(shortDescription ?? "") };
 }

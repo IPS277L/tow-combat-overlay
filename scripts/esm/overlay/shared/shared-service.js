@@ -14,12 +14,40 @@ import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
 
 const { tooltips: MODULE_TOOLTIPS } = getTowCombatOverlayConstants();
 
+export function towCombatOverlayLocalizeSystemKey(key, fallback = "") {
+  const localized = game?.i18n?.localize?.(String(key ?? ""));
+  if (typeof localized === "string" && localized !== key) return localized;
+  return String(fallback ?? key ?? "");
+}
+
+export function towCombatOverlayResolveConditionLabel(statusId) {
+  const id = String(statusId ?? "");
+  if (!id) return "";
+  const conditionName = game.oldworld?.config?.conditions?.[id]?.name;
+  if (typeof conditionName === "string" && conditionName.length > 0) {
+    if (conditionName.startsWith("TOW.")) return towCombatOverlayLocalizeSystemKey(conditionName, id);
+    return conditionName;
+  }
+  return towCombatOverlayLocalizeSystemKey(`TOW.ConditionName.${id}`, id);
+}
+
 function getActorTypeLabel(actor) {
   const systemType = String(actor?.system?.type ?? "").trim();
   if (systemType) return systemType;
   const actorType = String(actor?.type ?? "").trim();
   if (actorType) return actorType;
   return "actor";
+}
+
+function formatTypeTooltipTitle(typeLabel) {
+  const raw = String(typeLabel ?? "").trim();
+  if (!raw) return "";
+  if (raw !== raw.toLowerCase()) return raw;
+  return raw
+    .split(/[\s_-]+/g)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function getMaxWoundLimit(actor) {
@@ -64,7 +92,10 @@ export function getTypeTooltipData(actor) {
   const fallbackType = String(actor?.type ?? "actor").trim().toLowerCase();
   const typeKey = systemType || fallbackType;
   const npcTypeLabelKey = game.oldworld?.config?.npcType?.[typeKey] ?? null;
-  const typeLabel = npcTypeLabelKey ? game.i18n.localize(npcTypeLabelKey) : getActorTypeLabel(actor);
+  const rawTypeLabel = npcTypeLabelKey
+    ? towCombatOverlayLocalizeSystemKey(npcTypeLabelKey, getActorTypeLabel(actor))
+    : getActorTypeLabel(actor);
+  const typeLabel = formatTypeTooltipTitle(rawTypeLabel);
   const hasThresholds = actor?.type === "npc" && actor.system?.hasThresholds === true;
 
   if (typeKey === "minion") {

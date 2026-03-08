@@ -1,0 +1,39 @@
+<div class="tow-combat-overlay-chat-card tow-combat-overlay-chat-card--flow">
+  <div class="tow-combat-overlay-flow-card__names {{#if namesStacked}}is-stacked{{/if}}">
+    {{#if namesStacked}}
+      <div>{{attackerName}}</div>
+      <div class="tow-combat-overlay-flow-card__vs">{{vsLabel}}</div>
+      <div>{{defenderName}}</div>
+    {{else}}
+      {{attackerName}} {{vsLabel}} {{defenderName}}
+    {{/if}}
+  </div>
+
+  <div class="tow-combat-overlay-flow-card__line">
+    <strong class="tow-combat-overlay-flow-card__tone is-{{outcomeTone}}">{{outcomeLabel}}</strong>
+  </div>
+
+  <div class="tow-combat-overlay-flow-card__line">
+    {{marginLabelText}}:
+    <strong class="tow-combat-overlay-flow-card__tone is-{{marginTone}}">{{marginLabel}}</strong>
+    &nbsp;|&nbsp;
+    {{damageLabelText}}:
+    <strong class="tow-combat-overlay-flow-card__tone is-{{damageTone}}">{{damageLabel}}</strong>
+  </div>
+
+  <div class="tow-combat-overlay-flow-card__statuses">
+    <div class="tow-combat-overlay-flow-card__status-row">
+      <span class="tow-combat-overlay-flow-card__status-title">{{sourceLabel}}:</span>
+      <div class="tow-combat-overlay-flow-card__status-list">
+        {{{sourceStatusMarkup}}}
+      </div>
+    </div>
+
+    <div class="tow-combat-overlay-flow-card__status-row">
+      <span class="tow-combat-overlay-flow-card__status-title">{{targetLabel}}:</span>
+      <div class="tow-combat-overlay-flow-card__status-list">
+        {{{targetStatusMarkup}}}
+      </div>
+    </div>
+  </div>
+</div>

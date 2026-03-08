@@ -2,8 +2,6 @@ import {
   AUTO_APPLY_WAIT_MS,
   AUTO_DEFENCE_WAIT_MS,
   AUTO_STAGGER_PATCH_MS,
-  FLOW_CARD_CHIP_FONT_SIZE,
-  FLOW_CARD_FONT_SIZE,
   MODULE_KEY,
   OPPOSED_LINK_WAIT_MS
 } from "../../runtime/overlay-runtime-constants.js";
@@ -17,6 +15,8 @@ import {
   towCombatOverlayApplyActorDamage,
   towCombatOverlayEnsureActionsApi
 } from "../shared/actions-bridge-service.js";
+import { towCombatOverlayLocalize, towCombatOverlayRenderTemplate } from "../../combat/core-service.js";
+import { towCombatOverlayResolveConditionLabel } from "../shared/shared-service.js";
 
 function getDialogActionList(config) {
   return Array.isArray(config?.buttons)
@@ -213,42 +213,33 @@ function deriveAppliedStatusLabels(before, after) {
     if (!labels.includes(label)) labels.push(label);
   };
 
-  if ((after?.wounds ?? 0) > (before?.wounds ?? 0)) add("Wound");
+  if ((after?.wounds ?? 0) > (before?.wounds ?? 0)) {
+    add(towCombatOverlayLocalize("TOWCOMBATOVERLAY.Status.Wound", "Wound"));
+  }
 
   const beforeStatuses = before?.statuses ?? new Set();
   const afterStatuses = after?.statuses ?? new Set();
   for (const statusId of afterStatuses) {
     if (beforeStatuses.has(statusId)) continue;
-    const label = game.oldworld?.config?.conditions?.[statusId]?.name
-      ?? game.i18n.localize(`TOW.ConditionName.${statusId}`)
-      ?? statusId;
+    const label = towCombatOverlayResolveConditionLabel(statusId);
     add(label);
   }
   return labels;
 }
 
-function getFlowNamesMarkup(attackerName, defenderName) {
-  const attackerSafe = foundry.utils.escapeHTML(attackerName);
-  const defenderSafe = foundry.utils.escapeHTML(defenderName);
+function getFlowNamesModel(attackerName, defenderName) {
   const combinedLen = `${attackerName} vs. ${defenderName}`.length;
   const needsStacked = combinedLen > 34 || attackerName.length > 18 || defenderName.length > 18;
-
-  if (!needsStacked) {
-    return `<div style="font-size: inherit; text-align:center; font-weight:700;">
-      ${attackerSafe} vs. ${defenderSafe}
-    </div>`;
-  }
-
-  return `<div style="font-size: inherit; text-align:center; font-weight:700; display:flex; flex-direction:column; align-items:center; line-height:1.2; gap:1px;">
-    <div>${attackerSafe}</div>
-    <div style="font-weight:600; opacity:0.85;">vs.</div>
-    <div>${defenderSafe}</div>
-  </div>`;
+  return {
+    attackerName,
+    defenderName,
+    needsStacked
+  };
 }
 
 async function postFlowSeparatorCard(opposed, { sourceStatusHints = [], targetStatusHints = [] } = {}) {
-  const attackerName = opposed?.attackerToken?.name ?? "Attacker";
-  const defenderName = opposed?.defenderToken?.name ?? opposed?.defender?.alias ?? "Defender";
+  const attackerName = opposed?.attackerToken?.name ?? towCombatOverlayLocalize("TOWCOMBATOVERLAY.Chat.Attacker", "Attacker");
+  const defenderName = opposed?.defenderToken?.name ?? opposed?.defender?.alias ?? towCombatOverlayLocalize("TOWCOMBATOVERLAY.Chat.Defender", "Defender");
   const outcome = opposed?.result?.outcome ?? "resolved";
   const outcomeText = String(outcome);
   const outcomeLabel = outcomeText.charAt(0).toUpperCase() + outcomeText.slice(1).toLowerCase();
@@ -264,18 +255,22 @@ async function postFlowSeparatorCard(opposed, { sourceStatusHints = [], targetSt
   };
 
   const damageMessageKey = String(opposed?.result?.damage?.message ?? "");
-  if (damageMessageKey.includes("TakesWound")) pushStatus("Wound");
-  if (damageMessageKey.includes("GainsStaggered")) pushStatus("Staggered");
-  if (damageMessageKey.includes("SuffersFault")) pushStatus("Fault");
+  if (damageMessageKey.includes("TakesWound")) {
+    pushStatus(towCombatOverlayLocalize("TOWCOMBATOVERLAY.Status.Wound", "Wound"));
+  }
+  if (damageMessageKey.includes("GainsStaggered")) {
+    pushStatus(towCombatOverlayLocalize("TOWCOMBATOVERLAY.Status.Staggered", "Staggered"));
+  }
+  if (damageMessageKey.includes("SuffersFault")) {
+    pushStatus(towCombatOverlayLocalize("TOWCOMBATOVERLAY.Status.Fault", "Fault"));
+  }
 
   const effectStatuses = Array.isArray(opposed?.attackerTest?.damageEffects)
     ? opposed.attackerTest.damageEffects.flatMap((effect) => Array.from(effect?.statuses ?? []))
     : [];
   for (const status of effectStatuses) {
     const key = String(status ?? "");
-    const label = game.oldworld?.config?.conditions?.[key]?.name
-      ?? game.i18n.localize(`TOW.ConditionName.${key}`)
-      ?? key;
+    const label = towCombatOverlayResolveConditionLabel(key);
     pushStatus(label);
   }
 
@@ -283,84 +278,66 @@ async function postFlowSeparatorCard(opposed, { sourceStatusHints = [], targetSt
   const targetStatusLabels = [...statusLabels];
   const sourceStatusLabels = Array.from(new Set((sourceStatusHints ?? []).filter(Boolean)));
 
-  const outcomeColor = outcome === "success" ? "#2e7d32" : outcome === "failure" ? "#9b1c1c" : "#6b5e3a";
-  const marginColor = margin > 0 ? "#2e7d32" : margin < 0 ? "#9b1c1c" : "#6b5e3a";
-  const damageColor = damageValue > 0 ? "#9b1c1c" : "#6b5e3a";
+  const getOutcomeTone = (value) => {
+    if (value === "success") return "success";
+    if (value === "failure") return "failure";
+    return "neutral";
+  };
+  const getMarginTone = (value) => {
+    if (value > 0) return "success";
+    if (value < 0) return "failure";
+    return "neutral";
+  };
+  const getDamageTone = (value) => (value > 0 ? "failure" : "neutral");
 
-  const statusColorFor = (label) => {
+  const statusToneFor = (label) => {
     const key = String(label).toLowerCase();
-    if (key.includes("wound")) return { bg: "#5e1f1f", fg: "#ffd9d9", border: "#b75b5b" };
-    if (key.includes("stagger")) return { bg: "#5a4a18", fg: "#ffe8a6", border: "#c9a447" };
-    if (key.includes("prone")) return { bg: "#24344f", fg: "#d6e6ff", border: "#5f84c6" };
-    if (key.includes("fault")) return { bg: "#4b214f", fg: "#f0d8ff", border: "#a164bf" };
-    return { bg: "#3a362b", fg: "#efe8d2", border: "#8f8468" };
+    if (key.includes("wound")) return "wound";
+    if (key.includes("stagger")) return "staggered";
+    if (key.includes("prone")) return "prone";
+    if (key.includes("fault")) return "fault";
+    return "default";
   };
 
-  const statusMarkupFrom = (labels) => labels.length
-    ? labels.map((label) => {
-      const c = statusColorFor(label);
-      return `<span style="
-        display:inline-block;
-        margin:0 2px;
-        padding:1px 6px;
-        border-radius:10px;
-        border:1px solid ${c.border};
-        background:${c.bg};
-        color:${c.fg};
-        font-size:${FLOW_CARD_CHIP_FONT_SIZE};
-        line-height:1.4;
-      ">${foundry.utils.escapeHTML(label)}</span>`;
-    }).join("")
-    : `<span style="
-      display:inline-block;
-      margin:0 2px;
-      padding:1px 6px;
-      border-radius:10px;
-      border:1px solid #8f8468;
-      background:#3a362b;
-      color:#efe8d2;
-      font-size:${FLOW_CARD_CHIP_FONT_SIZE};
-      line-height:1.4;
-    ">None</span>`;
+  const toStatusItems = (labels) => (labels.length
+    ? labels.map((label) => ({ label, tone: statusToneFor(label) }))
+    : [{ label: towCombatOverlayLocalize("TOWCOMBATOVERLAY.Chat.None", "None"), tone: "none" }]);
 
-  const sourceStatusMarkup = statusMarkupFrom(sourceStatusLabels);
-  const targetStatusMarkup = statusMarkupFrom(targetStatusLabels);
-  const namesMarkup = getFlowNamesMarkup(attackerName, defenderName);
-
-  const content = `<div style="
-      border-top: 1px solid rgba(130,110,80,0.45);
-      border-bottom: 1px solid rgba(130,110,80,0.45);
-      margin: 4px 0;
-      padding: 7px 8px;
-      text-align: center;
-      letter-spacing: 0.04em;
-      opacity: 0.9;
-      line-height: 1.35;
-      font-size: ${FLOW_CARD_FONT_SIZE};">
-      ${namesMarkup}
-      <div style="margin-top:2px; font-size: inherit; text-align:center;">
-        <strong style="color:${outcomeColor};">${foundry.utils.escapeHTML(outcomeLabel)}</strong>
-      </div>
-      <div style="margin-top:2px; font-size: inherit; text-align:center;">
-        Margin: <strong style="color:${marginColor};">${foundry.utils.escapeHTML(marginLabel)}</strong>
-        &nbsp;|&nbsp;
-        Damage: <strong style="color:${damageColor};">${foundry.utils.escapeHTML(damageLabel)}</strong>
-      </div>
-      <div style="margin-top:5px; display:flex; flex-direction:column; gap:4px; align-items:stretch; text-align:left;">
-        <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-          <span style="opacity:0.8; min-width:56px;">Source:</span>
-          <div style="display:flex; gap:4px; flex-wrap:wrap;">${sourceStatusMarkup}</div>
-        </div>
-        <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-          <span style="opacity:0.8; min-width:56px;">Target:</span>
-          <div style="display:flex; gap:4px; flex-wrap:wrap;">${targetStatusMarkup}</div>
-        </div>
-      </div>
-    </div>`;
+  const namesModel = getFlowNamesModel(attackerName, defenderName);
+  const sourceStatusMarkup = (await Promise.all(
+    toStatusItems(sourceStatusLabels).map((item) => towCombatOverlayRenderTemplate(
+      "modules/the-old-world-combat-overlay/templates/chat/rows/status-chip.hbs",
+      item
+    ))
+  )).join("");
+  const targetStatusMarkup = (await Promise.all(
+    toStatusItems(targetStatusLabels).map((item) => towCombatOverlayRenderTemplate(
+      "modules/the-old-world-combat-overlay/templates/chat/rows/status-chip.hbs",
+      item
+    ))
+  )).join("");
+  const content = await towCombatOverlayRenderTemplate("modules/the-old-world-combat-overlay/templates/chat/flow-separator.hbs", {
+    attackerName: namesModel.attackerName,
+    defenderName: namesModel.defenderName,
+    namesStacked: namesModel.needsStacked,
+    vsLabel: towCombatOverlayLocalize("TOWCOMBATOVERLAY.Chat.Vs", "vs."),
+    sourceLabel: towCombatOverlayLocalize("TOWCOMBATOVERLAY.Chat.Source", "Source"),
+    targetLabel: towCombatOverlayLocalize("TOWCOMBATOVERLAY.Chat.Target", "Target"),
+    marginLabelText: towCombatOverlayLocalize("TOWCOMBATOVERLAY.Chat.Margin", "Margin"),
+    damageLabelText: towCombatOverlayLocalize("TOWCOMBATOVERLAY.Chat.Damage", "Damage"),
+    outcomeLabel,
+    marginLabel,
+    damageLabel,
+    outcomeTone: getOutcomeTone(outcome),
+    marginTone: getMarginTone(margin),
+    damageTone: getDamageTone(damageValue),
+    sourceStatusMarkup,
+    targetStatusMarkup
+  });
 
   await ChatMessage.create({
     content,
-    speaker: { alias: "Combat Flow" }
+    speaker: { alias: towCombatOverlayLocalize("TOWCOMBATOVERLAY.Chat.CombatFlowAlias", "Combat Flow") }
   });
 }
 

@@ -5,10 +5,8 @@ export function registerTowCombatOverlayActionsRuntimeApi() {
   const services = getTowCombatOverlayActionServices();
   return registerTowCombatOverlayActionsApi({
     attackActor: services.attackActor,
-    castActor: services.castActor,
     defenceActor: services.defenceActor,
     runAttackForControlled: services.runAttackForControlled,
-    runCastingForControlled: services.runCastingForControlled,
     runDefenceForControlled: services.runDefenceForControlled
   });
 }

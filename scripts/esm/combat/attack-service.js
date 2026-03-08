@@ -1,9 +1,12 @@
 import {
-  towCombatOverlayEscapeHtml,
+  towCombatOverlayApplyDialogClass,
+  towCombatOverlayBindClick,
   towCombatOverlayGetAttackMeta,
   towCombatOverlayGetSortedWeaponAttacks,
+  towCombatOverlayOpenSelectorDialog,
   towCombatOverlayRenderDamageDisplay,
   towCombatOverlayRenderSelectorRowButton,
+  towCombatOverlayRenderTemplate,
   towCombatOverlayScheduleSoon,
   towCombatOverlayShouldExecuteAttack,
   towCombatOverlayToElement,
@@ -118,41 +121,39 @@ export async function towCombatOverlaySetupAbilityTestWithDamage(actor, ability,
   return testRef;
 }
 
-export function towCombatOverlayRenderAttackSelector(actor, attacks, { onFastAuto } = {}) {
-  const buttonMarkup = attacks
-    .map((attack, index) => {
-      const itemId = towCombatOverlayEscapeHtml(attack.id);
-      return towCombatOverlayRenderSelectorRowButton({
-        rowClass: "attack-btn",
-        dataAttrs: `data-id="${itemId}"`,
-        label: attack.name,
-        subLabel: towCombatOverlayGetAttackMeta(attack),
-        valueLabel: "",
-        highlighted: index === 0,
-        compact: false
-      });
-    })
-    .join("");
+export async function towCombatOverlayRenderAttackSelector(actor, attacks, { onFastAuto } = {}) {
+  const rows = attacks.map((attack, index) => ({
+    rowClass: "attack-btn",
+    id: attack.id,
+    label: attack.name,
+    subLabel: towCombatOverlayGetAttackMeta(attack),
+    valueLabel: "",
+    highlighted: index === 0,
+    compact: false
+  }));
+  const buttonMarkup = (await Promise.all(
+    rows.map((row) => towCombatOverlayRenderSelectorRowButton(row))
+  )).join("");
 
-  const content = `<div style="display:flex; flex-direction:column; min-width:0; border:1px solid #b9b6aa; border-radius:4px; overflow:hidden;">
-    <div style="padding:4px 6px; font-size:12px; font-weight:700; background:#d9d5c7;">${MODULE_DIALOGS.attackListHeader}</div>
-    <div style="display:flex; flex-direction:column; gap:4px; padding:6px; overflow-y:auto; overflow-x:hidden; max-height:430px; scrollbar-gutter:stable;">
-      ${buttonMarkup || `<div style="font-size:12px; opacity:0.7;">${MODULE_DIALOGS.noAttacks}</div>`}
-    </div>
-  </div>`;
-  const selectorDialog = new Dialog({
-    title: MODULE_DIALOGS.attackSelectorTitle.replace("{actorName}", actor.name),
+  const content = await towCombatOverlayRenderTemplate("modules/the-old-world-combat-overlay/templates/combat/attack-selector.hbs", {
+    attackListHeader: MODULE_DIALOGS.attackListHeader,
+    noAttacks: MODULE_DIALOGS.noAttacks,
+    buttonMarkup
+  });
+  const title = MODULE_DIALOGS.attackSelectorTitle.replace("{actorName}", actor.name);
+  towCombatOverlayOpenSelectorDialog({
+    title,
     content,
     width: 560,
-    height: 560,
-    buttons: { close: { label: MODULE_DIALOGS.closeLabel } },
-    render: (html) => {
-      html.find(".attack-btn").on("click", async (event) => {
+    closeLabel: MODULE_DIALOGS.closeLabel,
+    onRender: (html, dialogApp) => {
+      towCombatOverlayApplyDialogClass(html, "tow-combat-overlay-dialog");
+      towCombatOverlayBindClick(html, ".attack-btn", async (event) => {
         const chosen = actor.items.get(event.currentTarget.dataset.id);
         if (!chosen) return;
         const fastRoll = event.shiftKey === true;
 
-        selectorDialog.close();
+        dialogApp.close();
         if (fastRoll && typeof onFastAuto === "function") {
           try {
             await onFastAuto({ actor, ability: chosen });
@@ -165,8 +166,6 @@ export function towCombatOverlayRenderAttackSelector(actor, attacks, { onFastAut
       });
     }
   });
-
-  selectorDialog.render(true);
 }
 
 export async function towCombatOverlayAttackActor(actor, { manual = false, onFastAuto = null } = {}) {
@@ -176,7 +175,7 @@ export async function towCombatOverlayAttackActor(actor, { manual = false, onFas
   if (attacks.length === 0) return;
 
   if (manual) {
-    towCombatOverlayRenderAttackSelector(actor, attacks, { onFastAuto });
+    await towCombatOverlayRenderAttackSelector(actor, attacks, { onFastAuto });
     return;
   }
   await towCombatOverlaySetupAbilityTestWithDamage(actor, attacks[0], { autoRoll: true });
