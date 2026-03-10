@@ -41,10 +41,13 @@ import {
 } from "../automation/automation-service.js";
 import {
   adjustTowCombatOverlayActorRollModifierDice,
+  createTowCombatOverlayRollContext,
   cycleTowCombatOverlayActorRollState,
+  getTowCombatOverlayActorRollModifierFields,
   getTowCombatOverlayActorRollModifierState,
   getTowCombatOverlayActorRollModifierStateLabel
 } from "../../combat/roll-modifier-service.js";
+import { getTowCombatOverlaySystemAdapter } from "../../system-adapter/system-adapter.js";
 
 const PANEL_ID = "tow-combat-overlay-control-panel";
 const PANEL_TEMPLATE_PATH = "modules/tow-combat-overlay/templates/overlay/control-panel.hbs";
@@ -459,10 +462,14 @@ async function runPanelAimAction(actor, sourceToken, { autoRoll = true, targetTo
   const execute = async () => {
     if (autoRoll) armAutoSubmitActionSkillDialog(actor, "awareness");
     if (typeof actor?.system?.doAction === "function") {
-      await actor.system.doAction("aim");
+      await runDefaultPanelActorAction(actor, "aim");
       return;
     }
-    await actor.setupSkillTest?.("awareness", { action: "aim", skipTargets: true });
+    await getTowCombatOverlaySystemAdapter().setupSkillTest(
+      actor,
+      "awareness",
+      createTowCombatOverlayRollContext(actor, { action: "aim", skipTargets: true })
+    );
   };
 
   const resolvedTarget = targetToken ?? sourceToken ?? null;
@@ -476,6 +483,9 @@ async function runPanelAimAction(actor, sourceToken, { autoRoll = true, targetTo
 async function runPanelHelpAction(actor, sourceToken, { autoRoll = true, targetToken = null } = {}) {
   if (!actor) return;
   const execute = async () => {
+    armApplyRollModifiersToNextTestDialog(actor, {
+      matches: (app) => String(app?.context?.action ?? "").toLowerCase() === "help"
+    });
     if (autoRoll) armAutoPickFirstHelpSkillDialog(actor);
     await runDefaultPanelActorAction(actor, "help");
   };
@@ -804,21 +814,79 @@ async function runDefaultPanelActorAction(actor, actionKey) {
   const key = String(actionKey ?? "").trim();
   if (!actor || !key) return;
 
+  const runWithActionRollContext = async (callback) => withPatchedActionSkillTestContext(actor, callback);
+
   if (typeof actor?.system?.doAction === "function") {
-    await actor.system.doAction(key);
+    await runWithActionRollContext(() => actor.system.doAction(key));
     return;
   }
 
   const actionData = game?.oldworld?.config?.actions?.[key] ?? null;
   if (actionData?.script && typeof actionData.script === "function") {
-    await actionData.script.call(actionData, actor);
+    await runWithActionRollContext(() => actionData.script.call(actionData, actor));
     return;
   }
 
   const actionUse = game?.oldworld?.config?.rollClasses?.ActionUse;
   if (typeof actionUse?.fromAction === "function") {
-    await actionUse.fromAction(key, actor);
+    await runWithActionRollContext(() => actionUse.fromAction(key, actor));
   }
+}
+
+async function withPatchedActionSkillTestContext(actor, callback) {
+  if (!actor || typeof callback !== "function") return callback?.();
+  if (typeof actor.setupSkillTest !== "function") return callback();
+
+  const originalSetupSkillTest = actor.setupSkillTest;
+  const boundOriginal = originalSetupSkillTest.bind(actor);
+  const patchedSetupSkillTest = function patchedTowCombatOverlayActionSkillTest(skill, context = {}) {
+    return boundOriginal(skill, createTowCombatOverlayRollContext(actor, context));
+  };
+  actor.setupSkillTest = patchedSetupSkillTest;
+
+  try {
+    return await callback();
+  } finally {
+    if (actor.setupSkillTest === patchedSetupSkillTest) {
+      actor.setupSkillTest = originalSetupSkillTest;
+    }
+  }
+}
+
+function armApplyRollModifiersToNextTestDialog(actor, { matches = null, timeoutMs = 20000 } = {}) {
+  if (!actor) return;
+  const rollFields = getTowCombatOverlayActorRollModifierFields(actor);
+  const hookName = "renderTestDialog";
+  let hookId = null;
+  let timeoutId = null;
+
+  const cleanup = () => {
+    if (hookId !== null) Hooks.off(hookName, hookId);
+    hookId = null;
+    if (timeoutId !== null) clearTimeout(timeoutId);
+    timeoutId = null;
+  };
+
+  hookId = Hooks.on(hookName, (app) => {
+    if (app?.actor?.id !== actor.id) return;
+    if (typeof matches === "function" && !matches(app)) return;
+    cleanup();
+
+    if (!app || app._towCombatOverlayRollModsInjected) return;
+    app._towCombatOverlayRollModsInjected = true;
+
+    app.userEntry ??= {};
+    app.fields ??= {};
+    for (const [key, value] of Object.entries(rollFields)) {
+      const numericValue = Number(value ?? 0);
+      app.userEntry[key] = numericValue;
+      app.fields[key] = numericValue;
+    }
+
+    if (typeof app.render === "function") app.render(true);
+  });
+
+  timeoutId = setTimeout(cleanup, Math.max(250, Number(timeoutMs) || 0));
 }
 
 function armAutoSubmitActionSkillDialog(actor, skill) {
@@ -977,19 +1045,19 @@ async function withForcedRecoverDialogChoice(choice, callback) {
 
 async function runDefaultRecoverAction(actor) {
   if (typeof actor?.system?.doAction === "function") {
-    await actor.system.doAction("recover");
+    await withPatchedActionSkillTestContext(actor, () => actor.system.doAction("recover"));
     return;
   }
 
   const recoverActionData = game?.oldworld?.config?.actions?.recover ?? null;
   if (recoverActionData?.script && typeof recoverActionData.script === "function") {
-    await recoverActionData.script.call(recoverActionData, actor);
+    await withPatchedActionSkillTestContext(actor, () => recoverActionData.script.call(recoverActionData, actor));
     return;
   }
 
   const actionUse = game?.oldworld?.config?.rollClasses?.ActionUse;
   if (typeof actionUse?.fromAction === "function") {
-    await actionUse.fromAction("recover", actor);
+    await withPatchedActionSkillTestContext(actor, () => actionUse.fromAction("recover", actor));
   }
 }
 
@@ -1052,11 +1120,29 @@ async function runPanelRecoverAction(actor, subAction, { autoRoll = true } = {})
   if (!actor || !actionKey) return;
 
   if (!autoRoll) {
+    if (actionKey === "treat") {
+      armApplyRollModifiersToNextTestDialog(actor, {
+        matches: (app) => {
+          const skill = String(app?.skill ?? "").toLowerCase();
+          const title = String(app?.context?.title ?? "").toLowerCase();
+          const appendTitle = String(app?.context?.appendTitle ?? "").toLowerCase();
+          return skill === "recall" && (title.includes("treat wound") || appendTitle.includes("treat wound"));
+        }
+      });
+    }
     await runDefaultRecoverAction(actor);
     return;
   }
 
   if (actionKey === "treat") {
+    armApplyRollModifiersToNextTestDialog(actor, {
+      matches: (app) => {
+        const skill = String(app?.skill ?? "").toLowerCase();
+        const title = String(app?.context?.title ?? "").toLowerCase();
+        const appendTitle = String(app?.context?.appendTitle ?? "").toLowerCase();
+        return skill === "recall" && (title.includes("treat wound") || appendTitle.includes("treat wound"));
+      }
+    });
     armAutoSubmitRecallSkillDialog(actor);
     armAutoPickFirstRecoverItemDialog("treat");
   }
@@ -1074,7 +1160,7 @@ async function runPanelManoeuvreAction(actor, subAction, { autoRoll = true } = {
   const subActionData = game?.oldworld?.config?.actions?.[action]?.subActions?.[actionKey] ?? null;
 
   if (!autoRoll && typeof actor?.system?.doAction === "function") {
-    await actor.system.doAction(action, actionKey);
+    await withPatchedActionSkillTestContext(actor, () => actor.system.doAction(action, actionKey));
     return;
   }
 
@@ -1086,7 +1172,11 @@ async function runPanelManoeuvreAction(actor, subAction, { autoRoll = true } = {
       matches: (app) => app?.actor?.id === actor.id && app?.skill === skillKey,
       submitErrorMessage: "TestDialog.submit() is unavailable."
     });
-    return actor.setupSkillTest(skillKey, { action, subAction: actionKey, skipTargets: true });
+    return getTowCombatOverlaySystemAdapter().setupSkillTest(
+      actor,
+      skillKey,
+      createTowCombatOverlayRollContext(actor, { action, subAction: actionKey, skipTargets: true })
+    );
   };
 
   if (actionKey === "run") {

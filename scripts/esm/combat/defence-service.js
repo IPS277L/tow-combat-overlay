@@ -176,14 +176,13 @@ export async function towCombatOverlayRenderDefenceSelector(actor, entries) {
         const id = event.currentTarget.dataset.id;
         const type = event.currentTarget.dataset.type;
         if (!id || !type) return;
-        const fastRoll = event.shiftKey === true;
         dialogApp.close();
 
         if (type === "characteristic") {
           await towCombatOverlayRollCharacteristic(actor, id);
           return;
         }
-        await towCombatOverlayRollSkill(actor, id, { autoRoll: fastRoll });
+        await towCombatOverlayRollSkill(actor, id, { autoRoll: false });
       });
     }
   });
