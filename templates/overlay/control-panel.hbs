@@ -1,19 +1,35 @@
 <section id="tow-combat-overlay-control-panel" class="tow-combat-overlay-control-panel" aria-label="Combat control panel">
   <div class="tow-combat-overlay-control-panel__body">
     <div class="tow-combat-overlay-control-panel__section">
-      <div class="tow-combat-overlay-control-panel__section-title" data-role="tokenName">No token selected</div>
       <div class="tow-combat-overlay-control-panel__selection" data-selection="none">
         <img
           class="tow-combat-overlay-control-panel__selection-image"
           src=""
           alt="Selected token"
         />
+        <div class="tow-combat-overlay-control-panel__selection-mods">
+          <button
+            type="button"
+            class="tow-combat-overlay-control-panel__selection-mod-button"
+            data-action-control="diceModifier"
+            aria-label="Dice Modifier"
+          >
+            <span class="tow-combat-overlay-control-panel__action-slot-label" data-selection-mod-label="diceModifier">+0d10</span>
+          </button>
+          <button
+            type="button"
+            class="tow-combat-overlay-control-panel__selection-mod-button"
+            data-action-control="rollState"
+            aria-label="Roll State"
+          >
+            <span class="tow-combat-overlay-control-panel__action-slot-label" data-selection-mod-label="rollState">Common</span>
+          </button>
+        </div>
         <span class="tow-combat-overlay-control-panel__selection-placeholder">-</span>
         <span class="tow-combat-overlay-control-panel__selection-multi-count">x0</span>
       </div>
     </div>
     <div class="tow-combat-overlay-control-panel__section">
-      <div class="tow-combat-overlay-control-panel__section-title">Stats</div>
       <div class="tow-combat-overlay-control-panel__stats" data-selection="none">
         <div class="tow-combat-overlay-control-panel__stat-row" data-stat-row="tokenType">
           <span class="tow-combat-overlay-control-panel__stat-label">Type</span>
@@ -38,7 +54,6 @@
       </div>
     </div>
     <div class="tow-combat-overlay-control-panel__section">
-      <div class="tow-combat-overlay-control-panel__section-title">Statuses</div>
       <div class="tow-combat-overlay-control-panel__statuses" data-selection="none">
         {{#each statuses}}
           <div
@@ -51,16 +66,22 @@
       </div>
     </div>
     <div class="tow-combat-overlay-control-panel__item-groups">
+      <div class="tow-combat-overlay-control-panel__item-group" data-item-group="actions">
+        <div class="tow-combat-overlay-control-panel__group-grid"></div>
+      </div>
+      <div class="tow-combat-overlay-control-panel__item-group" data-item-group="manoeuvre">
+        <div class="tow-combat-overlay-control-panel__group-grid"></div>
+      </div>
+      <div class="tow-combat-overlay-control-panel__item-group" data-item-group="recover">
+        <div class="tow-combat-overlay-control-panel__group-grid"></div>
+      </div>
       <div class="tow-combat-overlay-control-panel__item-group" data-item-group="attacks">
-        <div class="tow-combat-overlay-control-panel__section-title">Attacks</div>
         <div class="tow-combat-overlay-control-panel__group-grid"></div>
       </div>
       <div class="tow-combat-overlay-control-panel__item-group" data-item-group="abilities">
-        <div class="tow-combat-overlay-control-panel__section-title">Abilities</div>
         <div class="tow-combat-overlay-control-panel__group-grid"></div>
       </div>
       <div class="tow-combat-overlay-control-panel__item-group" data-item-group="magic">
-        <div class="tow-combat-overlay-control-panel__section-title">Magic</div>
         <div class="tow-combat-overlay-control-panel__group-grid"></div>
       </div>
     </div>
