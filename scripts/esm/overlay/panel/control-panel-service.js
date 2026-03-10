@@ -1693,12 +1693,14 @@ function updateSelectionDisplay(panelElement) {
   const miscastDiceRow = panelElement.querySelector("[data-stat-row='miscastDice']");
   const speedElement = panelElement.querySelector("[data-stat='speed']");
   const imageElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-image");
+  const selectionNameElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-name");
   const selectionModsElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-mods");
   const selectionDiceModLabel = selectionElement.querySelector("[data-selection-mod-label='diceModifier']");
   const selectionRollStateLabel = selectionElement.querySelector("[data-selection-mod-label='rollState']");
   const placeholderElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-placeholder");
   const multiCountElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-multi-count");
   if (!(imageElement instanceof HTMLImageElement)) return;
+  if (!(selectionNameElement instanceof HTMLElement)) return;
   if (!(statsElement instanceof HTMLElement)) return;
   if (!(tokenTypeElement instanceof HTMLElement)) return;
   if (!(resilienceElement instanceof HTMLElement)) return;
@@ -1746,6 +1748,7 @@ function updateSelectionDisplay(panelElement) {
   speedElement.textContent = speed;
   imageElement.src = iconSrc;
   imageElement.alt = tokenName;
+  selectionNameElement.textContent = tokenName || "-";
   selectionModsElement.style.display = "flex";
   selectionDiceModLabel.textContent = formatActionDiceLabel(token?.actor ?? token?.document?.actor ?? null);
   selectionRollStateLabel.textContent = formatActionRollStateLabel(token?.actor ?? token?.document?.actor ?? null);
