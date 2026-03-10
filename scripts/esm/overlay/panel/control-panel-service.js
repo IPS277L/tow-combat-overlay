@@ -195,7 +195,8 @@ function bindPanelSlotEvent(slotElement) {
     showOverlayTooltip(title, description || "No description.", { x: event.clientX, y: event.clientY }, null, {
       allowOutsideCanvas: true,
       clientCoordinates: true,
-      theme: "panel"
+      theme: "panel",
+      descriptionIsHtml: true
     });
   };
   const onHideTooltip = () => hideStatusTooltip();
@@ -352,7 +353,22 @@ function getSpeedLabel(token) {
 }
 
 function normalizeItemDescription(item) {
-  const descriptionSource = item?.system?.description ?? item?.system?.summary ?? "";
+  const descriptionSource = item?.system?.description
+    ?? item?.system?.summary
+    ?? item?.description
+    ?? item?.flags?.core?.description
+    ?? "";
+  return normalizeDescriptionSource(descriptionSource);
+}
+
+function normalizeDescriptionSource(descriptionSource) {
+  const escapeHtml = (value) => String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
   let raw = descriptionSource;
   if (raw && typeof raw === "object") {
     raw = raw?.value
@@ -364,49 +380,59 @@ function normalizeItemDescription(item) {
   }
   const html = (typeof raw === "string") ? raw : "";
   if (!html) return "";
+
+  const refLabels = [];
+  const refTokenized = html.replace(/@[\w.]+\[[^\]]+\](?:\{([^}]+)\})?/g, (_full, label) => {
+    const index = refLabels.length;
+    const safeLabel = String(label ?? "Reference").trim() || "Reference";
+    refLabels.push(safeLabel);
+    return `__TOW_REF_${index}__`;
+  });
+
   const temp = document.createElement("div");
-  temp.innerHTML = html;
-  const text = String(temp.textContent ?? temp.innerText ?? "").replace(/\s+/g, " ").trim();
-  return text;
+  temp.innerHTML = refTokenized
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "</p>\n");
+  const plainText = String(temp.textContent ?? temp.innerText ?? "")
+    .replace(/\u00a0/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n");
+  const normalizedText = plainText
+    .split("\n")
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .join("\n");
+
+  let markup = escapeHtml(normalizedText).replace(/\n/g, "<br>");
+  for (let index = 0; index < refLabels.length; index += 1) {
+    const token = `__TOW_REF_${index}__`;
+    const chip = `<span class="tow-combat-overlay-control-panel__ref-chip">${escapeHtml(refLabels[index])}</span>`;
+    markup = markup.split(token).join(chip);
+  }
+  return markup;
 }
 
 function getPanelItemGroupsForActor(actor) {
-  const items = Array.isArray(actor?.items?.contents) ? actor.items.contents : [];
-  const filtered = items;
+  const toList = (value) => (Array.isArray(value) ? value : []);
+  const abilityItems = toList(actor?.itemTypes?.ability);
+  const talentItems = toList(actor?.itemTypes?.talent);
+  const spellItems = toList(actor?.itemTypes?.spell);
+  const blessingItems = toList(actor?.itemTypes?.blessing);
+  const weaponItems = toList(actor?.itemTypes?.weapon);
 
-  const groups = {
-    attacks: [],
-    abilities: [],
-    magic: []
-  };
+  // Match Old World sheet logic:
+  // - attacks: ability items where system.isAttack is true
+  // - abilities: non-attack ability items + talents
+  // - magic: spell items; blessings are religion in core, mapped here into magic group
+  const attacks = abilityItems
+    .filter((item) => item?.system?.isAttack === true)
+    .concat(weaponItems.filter((item) => item?.system?.isEquipped || item?.system?.equipped?.value));
+  const abilities = abilityItems
+    .filter((item) => item?.system?.isAttack !== true)
+    .concat(talentItems);
+  const magic = spellItems.concat(blessingItems);
 
-  for (const item of filtered) {
-    const type = String(item?.type ?? "").toLowerCase();
-    const hasAbilityAttack = !!item?.system?.attack && (
-      item?.system?.isAttack === true ||
-      (typeof item?.system?.attack?.skill === "string" && item.system.attack.skill.length > 0) ||
-      (!!item?.system?.attack?.dice && !!item?.system?.attack?.target)
-    );
-    const isAttack = type === "weapon" || (type === "ability" && hasAbilityAttack);
-    const isMagic = type === "spell" || type === "blessing" || item?.system?.damage?.magical === true;
-    const isAbility = type === "ability" && !isAttack && !isMagic;
-
-    if (isAttack) {
-      groups.attacks.push(item);
-      continue;
-    }
-    if (isMagic) {
-      groups.magic.push(item);
-      continue;
-    }
-    if (isAbility) {
-      groups.abilities.push(item);
-      continue;
-    }
-    groups.abilities.push(item);
-  }
-
-  return groups;
+  return { attacks, abilities, magic };
 }
 
 function debugTokenItems(controlPanelState, token) {
@@ -436,6 +462,7 @@ function debugTokenItems(controlPanelState, token) {
 function resolveDynamicGridLayout(itemCount) {
   const count = Math.max(0, Math.trunc(Number(itemCount) || 0));
   if (count <= 0) return { columns: 1, rows: 1 };
+  if (count === 1) return { columns: 1, rows: 1 };
   const rows = Math.max(1, Math.min(2, count));
   const columns = Math.max(1, Math.ceil(count / rows));
   return { columns, rows };
@@ -472,9 +499,19 @@ function ensureGroupSlotElements(panelElement, groupKey, slotCount) {
 function applyGroupGridLayout(panelElement, groupKey, slotCount) {
   const gridElement = getGroupGridElement(panelElement, groupKey);
   if (!(gridElement instanceof HTMLElement)) return;
+
+  // Force a strict single-row footprint for single-item groups.
+  if (Number(slotCount) === 1) {
+    gridElement.style.gridTemplateColumns = "repeat(1, var(--tow-control-panel-slot-size))";
+    gridElement.style.gridTemplateRows = "repeat(1, var(--tow-control-panel-slot-size))";
+    gridElement.style.gridAutoFlow = "column";
+    return;
+  }
+
   const { columns, rows } = resolveDynamicGridLayout(slotCount);
   gridElement.style.gridTemplateColumns = `repeat(${columns}, var(--tow-control-panel-slot-size))`;
   gridElement.style.gridTemplateRows = `repeat(${rows}, var(--tow-control-panel-slot-size))`;
+  gridElement.style.gridAutoFlow = "";
 }
 
 function updateGroupSlots(panelElement, groupKey, groupItems = []) {
@@ -604,6 +641,8 @@ function updateSelectionDisplay(panelElement) {
     multiCountElement.textContent = "x0";
     updatePanelSlots(panelElement, null);
     updateStatusDisplay(panelElement, null);
+    const rect = panelElement.getBoundingClientRect();
+    applyPanelPosition(panelElement, rect.left, rect.top);
     return;
   }
 
@@ -632,6 +671,8 @@ function updateSelectionDisplay(panelElement) {
     multiCountElement.textContent = "x1";
     updatePanelSlots(panelElement, token);
     updateStatusDisplay(panelElement, token);
+    const rect = panelElement.getBoundingClientRect();
+    applyPanelPosition(panelElement, rect.left, rect.top);
     return;
   }
 
@@ -651,6 +692,8 @@ function updateSelectionDisplay(panelElement) {
   multiCountElement.textContent = `x${selectedCount}`;
   updatePanelSlots(panelElement, null);
   updateStatusDisplay(panelElement, null);
+  const rect = panelElement.getBoundingClientRect();
+  applyPanelPosition(panelElement, rect.left, rect.top);
 }
 
 function bindPanelSelectionSync(controlPanelState, panelElement) {

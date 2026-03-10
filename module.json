@@ -2,7 +2,7 @@
   "id": "tow-combat-overlay",
   "title": "Warhammer: The Old World - Combat Overlay",
   "description": "<p>Combat overlay and automation helpers for Warhammer: The Old World Roleplaying Game.</p>",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "compatibility": {
     "minimum": "13",
     "verified": "13",

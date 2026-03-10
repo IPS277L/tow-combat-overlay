@@ -210,16 +210,34 @@ function applyTooltipTheme(tooltip, theme = "overlay") {
 export function showOverlayTooltip(title, description, point, existingTooltip = null, options = {}) {
   const tooltip = existingTooltip ?? ensureStatusTooltip();
   if (!tooltip || !point) return;
-  applyTooltipTheme(tooltip, options?.theme ?? "overlay");
+  const theme = String(options?.theme ?? "overlay");
+  const isPanelTheme = theme.toLowerCase() === "panel";
+  applyTooltipTheme(tooltip, theme);
   tooltip.title.textContent = String(title ?? "");
-  tooltip.body.textContent = String(description ?? "");
+  if (options?.descriptionIsHtml === true) {
+    tooltip.body.innerHTML = String(description ?? "");
+  } else {
+    tooltip.body.textContent = String(description ?? "");
+  }
 
   const allowOutsideCanvas = options?.allowOutsideCanvas === true;
   const clientCoordinates = options?.clientCoordinates === true;
   const view = canvas?.app?.renderer?.events?.domElement ?? canvas?.app?.view;
   const rect = view?.getBoundingClientRect?.();
-  const clientX = Number(point.x ?? 0) + (clientCoordinates ? 0 : Number(rect?.left ?? 0)) + STATUS_TOOLTIP_OFFSET_X;
-  const clientY = Number(point.y ?? 0) + (clientCoordinates ? 0 : Number(rect?.top ?? 0)) + STATUS_TOOLTIP_OFFSET_Y;
+
+  // Panel tooltips carry long descriptions; prefer wider layout for readability.
+  if (isPanelTheme) {
+    const widthBasis = Number(rect?.width ?? window.innerWidth);
+    const panelMaxWidth = Math.max(220, Math.min(420, Math.round(widthBasis - 24)));
+    tooltip.element.style.maxWidth = `${panelMaxWidth}px`;
+  } else {
+    tooltip.element.style.maxWidth = `${STATUS_TOOLTIP_MAX_WIDTH}px`;
+  }
+
+  const baseX = Number(point.x ?? 0) + (clientCoordinates ? 0 : Number(rect?.left ?? 0));
+  const baseY = Number(point.y ?? 0) + (clientCoordinates ? 0 : Number(rect?.top ?? 0));
+  const clientX = baseX + STATUS_TOOLTIP_OFFSET_X;
+  const clientY = baseY + STATUS_TOOLTIP_OFFSET_Y;
 
   if (!allowOutsideCanvas) {
     const topElement = document.elementFromPoint(clientX, clientY);
@@ -232,7 +250,46 @@ export function showOverlayTooltip(title, description, point, existingTooltip = 
 
   tooltip.element.style.left = `${Math.round(clientX)}px`;
   tooltip.element.style.top = `${Math.round(clientY)}px`;
+  tooltip.element.style.visibility = "hidden";
   tooltip.element.style.display = "block";
+
+  const tooltipWidth = Math.max(1, Math.round(tooltip.element.offsetWidth || 1));
+  const tooltipHeight = Math.max(1, Math.round(tooltip.element.offsetHeight || 1));
+  const viewportMargin = 8;
+  const bounds = allowOutsideCanvas && !rect
+    ? {
+      left: viewportMargin,
+      top: viewportMargin,
+      right: Math.max(viewportMargin, window.innerWidth - viewportMargin),
+      bottom: Math.max(viewportMargin, window.innerHeight - viewportMargin)
+    }
+    : {
+      left: Math.round((rect?.left ?? 0) + viewportMargin),
+      top: Math.round((rect?.top ?? 0) + viewportMargin),
+      right: Math.round((rect?.right ?? window.innerWidth) - viewportMargin),
+      bottom: Math.round((rect?.bottom ?? window.innerHeight) - viewportMargin)
+    };
+
+  const clamp = (value, min, max) => {
+    if (max < min) return min;
+    return Math.min(max, Math.max(min, value));
+  };
+
+  let finalX = clientX;
+  let finalY = clientY;
+  if ((finalY + tooltipHeight) > bounds.bottom) {
+    finalY = baseY - STATUS_TOOLTIP_OFFSET_Y - tooltipHeight;
+  }
+  if ((finalX + tooltipWidth) > bounds.right) {
+    finalX = baseX - STATUS_TOOLTIP_OFFSET_X - tooltipWidth;
+  }
+
+  finalX = clamp(finalX, bounds.left, bounds.right - tooltipWidth);
+  finalY = clamp(finalY, bounds.top, bounds.bottom - tooltipHeight);
+
+  tooltip.element.style.left = `${Math.round(finalX)}px`;
+  tooltip.element.style.top = `${Math.round(finalY)}px`;
+  tooltip.element.style.visibility = "visible";
 }
 
 export function hideStatusTooltip() {

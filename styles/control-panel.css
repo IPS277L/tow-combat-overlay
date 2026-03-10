@@ -213,6 +213,7 @@
 .tow-combat-overlay-control-panel__item-groups {
   display: flex;
   align-items: flex-start;
+  align-self: flex-start;
   gap: 8px;
 }
 
@@ -283,4 +284,17 @@
   font-weight: 600;
   line-height: 1;
   opacity: 0.95;
+}
+
+.tow-combat-overlay-status-tooltip .tow-combat-overlay-control-panel__ref-chip {
+  display: inline-block;
+  padding: 1px 3px;
+  margin: 0 1px;
+  border-radius: 5px;
+  border: 1px dotted var(--tow-darkred, #8b2626);
+  background: none;
+  color: var(--tow-red, #b72a2a);
+  font-weight: 700;
+  line-height: 1.1;
+  vertical-align: baseline;
 }
