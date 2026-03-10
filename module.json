@@ -20,6 +20,9 @@
     },
     {
       "src": "styles/chat-cards.css"
+    },
+    {
+      "src": "styles/control-panel.css"
     }
   ],
   "languages": [

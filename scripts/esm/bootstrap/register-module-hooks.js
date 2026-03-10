@@ -11,12 +11,17 @@ import {
   isTowCombatOverlaySettingEnabled,
   registerTowCombatOverlaySettings
 } from "./register-settings.js";
+import {
+  towCombatOverlayEnsureControlPanel,
+  towCombatOverlayRemoveControlPanel
+} from "../overlay/panel/control-panel-service.js";
 
 function ensureTowCombatOverlayStylesheetLoaded() {
   const explicitHrefs = [
     "modules/tow-combat-overlay/styles/dialog-base.css",
     "modules/tow-combat-overlay/styles/dialog-selectors.css",
-    "modules/tow-combat-overlay/styles/chat-cards.css"
+    "modules/tow-combat-overlay/styles/chat-cards.css",
+    "modules/tow-combat-overlay/styles/control-panel.css"
   ];
   const links = Array.from(document.querySelectorAll("link[rel='stylesheet']"));
   const loadedHrefs = new Set(
@@ -40,24 +45,38 @@ function ensureTowCombatOverlayStylesheetLoaded() {
 export function syncTowCombatOverlayEnabledSetting() {
   const { settings } = getTowCombatOverlayConstants();
   const overlayApi = getTowCombatOverlayOverlayApi();
-  if (!overlayApi) return false;
+  let didChange = false;
 
   const wantsEnabled = isTowCombatOverlaySettingEnabled(settings.enableOverlay, true);
+  const wantsControlPanel = isTowCombatOverlaySettingEnabled(settings.enableControlPanel, true);
+
+  if (!overlayApi) {
+    if (!wantsControlPanel) towCombatOverlayRemoveControlPanel();
+    return false;
+  }
   const isEnabled = typeof overlayApi.isEnabled === "function"
     ? !!overlayApi.isEnabled()
     : false;
 
   if (wantsEnabled && !isEnabled && typeof overlayApi.enable === "function") {
     overlayApi.enable();
-    return true;
+    didChange = true;
   }
 
   if (!wantsEnabled && isEnabled && typeof overlayApi.disable === "function") {
     overlayApi.disable();
-    return true;
+    didChange = true;
   }
 
-  return false;
+  if (wantsControlPanel) {
+    void towCombatOverlayEnsureControlPanel().catch((error) => {
+      console.error("[tow-combat-overlay] Failed to initialize control panel.", error);
+    });
+  } else {
+    towCombatOverlayRemoveControlPanel();
+  }
+
+  return didChange;
 }
 
 function registerTowCombatOverlayRuntimeApis() {

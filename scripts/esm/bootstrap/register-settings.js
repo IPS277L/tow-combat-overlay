@@ -45,4 +45,13 @@ export function registerTowCombatOverlaySettings() {
     hint: "TOWCOMBATOVERLAY.Setting.EnableOverlay.Hint",
     onChange: () => syncTowCombatOverlayEnabledSetting()
   });
+  game.settings.register(moduleId, settingKeys.enableControlPanel, {
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+    name: "Enable Control Panel",
+    hint: "Show the draggable control panel.",
+    onChange: () => syncTowCombatOverlayEnabledSetting()
+  });
 }

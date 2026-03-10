@@ -1,0 +1,68 @@
+<section id="tow-combat-overlay-control-panel" class="tow-combat-overlay-control-panel" aria-label="Combat control panel">
+  <div class="tow-combat-overlay-control-panel__body">
+    <div class="tow-combat-overlay-control-panel__section">
+      <div class="tow-combat-overlay-control-panel__section-title" data-role="tokenName">No token selected</div>
+      <div class="tow-combat-overlay-control-panel__selection" data-selection="none" title="No token selected">
+        <img
+          class="tow-combat-overlay-control-panel__selection-image"
+          src=""
+          alt="Selected token"
+        />
+        <span class="tow-combat-overlay-control-panel__selection-placeholder">-</span>
+        <span class="tow-combat-overlay-control-panel__selection-multi-count">x0</span>
+      </div>
+    </div>
+    <div class="tow-combat-overlay-control-panel__section">
+      <div class="tow-combat-overlay-control-panel__section-title">Stats</div>
+      <div class="tow-combat-overlay-control-panel__stats" data-selection="none">
+        <div class="tow-combat-overlay-control-panel__stat-row" data-stat-row="tokenType">
+          <span class="tow-combat-overlay-control-panel__stat-label">Type</span>
+          <span class="tow-combat-overlay-control-panel__stat-value" data-stat="tokenType">-</span>
+        </div>
+        <div class="tow-combat-overlay-control-panel__stat-row" data-stat-row="resilience">
+          <span class="tow-combat-overlay-control-panel__stat-label">Resilience</span>
+          <span class="tow-combat-overlay-control-panel__stat-value" data-stat="resilience">-</span>
+        </div>
+        <div class="tow-combat-overlay-control-panel__stat-row" data-stat-row="wounds">
+          <span class="tow-combat-overlay-control-panel__stat-label">Wounds</span>
+          <span class="tow-combat-overlay-control-panel__stat-value" data-stat="wounds">-</span>
+        </div>
+        <div class="tow-combat-overlay-control-panel__stat-row" data-stat-row="miscastDice">
+          <span class="tow-combat-overlay-control-panel__stat-label">Miscast Dice</span>
+          <span class="tow-combat-overlay-control-panel__stat-value" data-stat="miscastDice">-</span>
+        </div>
+        <div class="tow-combat-overlay-control-panel__stat-row" data-stat-row="speed">
+          <span class="tow-combat-overlay-control-panel__stat-label">Speed</span>
+          <span class="tow-combat-overlay-control-panel__stat-value" data-stat="speed">-</span>
+        </div>
+      </div>
+    </div>
+    <div class="tow-combat-overlay-control-panel__section">
+      <div class="tow-combat-overlay-control-panel__section-title">Statuses</div>
+      <div class="tow-combat-overlay-control-panel__statuses" data-selection="none" title="Token statuses">
+        {{#each statuses}}
+          <div
+            class="tow-combat-overlay-control-panel__status-icon"
+            data-status-id="{{this.id}}"
+          >
+            <img src="{{this.img}}" alt="{{this.label}}" />
+          </div>
+        {{/each}}
+      </div>
+    </div>
+    <div class="tow-combat-overlay-control-panel__item-groups">
+      <div class="tow-combat-overlay-control-panel__item-group" data-item-group="attacks">
+        <div class="tow-combat-overlay-control-panel__section-title">Attacks</div>
+        <div class="tow-combat-overlay-control-panel__group-grid"></div>
+      </div>
+      <div class="tow-combat-overlay-control-panel__item-group" data-item-group="abilities">
+        <div class="tow-combat-overlay-control-panel__section-title">Abilities</div>
+        <div class="tow-combat-overlay-control-panel__group-grid"></div>
+      </div>
+      <div class="tow-combat-overlay-control-panel__item-group" data-item-group="magic">
+        <div class="tow-combat-overlay-control-panel__section-title">Magic</div>
+        <div class="tow-combat-overlay-control-panel__group-grid"></div>
+      </div>
+    </div>
+  </div>
+</section>

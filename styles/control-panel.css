@@ -1,0 +1,286 @@
+.tow-combat-overlay-control-panel {
+  --tow-control-panel-slot-size: 60px;
+  --tow-control-panel-gap: 5px;
+  --tow-control-panel-selection-size: calc((var(--tow-control-panel-slot-size) * 2) + var(--tow-control-panel-gap));
+  --tow-panel-bg-0: #efecdf;
+  --tow-panel-bg-1: #e7e3d6;
+  --tow-panel-bg-2: #ddd8c9;
+  --tow-panel-border: #b9b6aa;
+  --tow-panel-border-strong: #8f7c43;
+  --tow-panel-text: #2a2620;
+  --tow-panel-subtext: #5b5449;
+  --tow-panel-slot-bg: #f2f1e8;
+  --tow-panel-slot-bg-hover: #e8ddbe;
+  --tow-panel-slot-border: #bdb9ab;
+  --tow-panel-slot-icon: #6a5623;
+  position: fixed;
+  z-index: 10010;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--tow-panel-border);
+  border-radius: 6px;
+  background: linear-gradient(180deg, var(--tow-panel-bg-0) 0%, var(--tow-panel-bg-1) 55%, var(--tow-panel-bg-2) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    0 5px 16px rgba(16, 14, 11, 0.34);
+  user-select: none;
+  cursor: default;
+}
+
+.tow-combat-overlay-control-panel__body {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.tow-combat-overlay-control-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tow-combat-overlay-control-panel__section-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--tow-panel-text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.tow-combat-overlay-control-panel__selection {
+  width: var(--tow-control-panel-selection-size);
+  min-width: var(--tow-control-panel-selection-size);
+  height: var(--tow-control-panel-selection-size);
+  border: 1px solid var(--tow-panel-slot-border);
+  border-radius: 5px;
+  position: relative;
+  overflow: hidden;
+  background: var(--tow-panel-slot-bg);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.tow-combat-overlay-control-panel__selection-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+
+.tow-combat-overlay-control-panel__selection-placeholder {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tow-panel-subtext);
+  opacity: 0.9;
+}
+
+.tow-combat-overlay-control-panel__selection-multi-count {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--tow-panel-text);
+  text-shadow: none;
+}
+
+.tow-combat-overlay-control-panel__selection[data-selection="single"] .tow-combat-overlay-control-panel__selection-image {
+  display: block;
+}
+
+.tow-combat-overlay-control-panel__selection[data-selection="single"] .tow-combat-overlay-control-panel__selection-placeholder {
+  display: none;
+}
+
+.tow-combat-overlay-control-panel__selection[data-selection="multi"] .tow-combat-overlay-control-panel__selection-multi-count {
+  display: inline-flex;
+}
+
+.tow-combat-overlay-control-panel__selection[data-selection="multi"] .tow-combat-overlay-control-panel__selection-placeholder {
+  display: none;
+}
+
+.tow-combat-overlay-control-panel__stats {
+  width: 166px;
+  min-width: 166px;
+  height: var(--tow-control-panel-selection-size);
+  border: 1px solid var(--tow-panel-slot-border);
+  border-radius: 5px;
+  padding: 8px 9px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--tow-panel-slot-bg);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38);
+}
+
+.tow-combat-overlay-control-panel__statuses {
+  --tow-control-panel-status-size: 27px;
+  --tow-control-panel-status-gap: 4px;
+  --tow-control-panel-status-cols: 4;
+  width: calc((var(--tow-control-panel-status-size) * var(--tow-control-panel-status-cols)) + (var(--tow-control-panel-status-gap) * (var(--tow-control-panel-status-cols) - 1)) + 16px);
+  min-width: calc((var(--tow-control-panel-status-size) * var(--tow-control-panel-status-cols)) + (var(--tow-control-panel-status-gap) * (var(--tow-control-panel-status-cols) - 1)) + 16px);
+  height: var(--tow-control-panel-selection-size);
+  border: 1px solid var(--tow-panel-slot-border);
+  border-radius: 5px;
+  padding: 6px 7px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(var(--tow-control-panel-status-cols), var(--tow-control-panel-status-size));
+  grid-auto-rows: var(--tow-control-panel-status-size);
+  gap: var(--tow-control-panel-status-gap);
+  align-content: start;
+  justify-content: start;
+  background: var(--tow-panel-slot-bg);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.tow-combat-overlay-control-panel__status-icon {
+  width: var(--tow-control-panel-status-size);
+  height: var(--tow-control-panel-status-size);
+  border: 1px solid rgba(189, 185, 171, 0.8);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.45;
+  filter: saturate(0.2) grayscale(0.65);
+}
+
+.tow-combat-overlay-control-panel__status-icon img {
+  width: calc(var(--tow-control-panel-status-size) - 5px);
+  height: calc(var(--tow-control-panel-status-size) - 5px);
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.tow-combat-overlay-control-panel__status-icon.is-active {
+  border-color: var(--tow-panel-border-strong);
+  background: rgba(232, 221, 190, 0.62);
+  opacity: 1;
+  filter: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44);
+}
+
+.tow-combat-overlay-control-panel__stat-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 4px;
+}
+
+.tow-combat-overlay-control-panel__stat-label {
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--tow-panel-subtext);
+  line-height: 1.1;
+}
+
+.tow-combat-overlay-control-panel__stat-value {
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--tow-panel-text);
+  line-height: 1.1;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tow-combat-overlay-control-panel.is-dragging {
+  cursor: grabbing;
+}
+
+.tow-combat-overlay-control-panel__item-groups {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.tow-combat-overlay-control-panel__item-group {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tow-combat-overlay-control-panel__group-grid {
+  display: grid;
+  grid-template-columns: repeat(1, var(--tow-control-panel-slot-size));
+  grid-template-rows: repeat(1, var(--tow-control-panel-slot-size));
+  gap: var(--tow-control-panel-gap);
+}
+
+.tow-combat-overlay-control-panel__slot {
+  position: relative;
+  width: var(--tow-control-panel-slot-size);
+  height: var(--tow-control-panel-slot-size);
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--tow-panel-slot-border);
+  border-radius: 4px;
+  background: var(--tow-panel-slot-bg);
+  color: var(--tow-panel-slot-icon);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-type="attack"] {
+  border-color: #a77a3d;
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-type="ability"] {
+  border-color: #8f8a7e;
+}
+
+.tow-combat-overlay-control-panel__slot-image {
+  width: calc(var(--tow-control-panel-slot-size) - 7px);
+  height: calc(var(--tow-control-panel-slot-size) - 7px);
+  object-fit: cover;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.tow-combat-overlay-control-panel__slot:hover,
+.tow-combat-overlay-control-panel__slot:focus-visible {
+  border-color: var(--tow-panel-border-strong);
+  background: var(--tow-panel-slot-bg-hover);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.52),
+    0 0 0 1px rgba(143, 124, 67, 0.24);
+}
+
+.tow-combat-overlay-control-panel__slot-icon {
+  pointer-events: none;
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+  opacity: 0.95;
+}

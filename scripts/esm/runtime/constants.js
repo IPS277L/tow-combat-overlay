@@ -16,6 +16,7 @@ const MODULE_CONSTANTS_BASE = Object.freeze({
   }),
   settings: Object.freeze({
     enableOverlay: "enableOverlay",
+    enableControlPanel: "enableControlPanel",
     enableAutoDefence: "enableAutoDefence",
     enableAutoApplyDamage: "enableAutoApplyDamage",
     enableStaggerChoiceAutomation: "enableStaggerChoiceAutomation",
@@ -87,6 +88,14 @@ export function getTowCombatOverlayConstants() {
       resilience: Object.freeze({
         title: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.Resilience.Title", "Resilience"),
         description: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.Resilience.Description", "Resilience value used for durability and damage resolution thresholds.")
+      }),
+      speed: Object.freeze({
+        title: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.Speed.Title", "Speed"),
+        description: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.Speed.Description", "Movement pace category used for battlefield mobility and maneuvering.")
+      }),
+      miscastDice: Object.freeze({
+        title: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.MiscastDice.Title", "Miscast Dice"),
+        description: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.MiscastDice.Description", "Current count of accumulated miscast dice on the selected actor.")
       }),
       actorType: Object.freeze({
         defaultDescription: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.ActorType.DefaultDescription", "Actor type."),
