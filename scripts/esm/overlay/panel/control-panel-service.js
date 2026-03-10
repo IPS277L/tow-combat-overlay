@@ -1,15 +1,42 @@
 import {
+  towCombatOverlayAddWound,
   towCombatOverlayGetResilienceValue,
-  towCombatOverlayGetWoundCount
+  towCombatOverlayGetWoundCount,
+  towCombatOverlayRemoveWound
 } from "../layout/wound-state-service.js";
 import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
+import { MODULE_KEY } from "../../runtime/overlay-runtime-constants.js";
+import {
+  AUTO_APPLY_WAIT_MS,
+  AUTO_STAGGER_PATCH_MS
+} from "../../runtime/overlay-runtime-constants.js";
 import {
   getTypeTooltipData,
   hideStatusTooltip,
+  runActorOpLock,
   showOverlayTooltip,
   towCombatOverlayLocalizeSystemKey,
   towCombatOverlayResolveConditionLabel
 } from "../shared/shared-service.js";
+import {
+  towCombatOverlayCanEditActor,
+  towCombatOverlayCopyPoint,
+  towCombatOverlayIsAltModifier,
+  towCombatOverlayIsShiftModifier,
+  towCombatOverlayTokenAtPoint,
+  towCombatOverlayWarnNoPermission
+} from "../shared/core-helpers-service.js";
+import {
+  towCombatOverlayAddActorCondition,
+  towCombatOverlayRemoveActorCondition
+} from "../shared/actions-bridge-service.js";
+import {
+  towCombatOverlaySetupAbilityTestWithDamage
+} from "../../combat/attack-service.js";
+import {
+  createTowCombatOverlayAutomationCoordinator,
+  towCombatOverlayAutomation
+} from "../automation/automation-service.js";
 
 const PANEL_ID = "tow-combat-overlay-control-panel";
 const PANEL_TEMPLATE_PATH = "modules/tow-combat-overlay/templates/overlay/control-panel.hbs";
@@ -18,6 +45,7 @@ const PANEL_STATE_KEY = "__towCombatOverlayControlPanelState";
 const PANEL_VIEWPORT_MARGIN_PX = 8;
 const PANEL_FALLBACK_ITEM_ICON = "icons/svg/item-bag.svg";
 const PANEL_DEBUG_ITEMS = false;
+const PANEL_ATTACK_PICK_CURSOR = "crosshair";
 const { tooltips: MODULE_TOOLTIPS } = getTowCombatOverlayConstants();
 
 function localizeMaybe(key, fallback = "") {
@@ -50,6 +78,60 @@ function getActorStatusSet(actor) {
     for (const status of Array.from(effect?.statuses ?? [])) statuses.add(String(status));
   }
   return statuses;
+}
+
+function getActorEffectsByStatus(actor, conditionId) {
+  const id = String(conditionId ?? "");
+  if (!id) return [];
+  return Array.from(actor?.effects?.contents ?? []).filter((effect) => (
+    Array.from(effect?.statuses ?? []).map(String).includes(id)
+  ));
+}
+
+async function setActorConditionState(actor, conditionId, active) {
+  if (!actor || !conditionId) return;
+  const id = String(conditionId);
+  if (id !== "staggered" && typeof actor.toggleStatusEffect === "function") {
+    try {
+      await actor.toggleStatusEffect(id, { active });
+      return;
+    } catch (_error) {
+      // Fall through to adapter-driven methods.
+    }
+  }
+  if (active) await towCombatOverlayAddActorCondition(actor, id);
+  else await towCombatOverlayRemoveActorCondition(actor, id);
+}
+
+async function toggleConditionFromPanel(actor, conditionId) {
+  if (!actor || !conditionId) return;
+  if (!towCombatOverlayCanEditActor(actor)) {
+    towCombatOverlayWarnNoPermission(actor);
+    return;
+  }
+  const id = String(conditionId);
+  const applyToggle = async () => {
+    const active = getActorStatusSet(actor).has(id);
+    if (!active) {
+      await setActorConditionState(actor, id, true);
+      return;
+    }
+    await setActorConditionState(actor, id, false);
+    for (let i = 0; i < 4; i++) {
+      if (!getActorStatusSet(actor).has(id)) return;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    for (const effect of getActorEffectsByStatus(actor, id)) {
+      const liveEffect = effect?.id ? actor.effects?.get?.(effect.id) : null;
+      if (liveEffect) await liveEffect.delete();
+    }
+  };
+
+  if (game?.[MODULE_KEY]) {
+    await runActorOpLock(actor, `condition:${id}`, applyToggle);
+    return;
+  }
+  await applyToggle();
 }
 
 function getSingleControlledToken() {
@@ -179,6 +261,11 @@ async function createControlPanelElement() {
 }
 
 function bindPanelSlotEvent(slotElement) {
+  slotElement.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    void handlePanelSlotClick(slotElement, event);
+  });
   slotElement.addEventListener("click", (event) => {
     event.preventDefault();
   });
@@ -229,6 +316,163 @@ function bindPanelTooltipEvent(targetElement, getTooltipData) {
   targetElement.addEventListener("pointercancel", onHideTooltip);
 }
 
+function getOverlayAutomationRef() {
+  return towCombatOverlayAutomation ?? createTowCombatOverlayAutomationCoordinator();
+}
+
+function getWorldPointFromClientEvent(event) {
+  const clientX = Number(event?.clientX ?? NaN);
+  const clientY = Number(event?.clientY ?? NaN);
+  if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) return null;
+
+  const renderer = canvas?.app?.renderer;
+  const mapPositionToPoint = renderer?.events?.mapPositionToPoint
+    ?? renderer?.plugins?.interaction?.mapPositionToPoint;
+  if (typeof mapPositionToPoint !== "function") return null;
+
+  const localPoint = new PIXI.Point();
+  mapPositionToPoint.call(renderer.events ?? renderer.plugins?.interaction, localPoint, clientX, clientY);
+  if (!canvas?.stage?.worldTransform?.applyInverse) return towCombatOverlayCopyPoint(localPoint);
+  return towCombatOverlayCopyPoint(canvas.stage.worldTransform.applyInverse(localPoint));
+}
+
+function getPanelAttackPickState(controlPanelState) {
+  if (!controlPanelState.pendingAttackPick) controlPanelState.pendingAttackPick = {};
+  return controlPanelState.pendingAttackPick;
+}
+
+function clearPanelAttackPickMode() {
+  const controlPanelState = getControlPanelState();
+  if (!controlPanelState) return;
+  const pending = controlPanelState.pendingAttackPick;
+  if (!pending) return;
+
+  if (pending.windowPointerDownCapture) window.removeEventListener("pointerdown", pending.windowPointerDownCapture, true);
+  if (pending.windowPointerMove) window.removeEventListener("pointermove", pending.windowPointerMove, true);
+  if (pending.onEscape) window.removeEventListener("keydown", pending.onEscape, true);
+  if (pending.panelElement instanceof HTMLElement) pending.panelElement.classList.remove("is-picking-attack");
+  if (pending.slotElement instanceof HTMLElement) pending.slotElement.classList.remove("is-picking-attack");
+  if (pending.canvasView instanceof HTMLElement) pending.canvasView.style.cursor = "";
+  hideStatusTooltip();
+
+  delete controlPanelState.pendingAttackPick;
+}
+
+async function runPanelAttackOnTarget(sourceToken, targetToken, attackItem, { autoRoll = true } = {}) {
+  const sourceActor = sourceToken?.actor ?? sourceToken?.document?.actor ?? null;
+  if (!sourceActor || !targetToken || !attackItem) return;
+  const automation = getOverlayAutomationRef();
+  const sourceBeforeState = automation.snapshotActorState(sourceActor);
+  const restoreStaggerPrompt = automation.armDefaultStaggerChoiceWound(AUTO_STAGGER_PATCH_MS);
+  automation.armAutoDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState });
+
+  try {
+    await towCombatOverlaySetupAbilityTestWithDamage(sourceActor, attackItem, {
+      autoRoll,
+      context: { targets: [targetToken] }
+    });
+  } finally {
+    setTimeout(() => restoreStaggerPrompt(), AUTO_APPLY_WAIT_MS);
+  }
+}
+
+function startPanelAttackPickMode(panelElement, slotElement, sourceToken, attackItem, originEvent = null, options = {}) {
+  const preferDefaultDialog = options?.preferDefaultDialog === true;
+  const controlPanelState = getControlPanelState();
+  if (!controlPanelState || !sourceToken || !attackItem) return;
+  clearPanelAttackPickMode();
+
+  const canvasView = canvas?.app?.view;
+  if (canvasView instanceof HTMLElement) canvasView.style.cursor = PANEL_ATTACK_PICK_CURSOR;
+  panelElement.classList.add("is-picking-attack");
+  slotElement.classList.add("is-picking-attack");
+  let attackTriggered = false;
+  const showPickTooltip = (event) => {
+    const point = {
+      x: Number(event?.clientX ?? NaN),
+      y: Number(event?.clientY ?? NaN)
+    };
+    if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return;
+    showOverlayTooltip("Select Target", "Click a target token.", point, null, {
+      allowOutsideCanvas: true,
+      clientCoordinates: true,
+      theme: "panel"
+    });
+  };
+
+  const onWindowPointerDownCapture = async (event) => {
+    if (attackTriggered) return;
+    if (Number(event?.button ?? 0) !== 0) return;
+    const target = event?.target;
+    if (target instanceof Element && target.closest(`#${PANEL_ID}`)) return;
+    const point = getWorldPointFromClientEvent(event);
+    const targetToken = towCombatOverlayTokenAtPoint(point, { excludeTokenId: sourceToken.id });
+    if (!targetToken) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+    const useDefaultDialog = preferDefaultDialog || towCombatOverlayIsAltModifier(event);
+    attackTriggered = true;
+    clearPanelAttackPickMode();
+    await runPanelAttackOnTarget(sourceToken, targetToken, attackItem, { autoRoll: !useDefaultDialog });
+  };
+
+  const onEscape = (event) => {
+    if (event.key !== "Escape") return;
+    clearPanelAttackPickMode();
+  };
+  const onWindowPointerMove = (event) => {
+    if (attackTriggered) return;
+    showPickTooltip(event);
+  };
+
+  window.addEventListener("pointerdown", onWindowPointerDownCapture, true);
+  window.addEventListener("pointermove", onWindowPointerMove, true);
+  window.addEventListener("keydown", onEscape, true);
+  showPickTooltip(originEvent);
+
+  const pending = getPanelAttackPickState(controlPanelState);
+  pending.windowPointerDownCapture = onWindowPointerDownCapture;
+  pending.windowPointerMove = onWindowPointerMove;
+  pending.onEscape = onEscape;
+  pending.panelElement = panelElement;
+  pending.slotElement = slotElement;
+  pending.canvasView = canvasView;
+}
+
+async function handlePanelSlotClick(slotElement, event) {
+  const itemGroup = String(slotElement.dataset.itemGroup ?? "");
+  const itemId = String(slotElement.dataset.itemId ?? "");
+  if (itemGroup !== "attacks" || !itemId) return;
+
+  const sourceToken = getSingleControlledToken();
+  const sourceActor = sourceToken?.actor ?? sourceToken?.document?.actor ?? null;
+  if (!sourceToken || !sourceActor) return;
+
+  const attackItem = sourceActor.items?.get?.(itemId) ?? null;
+  if (!attackItem) return;
+  const altHeld = towCombatOverlayIsAltModifier(event);
+  const shiftHeld = towCombatOverlayIsShiftModifier(event);
+
+  if (altHeld && shiftHeld) {
+    clearPanelAttackPickMode();
+    await towCombatOverlaySetupAbilityTestWithDamage(sourceActor, attackItem, { autoRoll: false });
+    return;
+  }
+
+  if (shiftHeld) {
+    clearPanelAttackPickMode();
+    await towCombatOverlaySetupAbilityTestWithDamage(sourceActor, attackItem, { autoRoll: true });
+    return;
+  }
+
+  const panelElement = slotElement.closest(`#${PANEL_ID}`);
+  if (!(panelElement instanceof HTMLElement)) return;
+  startPanelAttackPickMode(panelElement, slotElement, sourceToken, attackItem, event, {
+    preferDefaultDialog: altHeld
+  });
+}
+
 function getPanelStatTooltipData(statKey) {
   const key = String(statKey ?? "").trim();
   if (!key) return null;
@@ -242,7 +486,15 @@ function getPanelStatTooltipData(statKey) {
     };
   }
   if (key === "resilience") return MODULE_TOOLTIPS.resilience;
-  if (key === "wounds") return MODULE_TOOLTIPS.wounds;
+  if (key === "wounds") {
+    const title = String(MODULE_TOOLTIPS?.wounds?.title ?? "Wounds");
+    const baseDescription = String(MODULE_TOOLTIPS?.wounds?.description ?? "").trim();
+    const clickHint = "Left-click adds 1 wound. Right-click removes 1 wound.";
+    const description = baseDescription.includes(clickHint)
+      ? baseDescription
+      : [baseDescription, clickHint].filter(Boolean).join(" ");
+    return { title, description };
+  }
   if (key === "speed") return MODULE_TOOLTIPS.speed;
   if (key === "miscastDice") return MODULE_TOOLTIPS.miscastDice;
   return null;
@@ -257,12 +509,47 @@ function bindPanelStatsTooltipEvents(panelElement) {
   }
 }
 
+function bindPanelWoundsStatEvents(panelElement) {
+  const woundsRow = panelElement.querySelector(".tow-combat-overlay-control-panel__stat-row[data-stat-row='wounds']");
+  if (!(woundsRow instanceof HTMLElement)) return;
+  woundsRow.style.cursor = "pointer";
+
+  woundsRow.addEventListener("click", async (event) => {
+    event.preventDefault();
+    const token = getSingleControlledToken();
+    const actor = token?.actor ?? token?.document?.actor ?? null;
+    if (!actor) return;
+    await towCombatOverlayAddWound(actor);
+    updateSelectionDisplay(panelElement);
+  });
+
+  woundsRow.addEventListener("contextmenu", async (event) => {
+    event.preventDefault();
+    const token = getSingleControlledToken();
+    const actor = token?.actor ?? token?.document?.actor ?? null;
+    if (!actor) return;
+    await towCombatOverlayRemoveWound(actor);
+    updateSelectionDisplay(panelElement);
+  });
+}
+
 function bindPanelStatusesTooltipEvents(panelElement) {
   const statusElements = Array.from(panelElement.querySelectorAll(".tow-combat-overlay-control-panel__status-icon"));
   for (const statusElement of statusElements) {
     if (!(statusElement instanceof HTMLElement)) continue;
     const conditionId = String(statusElement.dataset.statusId ?? "");
     bindPanelTooltipEvent(statusElement, () => getConditionTooltipData(conditionId));
+    statusElement.addEventListener("click", async (event) => {
+      event.preventDefault();
+      const token = getSingleControlledToken();
+      const actor = token?.actor ?? token?.document?.actor ?? null;
+      if (!actor || !conditionId) return;
+      await toggleConditionFromPanel(actor, conditionId);
+      updateStatusDisplay(panelElement, token);
+    });
+    statusElement.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+    });
   }
 }
 
@@ -329,6 +616,13 @@ function formatMiscastDiceValue(token) {
   const miscasts = Number(actor?.system?.magic?.miscasts ?? NaN);
   if (!Number.isFinite(miscasts)) return "-";
   return String(Math.trunc(miscasts));
+}
+
+function actorHasMagicCasting(actor) {
+  const magicLevel = Number(actor?.system?.magic?.level ?? NaN);
+  const hasMagicLevel = Number.isFinite(magicLevel) && magicLevel > 0;
+  const spellCount = Number(actor?.itemTypes?.spell?.length ?? 0);
+  return hasMagicLevel || spellCount > 0;
 }
 
 function getSpeedLabel(token) {
@@ -547,6 +841,8 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
 
     if (!item) {
       slotElement.dataset.itemType = "empty";
+      slotElement.dataset.itemGroup = groupKey;
+      slotElement.dataset.itemId = "";
       slotElement.dataset.tooltipTitle = "";
       slotElement.dataset.tooltipDescription = "";
       slotElement.setAttribute("aria-label", `Slot ${index + 1}`);
@@ -561,8 +857,17 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
     const itemDescription = normalizeItemDescription(item);
     const itemImage = String(item?.img ?? "").trim() || PANEL_FALLBACK_ITEM_ICON;
     slotElement.dataset.itemType = "item";
+    slotElement.dataset.itemGroup = groupKey;
+    slotElement.dataset.itemId = String(item?.id ?? "");
     slotElement.dataset.tooltipTitle = itemName;
-    slotElement.dataset.tooltipDescription = itemDescription;
+    if (groupKey === "attacks") {
+      const attackHint = "<em>Click: pick target, then auto-roll attack. Shift+click: auto-roll self attack. Alt+click: pick target, then open default Foundry attack dialog (no auto-roll). Alt+Shift+click: open default Foundry self-roll dialog (no auto-roll).</em>";
+      slotElement.dataset.tooltipDescription = itemDescription
+        ? `${attackHint}<br><br>${itemDescription}`
+        : attackHint;
+    } else {
+      slotElement.dataset.tooltipDescription = itemDescription;
+    }
     slotElement.setAttribute("aria-label", itemName);
     image.src = itemImage;
     image.alt = itemName;
@@ -604,6 +909,7 @@ function updateSelectionDisplay(panelElement) {
   const resilienceElement = panelElement.querySelector("[data-stat='resilience']");
   const woundsElement = panelElement.querySelector("[data-stat='wounds']");
   const miscastDiceElement = panelElement.querySelector("[data-stat='miscastDice']");
+  const miscastDiceRow = panelElement.querySelector("[data-stat-row='miscastDice']");
   const speedElement = panelElement.querySelector("[data-stat='speed']");
   const imageElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-image");
   const placeholderElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-placeholder");
@@ -615,6 +921,7 @@ function updateSelectionDisplay(panelElement) {
   if (!(resilienceElement instanceof HTMLElement)) return;
   if (!(woundsElement instanceof HTMLElement)) return;
   if (!(miscastDiceElement instanceof HTMLElement)) return;
+  if (!(miscastDiceRow instanceof HTMLElement)) return;
   if (!(speedElement instanceof HTMLElement)) return;
   if (!(placeholderElement instanceof HTMLElement)) return;
   if (!(multiCountElement instanceof HTMLElement)) return;
@@ -627,13 +934,14 @@ function updateSelectionDisplay(panelElement) {
   if (selectedCount <= 0) {
     if (controlPanelState) controlPanelState.lastDebugTokenKey = null;
     selectionElement.dataset.selection = "none";
-    selectionElement.title = "No token selected";
     statsElement.dataset.selection = "none";
     tokenNameElement.textContent = "No token selected";
     tokenTypeElement.textContent = "-";
     resilienceElement.textContent = "-";
     woundsElement.textContent = "-";
     miscastDiceElement.textContent = "-";
+    miscastDiceRow.style.visibility = "";
+    miscastDiceRow.style.pointerEvents = "";
     speedElement.textContent = "-";
     imageElement.src = "";
     imageElement.alt = "Selected token";
@@ -655,18 +963,20 @@ function updateSelectionDisplay(panelElement) {
     const resilience = towCombatOverlayGetResilienceValue(token?.document);
     const wounds = towCombatOverlayGetWoundCount(token?.document);
     const miscastDice = formatMiscastDiceValue(token);
+    const showMiscastDice = actorHasMagicCasting(token?.actor ?? token?.document?.actor ?? null);
     const speed = getSpeedLabel(token);
     selectionElement.dataset.selection = "single";
-    selectionElement.title = tokenName;
     statsElement.dataset.selection = "single";
     tokenNameElement.textContent = tokenName;
     tokenTypeElement.textContent = typeLabel;
     resilienceElement.textContent = formatStatNumber(resilience);
     woundsElement.textContent = formatStatNumber(wounds);
     miscastDiceElement.textContent = miscastDice;
+    miscastDiceRow.style.visibility = showMiscastDice ? "" : "hidden";
+    miscastDiceRow.style.pointerEvents = showMiscastDice ? "" : "none";
     speedElement.textContent = speed;
     imageElement.src = iconSrc;
-    imageElement.alt = selectionElement.title;
+    imageElement.alt = tokenName;
     placeholderElement.textContent = iconSrc ? "-" : "?";
     multiCountElement.textContent = "x1";
     updatePanelSlots(panelElement, token);
@@ -678,13 +988,14 @@ function updateSelectionDisplay(panelElement) {
 
   selectionElement.dataset.selection = "multi";
   if (controlPanelState) controlPanelState.lastDebugTokenKey = null;
-  selectionElement.title = `${selectedCount} tokens selected`;
   statsElement.dataset.selection = "multi";
   tokenNameElement.textContent = `${selectedCount} tokens selected`;
   tokenTypeElement.textContent = "Multiple";
   resilienceElement.textContent = "-";
   woundsElement.textContent = "-";
   miscastDiceElement.textContent = "-";
+  miscastDiceRow.style.visibility = "";
+  miscastDiceRow.style.pointerEvents = "";
   speedElement.textContent = "-";
   imageElement.src = "";
   imageElement.alt = "Multiple selected tokens";
@@ -826,6 +1137,7 @@ export async function towCombatOverlayEnsureControlPanel() {
   panelElement.style.visibility = "";
 
   bindPanelStatsTooltipEvents(panelElement);
+  bindPanelWoundsStatEvents(panelElement);
   bindPanelStatusesTooltipEvents(panelElement);
   bindControlPanelDrag(controlPanelState, panelElement);
   bindPanelSelectionSync(controlPanelState, panelElement);
@@ -834,6 +1146,7 @@ export async function towCombatOverlayEnsureControlPanel() {
 
 export function towCombatOverlayRemoveControlPanel() {
   const controlPanelState = game?.[PANEL_STATE_KEY];
+  clearPanelAttackPickMode();
   const panelElement = controlPanelState?.element;
   const onPointerDown = controlPanelState?.onPointerDown;
   const onPointerMove = controlPanelState?.onPointerMove;

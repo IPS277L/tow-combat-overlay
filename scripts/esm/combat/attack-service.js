@@ -100,9 +100,9 @@ function towCombatOverlayArmAutoSubmitAbilityDialog(actor, ability) {
   });
 }
 
-export async function towCombatOverlaySetupAbilityTestWithDamage(actor, ability, { autoRoll = false } = {}) {
+export async function towCombatOverlaySetupAbilityTestWithDamage(actor, ability, { autoRoll = false, context = {} } = {}) {
   towCombatOverlayArmDamageAppend(actor, ability);
-  const rollContext = createTowCombatOverlayRollContext(actor);
+  const rollContext = createTowCombatOverlayRollContext(actor, context);
 
   let testRef;
 

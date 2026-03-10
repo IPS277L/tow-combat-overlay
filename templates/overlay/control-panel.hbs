@@ -2,7 +2,7 @@
   <div class="tow-combat-overlay-control-panel__body">
     <div class="tow-combat-overlay-control-panel__section">
       <div class="tow-combat-overlay-control-panel__section-title" data-role="tokenName">No token selected</div>
-      <div class="tow-combat-overlay-control-panel__selection" data-selection="none" title="No token selected">
+      <div class="tow-combat-overlay-control-panel__selection" data-selection="none">
         <img
           class="tow-combat-overlay-control-panel__selection-image"
           src=""
@@ -19,6 +19,10 @@
           <span class="tow-combat-overlay-control-panel__stat-label">Type</span>
           <span class="tow-combat-overlay-control-panel__stat-value" data-stat="tokenType">-</span>
         </div>
+        <div class="tow-combat-overlay-control-panel__stat-row" data-stat-row="speed">
+          <span class="tow-combat-overlay-control-panel__stat-label">Speed</span>
+          <span class="tow-combat-overlay-control-panel__stat-value" data-stat="speed">-</span>
+        </div>
         <div class="tow-combat-overlay-control-panel__stat-row" data-stat-row="resilience">
           <span class="tow-combat-overlay-control-panel__stat-label">Resilience</span>
           <span class="tow-combat-overlay-control-panel__stat-value" data-stat="resilience">-</span>
@@ -31,15 +35,11 @@
           <span class="tow-combat-overlay-control-panel__stat-label">Miscast Dice</span>
           <span class="tow-combat-overlay-control-panel__stat-value" data-stat="miscastDice">-</span>
         </div>
-        <div class="tow-combat-overlay-control-panel__stat-row" data-stat-row="speed">
-          <span class="tow-combat-overlay-control-panel__stat-label">Speed</span>
-          <span class="tow-combat-overlay-control-panel__stat-value" data-stat="speed">-</span>
-        </div>
       </div>
     </div>
     <div class="tow-combat-overlay-control-panel__section">
       <div class="tow-combat-overlay-control-panel__section-title">Statuses</div>
-      <div class="tow-combat-overlay-control-panel__statuses" data-selection="none" title="Token statuses">
+      <div class="tow-combat-overlay-control-panel__statuses" data-selection="none">
         {{#each statuses}}
           <div
             class="tow-combat-overlay-control-panel__status-icon"
