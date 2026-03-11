@@ -1,5 +1,6 @@
 import {
   towCombatOverlayAddWound,
+  towCombatOverlayGetMaxWoundLimit,
   towCombatOverlayGetResilienceValue,
   towCombatOverlayGetWoundCount,
   towCombatOverlayRemoveWound
@@ -8,7 +9,8 @@ import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
 import { MODULE_KEY } from "../../runtime/overlay-runtime-constants.js";
 import {
   AUTO_APPLY_WAIT_MS,
-  AUTO_STAGGER_PATCH_MS
+  AUTO_STAGGER_PATCH_MS,
+  ICON_SRC_WOUND
 } from "../../runtime/overlay-runtime-constants.js";
 import {
   getTypeTooltipData,
@@ -50,11 +52,14 @@ import {
 import { getTowCombatOverlaySystemAdapter } from "../../system-adapter/system-adapter.js";
 
 const PANEL_ID = "tow-combat-overlay-control-panel";
+const PANEL_SELECTION_ID = "tow-combat-overlay-selection-panel";
 const PANEL_TEMPLATE_PATH = "modules/tow-combat-overlay/templates/overlay/control-panel.hbs";
 const PANEL_LOCAL_STORAGE_KEY = "tow-combat-overlay.control-panel-position.v1";
 const PANEL_STATE_KEY = "__towCombatOverlayControlPanelState";
 const PANEL_VIEWPORT_MARGIN_PX = 8;
+const PANEL_SELECTION_GAP_PX = 8;
 const PANEL_FALLBACK_ITEM_ICON = "icons/svg/item-bag.svg";
+const PANEL_RESILIENCE_ICON = "icons/svg/shield.svg";
 const PANEL_DEBUG_ITEMS = false;
 const PANEL_ATTACK_PICK_CURSOR = "crosshair";
 const PANEL_MANOEUVRE_ICON_BY_KEY = {
@@ -289,7 +294,55 @@ async function createControlPanelElement() {
   if (!(panelElement instanceof HTMLElement) || panelElement.id !== PANEL_ID) {
     throw new Error("[tow-combat-overlay] Failed to render control panel template.");
   }
-  return { panelElement };
+  return { panelElement, selectionPanelElement: createSelectionPanelElement() };
+}
+
+function createSelectionPanelElement() {
+  const selectionPanel = document.createElement("section");
+  selectionPanel.id = PANEL_SELECTION_ID;
+  selectionPanel.className = "tow-combat-overlay-selection-panel";
+  selectionPanel.setAttribute("aria-label", "Selected token panel");
+  selectionPanel.innerHTML = `
+    <div class="tow-combat-overlay-selection-panel__main">
+      <div class="tow-combat-overlay-selection-panel__portrait-column">
+        <span class="tow-combat-overlay-control-panel__selection-name">
+          <span class="tow-combat-overlay-control-panel__selection-name-main">-</span>
+        </span>
+        <div class="tow-combat-overlay-control-panel__selection" data-selection="none">
+          <img class="tow-combat-overlay-control-panel__selection-image" src="" alt="Selected token" />
+          <div class="tow-combat-overlay-control-panel__selection-stats">
+            <button type="button" class="tow-combat-overlay-control-panel__selection-stat-row" data-selection-stat-row="wounds">
+              <span class="tow-combat-overlay-control-panel__selection-stat-value" data-selection-stat="wounds">-</span>
+              <img class="tow-combat-overlay-control-panel__selection-stat-icon" src="${ICON_SRC_WOUND}" alt="" />
+            </button>
+            <button type="button" class="tow-combat-overlay-control-panel__selection-stat-row" data-selection-stat-row="resilience">
+              <span class="tow-combat-overlay-control-panel__selection-stat-value" data-selection-stat="resilience">-</span>
+              <img class="tow-combat-overlay-control-panel__selection-stat-icon" src="${PANEL_RESILIENCE_ICON}" alt="" />
+            </button>
+          </div>
+          <span class="tow-combat-overlay-control-panel__selection-placeholder">-</span>
+          <span class="tow-combat-overlay-control-panel__selection-multi-count">x0</span>
+        </div>
+      </div>
+    </div>
+  `;
+  return selectionPanel;
+}
+
+function syncSelectionPanelPosition(controlPanelState) {
+  const panelElement = controlPanelState?.element;
+  const selectionPanelElement = controlPanelState?.selectionElement;
+  if (!(panelElement instanceof HTMLElement)) return;
+  if (!(selectionPanelElement instanceof HTMLElement)) return;
+  const panelRect = panelElement.getBoundingClientRect();
+  const selectionRect = selectionPanelElement.getBoundingClientRect();
+  const selectionImageBlock = selectionPanelElement.querySelector(".tow-combat-overlay-control-panel__selection");
+  const imageBottomOffset = (selectionImageBlock instanceof HTMLElement)
+    ? (selectionImageBlock.offsetTop + selectionImageBlock.offsetHeight)
+    : selectionPanelElement.offsetHeight;
+  const left = panelRect.left - selectionRect.width - PANEL_SELECTION_GAP_PX;
+  const top = panelRect.bottom - imageBottomOffset;
+  applyPanelPosition(selectionPanelElement, left, top);
 }
 
 function bindPanelSlotEvent(slotElement) {
@@ -1273,8 +1326,51 @@ function bindPanelWoundsStatEvents(panelElement) {
   });
 }
 
+function bindSelectionPanelStatEvents(selectionPanelElement) {
+  if (!(selectionPanelElement instanceof HTMLElement)) return;
+  const resilienceRow = selectionPanelElement.querySelector("[data-selection-stat-row='resilience']");
+  const woundsRow = selectionPanelElement.querySelector("[data-selection-stat-row='wounds']");
+  if (resilienceRow instanceof HTMLElement) {
+    bindPanelTooltipEvent(resilienceRow, () => getPanelStatTooltipData("resilience"));
+    resilienceRow.addEventListener("click", (event) => event.preventDefault());
+    resilienceRow.addEventListener("contextmenu", (event) => event.preventDefault());
+  }
+
+  if (woundsRow instanceof HTMLElement) {
+    bindPanelTooltipEvent(woundsRow, () => getPanelStatTooltipData("wounds"));
+    woundsRow.style.cursor = "pointer";
+    woundsRow.addEventListener("click", async (event) => {
+      event.preventDefault();
+      const token = getSingleControlledToken();
+      const actor = token?.actor ?? token?.document?.actor ?? null;
+      if (!actor) return;
+      await towCombatOverlayAddWound(actor);
+      const panelElement = getControlPanelState()?.element;
+      if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
+    });
+    woundsRow.addEventListener("contextmenu", async (event) => {
+      event.preventDefault();
+      const token = getSingleControlledToken();
+      const actor = token?.actor ?? token?.document?.actor ?? null;
+      if (!actor) return;
+      await towCombatOverlayRemoveWound(actor);
+      const panelElement = getControlPanelState()?.element;
+      if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
+    });
+  }
+}
+
+function bindPanelTypeIconTooltipEvent(panelElement) {
+  if (!(panelElement instanceof HTMLElement)) return;
+  const typeElement = panelElement.querySelector("[data-panel-type-icon='tokenType']");
+  if (!(typeElement instanceof HTMLElement)) return;
+  bindPanelTooltipEvent(typeElement, () => getPanelStatTooltipData("tokenType"));
+  typeElement.addEventListener("click", (event) => event.preventDefault());
+  typeElement.addEventListener("contextmenu", (event) => event.preventDefault());
+}
+
 function bindPanelStatusesTooltipEvents(panelElement) {
-  const statusElements = Array.from(panelElement.querySelectorAll(".tow-combat-overlay-control-panel__status-icon"));
+  const statusElements = Array.from(panelElement.querySelectorAll(".tow-combat-overlay-control-panel__status-icon[data-status-id]"));
   for (const statusElement of statusElements) {
     if (!(statusElement instanceof HTMLElement)) continue;
     const conditionId = String(statusElement.dataset.statusId ?? "");
@@ -1326,9 +1422,9 @@ function formatActionDiceLabel(actor) {
 
 function formatActionRollStateLabel(actor) {
   const key = String(getTowCombatOverlayActorRollModifierState(actor)?.rollState ?? "normal").toLowerCase();
-  if (key === "grim") return "Grim";
-  if (key === "glorious") return "Glorious";
-  return "Common";
+  if (key === "grim") return "gr";
+  if (key === "glorious") return "gl";
+  return "co";
 }
 
 function updateActionControlsDisplay(panelElement, token = null) {
@@ -1446,6 +1542,16 @@ function formatStatNumber(value) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return "-";
   return String(Math.trunc(numeric));
+}
+
+function formatWoundsWithMax(token, woundsValue) {
+  const current = formatStatNumber(woundsValue);
+  if (current === "-") return current;
+  const actor = token?.actor ?? token?.document?.actor ?? null;
+  const max = towCombatOverlayGetMaxWoundLimit(actor);
+  if (!Number.isFinite(Number(max)) || Number(max) <= 0) return current;
+  const maxText = formatStatNumber(max);
+  return `${current}/${maxText}`;
 }
 
 function formatMiscastDiceValue(token) {
@@ -1759,7 +1865,7 @@ function updatePanelSlots(panelElement, token = null) {
 }
 
 function updateStatusDisplay(panelElement, token = null) {
-  const statusElements = Array.from(panelElement.querySelectorAll(".tow-combat-overlay-control-panel__status-icon"));
+  const statusElements = Array.from(panelElement?.querySelectorAll?.(".tow-combat-overlay-control-panel__status-icon[data-status-id]") ?? []);
   if (!statusElements.length) return;
   const actor = token?.actor ?? token?.document?.actor ?? null;
   const activeStatuses = actor ? getActorStatusSet(actor) : new Set();
@@ -1773,36 +1879,21 @@ function updateStatusDisplay(panelElement, token = null) {
 
 function updateSelectionDisplay(panelElement) {
   const controlPanelState = getControlPanelState();
-  const selectionElement = panelElement.querySelector(".tow-combat-overlay-control-panel__selection");
+  const selectionPanelElement = controlPanelState?.selectionElement;
+  const selectionElement = selectionPanelElement?.querySelector?.(".tow-combat-overlay-control-panel__selection");
   if (!(selectionElement instanceof HTMLElement)) return;
-  const statsElement = panelElement.querySelector(".tow-combat-overlay-control-panel__stats");
-  const tokenTypeElement = panelElement.querySelector("[data-stat='tokenType']");
-  const resilienceElement = panelElement.querySelector("[data-stat='resilience']");
-  const woundsElement = panelElement.querySelector("[data-stat='wounds']");
-  const miscastDiceElement = panelElement.querySelector("[data-stat='miscastDice']");
-  const miscastDiceRow = panelElement.querySelector("[data-stat-row='miscastDice']");
-  const speedElement = panelElement.querySelector("[data-stat='speed']");
   const imageElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-image");
-  const selectionNameElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-name");
-  const selectionModsElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-mods");
-  const selectionDiceModLabel = selectionElement.querySelector("[data-selection-mod-label='diceModifier']");
-  const selectionRollStateLabel = selectionElement.querySelector("[data-selection-mod-label='rollState']");
+  const selectionNameMainElement = selectionPanelElement?.querySelector?.(".tow-combat-overlay-control-panel__selection-name-main");
+  const selectionResilienceElement = selectionPanelElement?.querySelector?.("[data-selection-stat='resilience']");
+  const selectionWoundsElement = selectionPanelElement?.querySelector?.("[data-selection-stat='wounds']");
   const placeholderElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-placeholder");
   const multiCountElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-multi-count");
   if (!(imageElement instanceof HTMLImageElement)) return;
-  if (!(selectionNameElement instanceof HTMLElement)) return;
-  if (!(statsElement instanceof HTMLElement)) return;
-  if (!(tokenTypeElement instanceof HTMLElement)) return;
-  if (!(resilienceElement instanceof HTMLElement)) return;
-  if (!(woundsElement instanceof HTMLElement)) return;
-  if (!(miscastDiceElement instanceof HTMLElement)) return;
-  if (!(miscastDiceRow instanceof HTMLElement)) return;
-  if (!(speedElement instanceof HTMLElement)) return;
+  if (!(selectionNameMainElement instanceof HTMLElement)) return;
   if (!(placeholderElement instanceof HTMLElement)) return;
   if (!(multiCountElement instanceof HTMLElement)) return;
-  if (!(selectionModsElement instanceof HTMLElement)) return;
-  if (!(selectionDiceModLabel instanceof HTMLElement)) return;
-  if (!(selectionRollStateLabel instanceof HTMLElement)) return;
+  if (!(selectionResilienceElement instanceof HTMLElement)) return;
+  if (!(selectionWoundsElement instanceof HTMLElement)) return;
 
   const controlledTokens = Array.isArray(canvas?.tokens?.controlled)
     ? canvas.tokens.controlled.filter((token) => token && !token.destroyed)
@@ -1811,37 +1902,29 @@ function updateSelectionDisplay(panelElement) {
 
   if (selectedCount !== 1) {
     panelElement.style.display = "none";
+    if (selectionPanelElement instanceof HTMLElement) selectionPanelElement.style.display = "none";
     clearPanelAttackPickMode();
     return;
   }
 
   panelElement.style.display = "";
+  if (selectionPanelElement instanceof HTMLElement) selectionPanelElement.style.display = "";
 
   const token = controlledTokens[0];
   debugTokenItems(controlPanelState, token);
   const iconSrc = getPrimaryTokenIconSrc(token);
   const tokenName = getPrimaryTokenName(token);
-  const typeLabel = getPrimaryTokenTypeLabel(token);
   const resilience = towCombatOverlayGetResilienceValue(token?.document);
   const wounds = towCombatOverlayGetWoundCount(token?.document);
-  const miscastDice = formatMiscastDiceValue(token);
-  const showMiscastDice = actorHasMagicCasting(token?.actor ?? token?.document?.actor ?? null);
-  const speed = getSpeedLabel(token);
+  const actor = token?.actor ?? token?.document?.actor ?? null;
+  const isDead = !!actor?.hasCondition?.("dead");
   selectionElement.dataset.selection = "single";
-  statsElement.dataset.selection = "single";
-  tokenTypeElement.textContent = typeLabel;
-  resilienceElement.textContent = formatStatNumber(resilience);
-  woundsElement.textContent = formatStatNumber(wounds);
-  miscastDiceElement.textContent = miscastDice;
-  miscastDiceRow.style.visibility = showMiscastDice ? "" : "hidden";
-  miscastDiceRow.style.pointerEvents = showMiscastDice ? "" : "none";
-  speedElement.textContent = speed;
+  selectionElement.classList.toggle("is-dead", isDead);
   imageElement.src = iconSrc;
   imageElement.alt = tokenName;
-  selectionNameElement.textContent = tokenName || "-";
-  selectionModsElement.style.display = "flex";
-  selectionDiceModLabel.textContent = formatActionDiceLabel(token?.actor ?? token?.document?.actor ?? null);
-  selectionRollStateLabel.textContent = formatActionRollStateLabel(token?.actor ?? token?.document?.actor ?? null);
+  selectionNameMainElement.textContent = tokenName || "-";
+  selectionResilienceElement.textContent = formatStatNumber(resilience);
+  selectionWoundsElement.textContent = formatWoundsWithMax(token, wounds);
   placeholderElement.textContent = iconSrc ? "-" : "?";
   multiCountElement.textContent = "x1";
   updatePanelSlots(panelElement, token);
@@ -1849,6 +1932,7 @@ function updateSelectionDisplay(panelElement) {
   updateActionControlsDisplay(panelElement, token);
   const rect = panelElement.getBoundingClientRect();
   applyPanelPosition(panelElement, rect.left, rect.top);
+  syncSelectionPanelPosition(controlPanelState);
 }
 
 function bindPanelSelectionSync(controlPanelState, panelElement) {
@@ -1909,7 +1993,7 @@ function isDragBlockedTarget(targetElement) {
   return !!targetElement.closest(blockedSelector);
 }
 
-function bindControlPanelDrag(controlPanelState, panelElement) {
+function bindControlPanelDrag(controlPanelState, panelElement, { onMoved = null } = {}) {
   let dragData = null;
 
   const onPointerMove = (event) => {
@@ -1917,6 +2001,7 @@ function bindControlPanelDrag(controlPanelState, panelElement) {
     const deltaX = Number(event.clientX) - dragData.startClientX;
     const deltaY = Number(event.clientY) - dragData.startClientY;
     applyPanelPosition(panelElement, dragData.startLeft + deltaX, dragData.startTop + deltaY);
+    if (typeof onMoved === "function") onMoved();
   };
 
   const onPointerUp = () => {
@@ -1950,6 +2035,7 @@ function bindControlPanelDrag(controlPanelState, panelElement) {
   const onResize = () => {
     const rect = panelElement.getBoundingClientRect();
     applyPanelPosition(panelElement, rect.left, rect.top);
+    if (typeof onMoved === "function") onMoved();
   };
 
   panelElement.addEventListener("pointerdown", onPointerDown);
@@ -1962,7 +2048,7 @@ function bindControlPanelDrag(controlPanelState, panelElement) {
 }
 
 function removeStaleControlPanels() {
-  for (const panel of Array.from(document.querySelectorAll(`#${PANEL_ID}`))) {
+  for (const panel of Array.from(document.querySelectorAll(`#${PANEL_ID}, #${PANEL_SELECTION_ID}`))) {
     if (panel instanceof HTMLElement) panel.remove();
   }
 }
@@ -1971,28 +2057,39 @@ export async function towCombatOverlayEnsureControlPanel() {
   const controlPanelState = getControlPanelState();
   if (!controlPanelState) return;
 
-  if (controlPanelState.element instanceof HTMLElement && controlPanelState.element.isConnected) return;
+  const hasMainPanel = controlPanelState.element instanceof HTMLElement && controlPanelState.element.isConnected;
+  const hasSelectionPanel = controlPanelState.selectionElement instanceof HTMLElement && controlPanelState.selectionElement.isConnected;
+  if (hasMainPanel && hasSelectionPanel) return;
   removeStaleControlPanels();
 
-  const { panelElement } = await createControlPanelElement();
+  const { panelElement, selectionPanelElement } = await createControlPanelElement();
   panelElement.style.visibility = "hidden";
+  selectionPanelElement.style.visibility = "hidden";
   document.body.appendChild(panelElement);
+  document.body.appendChild(selectionPanelElement);
   applyInitialPanelPosition(panelElement);
+  syncSelectionPanelPosition({ element: panelElement, selectionElement: selectionPanelElement });
   panelElement.style.visibility = "";
+  selectionPanelElement.style.visibility = "";
 
-  bindPanelStatsTooltipEvents(panelElement);
-  bindPanelWoundsStatEvents(panelElement);
   bindPanelActionControls(panelElement);
+  bindPanelActionControls(selectionPanelElement);
+  bindSelectionPanelStatEvents(selectionPanelElement);
+  bindPanelTypeIconTooltipEvent(panelElement);
   bindPanelStatusesTooltipEvents(panelElement);
-  bindControlPanelDrag(controlPanelState, panelElement);
-  bindPanelSelectionSync(controlPanelState, panelElement);
   controlPanelState.element = panelElement;
+  controlPanelState.selectionElement = selectionPanelElement;
+  bindControlPanelDrag(controlPanelState, panelElement, {
+    onMoved: () => syncSelectionPanelPosition(controlPanelState)
+  });
+  bindPanelSelectionSync(controlPanelState, panelElement);
 }
 
 export function towCombatOverlayRemoveControlPanel() {
   const controlPanelState = game?.[PANEL_STATE_KEY];
   clearPanelAttackPickMode();
   const panelElement = controlPanelState?.element;
+  const selectionPanelElement = controlPanelState?.selectionElement;
   const onPointerDown = controlPanelState?.onPointerDown;
   const onPointerMove = controlPanelState?.onPointerMove;
   const onPointerUp = controlPanelState?.onPointerUp;
@@ -2026,6 +2123,7 @@ export function towCombatOverlayRemoveControlPanel() {
   if (updateActiveEffectHookId != null) Hooks.off("updateActiveEffect", updateActiveEffectHookId);
   if (deleteActiveEffectHookId != null) Hooks.off("deleteActiveEffect", deleteActiveEffectHookId);
   if (panelElement instanceof HTMLElement) panelElement.remove();
+  if (selectionPanelElement instanceof HTMLElement) selectionPanelElement.remove();
 
   removeStaleControlPanels();
   if (game && Object.prototype.hasOwnProperty.call(game, PANEL_STATE_KEY)) delete game[PANEL_STATE_KEY];
