@@ -57,9 +57,13 @@ const PANEL_TEMPLATE_PATH = "modules/tow-combat-overlay/templates/overlay/contro
 const PANEL_LOCAL_STORAGE_KEY = "tow-combat-overlay.control-panel-position.v1";
 const PANEL_STATE_KEY = "__towCombatOverlayControlPanelState";
 const PANEL_VIEWPORT_MARGIN_PX = 8;
-const PANEL_SELECTION_GAP_PX = 8;
+const PANEL_SELECTION_GAP_PX = 0;
 const PANEL_FALLBACK_ITEM_ICON = "icons/svg/item-bag.svg";
 const PANEL_RESILIENCE_ICON = "icons/svg/shield.svg";
+const PANEL_SPEED_ICON = PANEL_FALLBACK_ITEM_ICON;
+const PANEL_TYPE_ICON = "icons/svg/mystery-man.svg";
+const PANEL_ROLL_ICON = PANEL_FALLBACK_ITEM_ICON;
+const PANEL_DICE_ICON = PANEL_FALLBACK_ITEM_ICON;
 const PANEL_DEBUG_ITEMS = false;
 const PANEL_ATTACK_PICK_CURSOR = "crosshair";
 const PANEL_MANOEUVRE_ICON_BY_KEY = {
@@ -305,12 +309,12 @@ function createSelectionPanelElement() {
   selectionPanel.innerHTML = `
     <div class="tow-combat-overlay-selection-panel__main">
       <div class="tow-combat-overlay-selection-panel__portrait-column">
-        <span class="tow-combat-overlay-control-panel__selection-name">
-          <span class="tow-combat-overlay-control-panel__selection-name-main">-</span>
-        </span>
         <div class="tow-combat-overlay-control-panel__selection" data-selection="none">
           <img class="tow-combat-overlay-control-panel__selection-image" src="" alt="Selected token" />
-          <div class="tow-combat-overlay-control-panel__selection-stats">
+          <span class="tow-combat-overlay-control-panel__selection-name">
+            <span class="tow-combat-overlay-control-panel__selection-name-main">-</span>
+          </span>
+          <div class="tow-combat-overlay-control-panel__selection-side-stack">
             <button type="button" class="tow-combat-overlay-control-panel__selection-stat-row" data-selection-stat-row="wounds">
               <span class="tow-combat-overlay-control-panel__selection-stat-value" data-selection-stat="wounds">-</span>
               <img class="tow-combat-overlay-control-panel__selection-stat-icon" src="${ICON_SRC_WOUND}" alt="" />
@@ -319,6 +323,39 @@ function createSelectionPanelElement() {
               <span class="tow-combat-overlay-control-panel__selection-stat-value" data-selection-stat="resilience">-</span>
               <img class="tow-combat-overlay-control-panel__selection-stat-icon" src="${PANEL_RESILIENCE_ICON}" alt="" />
             </button>
+            <button type="button" class="tow-combat-overlay-control-panel__selection-stat-row" data-selection-stat-row="speed">
+              <span class="tow-combat-overlay-control-panel__selection-stat-value" data-selection-stat="speed">-</span>
+              <img class="tow-combat-overlay-control-panel__selection-stat-icon" src="${PANEL_SPEED_ICON}" alt="" />
+            </button>
+            <div class="tow-combat-overlay-control-panel__selection-mini-controls">
+              <button
+                type="button"
+                class="tow-combat-overlay-control-panel__selection-text-control tow-combat-overlay-control-panel__type-icon"
+                data-panel-type-icon="tokenType"
+                aria-label="Token Type"
+              >
+                <span class="tow-combat-overlay-control-panel__modifier-text" data-action-label="tokenType">-</span>
+                <img class="tow-combat-overlay-control-panel__selection-stat-icon" src="${PANEL_TYPE_ICON}" alt="" />
+              </button>
+              <button
+                type="button"
+                class="tow-combat-overlay-control-panel__selection-text-control tow-combat-overlay-control-panel__modifier-icon"
+                data-action-control="rollState"
+                aria-label="Roll State"
+              >
+                <span class="tow-combat-overlay-control-panel__modifier-text" data-action-label="rollState">co</span>
+                <img class="tow-combat-overlay-control-panel__selection-stat-icon" src="${PANEL_ROLL_ICON}" alt="" />
+              </button>
+              <button
+                type="button"
+                class="tow-combat-overlay-control-panel__selection-text-control tow-combat-overlay-control-panel__modifier-icon"
+                data-action-control="diceModifier"
+                aria-label="Dice Modifier"
+              >
+                <span class="tow-combat-overlay-control-panel__modifier-text" data-action-label="diceModifier">+0d10</span>
+                <img class="tow-combat-overlay-control-panel__selection-stat-icon" src="${PANEL_DICE_ICON}" alt="" />
+              </button>
+            </div>
           </div>
           <span class="tow-combat-overlay-control-panel__selection-placeholder">-</span>
           <span class="tow-combat-overlay-control-panel__selection-multi-count">x0</span>
@@ -356,6 +393,8 @@ function bindPanelSlotEvent(slotElement) {
   });
   slotElement.addEventListener("contextmenu", (event) => {
     event.preventDefault();
+    if (String(slotElement.dataset.itemGroup ?? "") !== "temporaryEffects") return;
+    void handlePanelSlotClick(slotElement, event);
   });
   const onShowTooltip = (event) => {
     const title = String(slotElement.dataset.tooltipTitle ?? "").trim();
@@ -752,6 +791,22 @@ function startPanelHelpPickMode(panelElement, slotElement, sourceToken, originEv
 async function handlePanelSlotClick(slotElement, event) {
   const itemGroup = String(slotElement.dataset.itemGroup ?? "");
   const itemId = String(slotElement.dataset.itemId ?? "");
+  if (itemGroup === "temporaryEffects" && itemId) {
+    if (event?.button !== 2) return;
+    const actor = getSingleControlledActor();
+    if (!actor) return;
+    if (!towCombatOverlayCanEditActor(actor)) {
+      towCombatOverlayWarnNoPermission(actor);
+      return;
+    }
+    const liveEffect = actor.effects?.get?.(itemId) ?? null;
+    if (!liveEffect || typeof liveEffect.delete !== "function") return;
+    await liveEffect.delete();
+    const panelElement = slotElement.closest(`#${PANEL_ID}`);
+    if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
+    return;
+  }
+
   if (itemGroup === "actions" && itemId) {
     const actor = getSingleControlledActor();
     const sourceToken = getSingleControlledToken();
@@ -1328,8 +1383,15 @@ function bindPanelWoundsStatEvents(panelElement) {
 
 function bindSelectionPanelStatEvents(selectionPanelElement) {
   if (!(selectionPanelElement instanceof HTMLElement)) return;
+  const speedRow = selectionPanelElement.querySelector("[data-selection-stat-row='speed']");
   const resilienceRow = selectionPanelElement.querySelector("[data-selection-stat-row='resilience']");
   const woundsRow = selectionPanelElement.querySelector("[data-selection-stat-row='wounds']");
+  if (speedRow instanceof HTMLElement) {
+    bindPanelTooltipEvent(speedRow, () => getPanelStatTooltipData("speed"));
+    speedRow.addEventListener("click", (event) => event.preventDefault());
+    speedRow.addEventListener("contextmenu", (event) => event.preventDefault());
+  }
+
   if (resilienceRow instanceof HTMLElement) {
     bindPanelTooltipEvent(resilienceRow, () => getPanelStatTooltipData("resilience"));
     resilienceRow.addEventListener("click", (event) => event.preventDefault());
@@ -1360,9 +1422,9 @@ function bindSelectionPanelStatEvents(selectionPanelElement) {
   }
 }
 
-function bindPanelTypeIconTooltipEvent(panelElement) {
-  if (!(panelElement instanceof HTMLElement)) return;
-  const typeElement = panelElement.querySelector("[data-panel-type-icon='tokenType']");
+function bindPanelTypeIconTooltipEvent(rootElement) {
+  if (!(rootElement instanceof HTMLElement)) return;
+  const typeElement = rootElement.querySelector("[data-panel-type-icon='tokenType']");
   if (!(typeElement instanceof HTMLElement)) return;
   bindPanelTooltipEvent(typeElement, () => getPanelStatTooltipData("tokenType"));
   typeElement.addEventListener("click", (event) => event.preventDefault());
@@ -1422,15 +1484,20 @@ function formatActionDiceLabel(actor) {
 
 function formatActionRollStateLabel(actor) {
   const key = String(getTowCombatOverlayActorRollModifierState(actor)?.rollState ?? "normal").toLowerCase();
-  if (key === "grim") return "gr";
-  if (key === "glorious") return "gl";
-  return "co";
+  if (key === "grim") return "Grim";
+  if (key === "glorious") return "Glorious";
+  return "Common";
 }
 
 function updateActionControlsDisplay(panelElement, token = null) {
   const actor = token?.actor ?? token?.document?.actor ?? null;
+  const typeLabels = Array.from(panelElement.querySelectorAll("[data-action-label='tokenType']"));
   const diceLabels = Array.from(panelElement.querySelectorAll("[data-action-label='diceModifier']"));
   const rollStateLabels = Array.from(panelElement.querySelectorAll("[data-action-label='rollState']"));
+  for (const typeLabel of typeLabels) {
+    if (!(typeLabel instanceof HTMLElement)) continue;
+    typeLabel.textContent = token ? getPrimaryTokenTypeLabel(token) : "-";
+  }
   for (const diceLabel of diceLabels) {
     if (!(diceLabel instanceof HTMLElement)) continue;
     diceLabel.textContent = actor ? formatActionDiceLabel(actor) : "-";
@@ -1659,6 +1726,27 @@ function getPanelItemGroupsForActor(actor) {
   const actions = getPanelActionEntries();
   const manoeuvre = getPanelManoeuvreSubActionEntries();
   const recover = getPanelRecoverActionEntries();
+  const conditionKeys = new Set(
+    Object.keys(game?.oldworld?.config?.conditions ?? {}).map((key) => String(key ?? "").toLowerCase())
+  );
+  const temporaryEffects = toList(actor?.effects?.contents)
+    .filter((effect) => {
+      if (!effect) return false;
+      if (effect.disabled || effect.isSuppressed) return false;
+      if (effect.transfer) return false;
+      const statuses = Array.from(effect.statuses ?? []).map((status) => String(status ?? "").toLowerCase());
+      if (statuses.some((status) => conditionKeys.has(status))) return false;
+      return true;
+    })
+    .sort((a, b) => Number(a?.sort ?? 0) - Number(b?.sort ?? 0))
+    .map((effect) => ({
+      id: String(effect?.id ?? ""),
+      name: String(effect?.name ?? "Effect"),
+      img: String(effect?.img ?? effect?.icon ?? PANEL_FALLBACK_ITEM_ICON),
+      system: {
+        description: String(effect?.description ?? "")
+      }
+    }));
 
   // Match Old World sheet logic:
   // - attacks: ability items where system.isAttack is true
@@ -1673,7 +1761,7 @@ function getPanelItemGroupsForActor(actor) {
     .concat(talentItems);
   const magic = spellItems.concat(blessingItems);
 
-  return { actions, attacks, abilities, manoeuvre, recover, magic };
+  return { actions, attacks, abilities, temporaryEffects, manoeuvre, recover, magic };
 }
 
 function debugTokenItems(controlPanelState, token) {
@@ -1740,6 +1828,17 @@ function ensureGroupSlotElements(panelElement, groupKey, slotCount) {
 function applyGroupGridLayout(panelElement, groupKey, slotCount) {
   const gridElement = getGroupGridElement(panelElement, groupKey);
   if (!(gridElement instanceof HTMLElement)) return;
+  const groupElement = gridElement.closest(".tow-combat-overlay-control-panel__item-group");
+  const isStatusStripAbilities = groupElement instanceof HTMLElement
+    && groupElement.classList.contains("tow-combat-overlay-control-panel__status-abilities");
+
+  if (isStatusStripAbilities) {
+    const count = Math.max(1, Math.trunc(Number(slotCount) || 1));
+    gridElement.style.gridTemplateColumns = `repeat(${count}, var(--tow-control-panel-slot-size))`;
+    gridElement.style.gridTemplateRows = "repeat(1, var(--tow-control-panel-slot-size))";
+    gridElement.style.gridAutoFlow = "column";
+    return;
+  }
 
   // Force a strict single-row footprint for single-item groups.
   if (Number(slotCount) === 1) {
@@ -1835,6 +1934,11 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
       slotElement.dataset.tooltipDescription = itemDescription
         ? `${manoeuvreHint}<br><br>${itemDescription}`
         : manoeuvreHint;
+    } else if (groupKey === "temporaryEffects") {
+      const infoHint = "<em>Right click: remove temporary effect.</em>";
+      slotElement.dataset.tooltipDescription = itemDescription
+        ? `${infoHint}<br><br>${itemDescription}`
+        : infoHint;
     } else if (groupKey === "abilities" || groupKey === "magic") {
       const infoHint = "<em>Reference only in this panel (no quick click action).</em>";
       slotElement.dataset.tooltipDescription = itemDescription
@@ -1855,10 +1959,11 @@ function updatePanelSlots(panelElement, token = null) {
   const actor = token?.actor ?? token?.document?.actor ?? null;
   const groups = actor
     ? getPanelItemGroupsForActor(actor)
-    : { actions: [], attacks: [], abilities: [], manoeuvre: [], recover: [], magic: [] };
+    : { actions: [], attacks: [], abilities: [], temporaryEffects: [], manoeuvre: [], recover: [], magic: [] };
   updateGroupSlots(panelElement, "actions", groups.actions);
   updateGroupSlots(panelElement, "attacks", groups.attacks);
   updateGroupSlots(panelElement, "abilities", groups.abilities);
+  updateGroupSlots(panelElement, "temporaryEffects", groups.temporaryEffects);
   updateGroupSlots(panelElement, "manoeuvre", groups.manoeuvre);
   updateGroupSlots(panelElement, "recover", groups.recover);
   updateGroupSlots(panelElement, "magic", groups.magic);
@@ -1884,6 +1989,7 @@ function updateSelectionDisplay(panelElement) {
   if (!(selectionElement instanceof HTMLElement)) return;
   const imageElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-image");
   const selectionNameMainElement = selectionPanelElement?.querySelector?.(".tow-combat-overlay-control-panel__selection-name-main");
+  const selectionSpeedElement = selectionPanelElement?.querySelector?.("[data-selection-stat='speed']");
   const selectionResilienceElement = selectionPanelElement?.querySelector?.("[data-selection-stat='resilience']");
   const selectionWoundsElement = selectionPanelElement?.querySelector?.("[data-selection-stat='wounds']");
   const placeholderElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-placeholder");
@@ -1892,6 +1998,7 @@ function updateSelectionDisplay(panelElement) {
   if (!(selectionNameMainElement instanceof HTMLElement)) return;
   if (!(placeholderElement instanceof HTMLElement)) return;
   if (!(multiCountElement instanceof HTMLElement)) return;
+  if (!(selectionSpeedElement instanceof HTMLElement)) return;
   if (!(selectionResilienceElement instanceof HTMLElement)) return;
   if (!(selectionWoundsElement instanceof HTMLElement)) return;
 
@@ -1916,6 +2023,7 @@ function updateSelectionDisplay(panelElement) {
   const tokenName = getPrimaryTokenName(token);
   const resilience = towCombatOverlayGetResilienceValue(token?.document);
   const wounds = towCombatOverlayGetWoundCount(token?.document);
+  const speed = getSpeedLabel(token);
   const actor = token?.actor ?? token?.document?.actor ?? null;
   const isDead = !!actor?.hasCondition?.("dead");
   selectionElement.dataset.selection = "single";
@@ -1923,6 +2031,7 @@ function updateSelectionDisplay(panelElement) {
   imageElement.src = iconSrc;
   imageElement.alt = tokenName;
   selectionNameMainElement.textContent = tokenName || "-";
+  selectionSpeedElement.textContent = speed;
   selectionResilienceElement.textContent = formatStatNumber(resilience);
   selectionWoundsElement.textContent = formatWoundsWithMax(token, wounds);
   placeholderElement.textContent = iconSrc ? "-" : "?";
@@ -1930,6 +2039,7 @@ function updateSelectionDisplay(panelElement) {
   updatePanelSlots(panelElement, token);
   updateStatusDisplay(panelElement, token);
   updateActionControlsDisplay(panelElement, token);
+  updateActionControlsDisplay(selectionPanelElement, token);
   const rect = panelElement.getBoundingClientRect();
   applyPanelPosition(panelElement, rect.left, rect.top);
   syncSelectionPanelPosition(controlPanelState);
@@ -2075,7 +2185,7 @@ export async function towCombatOverlayEnsureControlPanel() {
   bindPanelActionControls(panelElement);
   bindPanelActionControls(selectionPanelElement);
   bindSelectionPanelStatEvents(selectionPanelElement);
-  bindPanelTypeIconTooltipEvent(panelElement);
+  bindPanelTypeIconTooltipEvent(selectionPanelElement);
   bindPanelStatusesTooltipEvents(panelElement);
   controlPanelState.element = panelElement;
   controlPanelState.selectionElement = selectionPanelElement;
