@@ -197,7 +197,7 @@
   left: 50%;
   transform: translateX(-50%);
   width: max-content;
-  max-width: none;
+  max-width: 100%;
   z-index: 5;
   display: flex;
   flex-direction: column;
@@ -227,11 +227,11 @@
 }
 
 .tow-combat-overlay-control-panel__selection-name-main {
-  width: auto;
-  max-width: none;
+  width: 100%;
+  max-width: 100%;
   white-space: nowrap;
-  overflow: visible;
-  text-overflow: clip;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tow-combat-overlay-control-panel__selection-placeholder {
@@ -308,10 +308,10 @@
 
 .tow-combat-overlay-control-panel__statuses {
   position: absolute;
-  left: 0;
+  left: 50%;
   right: auto;
   bottom: calc(100% + 0px);
-  transform: none;
+  transform: translateX(-50%);
   width: max-content;
   min-width: 0;
   margin: 0;
@@ -337,6 +337,16 @@
   gap: var(--tow-control-panel-status-gap);
 }
 
+.tow-combat-overlay-control-panel__statuses-top {
+  width: 100%;
+  justify-content: center;
+}
+
+.tow-combat-overlay-control-panel__statuses-bottom {
+  width: 100%;
+  justify-content: flex-start;
+}
+
 .tow-combat-overlay-control-panel__statuses-top .tow-combat-overlay-control-panel__type-icon,
 .tow-combat-overlay-control-panel__statuses-top [data-action-control="diceModifier"],
 .tow-combat-overlay-control-panel__statuses-top [data-action-control="rollState"] {
@@ -348,7 +358,7 @@
   height: var(--tow-control-panel-status-size);
   border: 1px solid rgba(205, 205, 205, 0.7);
   border-radius: 4px;
-  background: transparent;
+  background: rgba(84, 84, 84, 0.9);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -401,7 +411,7 @@
   --tow-control-panel-gap: var(--tow-control-panel-status-gap);
   display: flex;
   align-items: center;
-  padding-right: 2px;
+  padding-right: 0;
 }
 
 .tow-combat-overlay-control-panel__status-abilities .tow-combat-overlay-control-panel__group-grid {
@@ -499,7 +509,7 @@
   display: flex;
   align-items: stretch;
   align-self: flex-start;
-  gap: 6px;
+  gap: var(--tow-control-panel-gap);
   margin-left: 0;
   padding: 4px;
   border: 0;
