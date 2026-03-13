@@ -422,6 +422,7 @@ export function createTowCombatOverlayAutomationCoordinator() {
   return {
     armDefaultStaggerChoiceWound,
     armAutoDefenceForOpposed,
+    armAutoApplyDamageForOpposed,
     snapshotActorState
   };
 }

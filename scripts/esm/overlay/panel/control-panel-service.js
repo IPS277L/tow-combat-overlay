@@ -8,7 +8,9 @@ import {
 import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
 import { MODULE_KEY } from "../../runtime/overlay-runtime-constants.js";
 import {
+  AUTO_DEFENCE_WAIT_MS,
   AUTO_APPLY_WAIT_MS,
+  OPPOSED_LINK_WAIT_MS,
   AUTO_STAGGER_PATCH_MS,
   ICON_SRC_WOUND
 } from "../../runtime/overlay-runtime-constants.js";
@@ -37,6 +39,7 @@ import {
   towCombatOverlaySetupAbilityTestWithDamage
 } from "../../combat/attack-service.js";
 import { towCombatOverlayDefenceActor } from "../../combat/defence-service.js";
+import { towCombatOverlayRollSkill } from "../../combat/defence-service.js";
 import {
   createTowCombatOverlayAutomationCoordinator,
   towCombatOverlayAutomation
@@ -82,9 +85,27 @@ const PANEL_ACTION_ICON_BY_KEY = {
   aim: "icons/svg/mystery-man.svg",
   help: "icons/svg/shield.svg",
   improvise: "icons/svg/item-bag.svg",
-  defence: "icons/svg/shield.svg"
+  defence: "icons/svg/shield.svg",
+  unarmed: "icons/svg/sword.svg"
 };
-const { tooltips: MODULE_TOOLTIPS } = getTowCombatOverlayConstants();
+const PANEL_UNARMED_FLAG_KEY = "generatedUnarmedAction";
+const PANEL_UNARMED_ACTION_ID = "unarmed";
+const PANEL_UNARMED_CLEANUP_POLL_MS = 250;
+const PANEL_UNARMED_CLEANUP_MAX_WAIT_MS = AUTO_APPLY_WAIT_MS + AUTO_DEFENCE_WAIT_MS + 4000;
+const PANEL_UNARMED_OPPOSED_DISCOVERY_GRACE_MS = 2000;
+const {
+  moduleId: MODULE_ID,
+  settings: MODULE_SETTINGS,
+  tooltips: MODULE_TOOLTIPS
+} = getTowCombatOverlayConstants();
+
+function isPanelAutoDefenceEnabled() {
+  try {
+    return game.settings.get(MODULE_ID, MODULE_SETTINGS.enableAutoDefence) !== false;
+  } catch (_error) {
+    return true;
+  }
+}
 
 function localizeMaybe(key, fallback = "") {
   const localized = game?.i18n?.localize?.(String(key ?? ""));
@@ -525,6 +546,172 @@ async function runPanelAttackOnTarget(sourceToken, targetToken, attackItem, { au
   }
 }
 
+function isPanelGeneratedUnarmedItem(item) {
+  return item?.getFlag?.("tow-combat-overlay", PANEL_UNARMED_FLAG_KEY) === true;
+}
+
+async function withTemporaryPanelUnarmedAbility(actor, callback) {
+  if (!actor || typeof callback !== "function") return null;
+  if (!towCombatOverlayCanEditActor(actor)) {
+    towCombatOverlayWarnNoPermission(actor);
+    return null;
+  }
+
+  const created = await actor.createEmbeddedDocuments("Item", [{
+    name: "Unarmed Attack",
+    type: "ability",
+    img: PANEL_ACTION_ICON_BY_KEY.unarmed ?? PANEL_FALLBACK_ITEM_ICON,
+    system: {
+      description: {
+        public: "<p>Quick unarmed strike.</p>",
+        gm: ""
+      },
+      attack: {
+        skill: "brawn",
+        dice: 0,
+        target: 0,
+        traits: ""
+      },
+      damage: {
+        formula: "0",
+        characteristic: "",
+        ignoreArmour: false,
+        magical: false,
+        successes: true,
+        bonus: 0,
+        excludeStaggeredOptions: {
+          give: false,
+          prone: false,
+          wounds: false
+        }
+      }
+    },
+    flags: {
+      "tow-combat-overlay": {
+        [PANEL_UNARMED_FLAG_KEY]: true
+      }
+    }
+  }]);
+
+  const unarmedAbility = created?.[0] ?? null;
+  if (!unarmedAbility) return null;
+
+  const deleteIfPresent = async () => {
+    const unarmedId = String(unarmedAbility?.id ?? "");
+    if (!unarmedId) return;
+    if (!actor?.items?.get?.(unarmedId)) return;
+    try {
+      await actor.deleteEmbeddedDocuments("Item", [unarmedId]);
+    } catch (_error) {
+      // Ignore cleanup errors.
+    }
+  };
+
+  const cleanupWhenSafe = async (testRef) => {
+    const startedAt = Date.now();
+    const initialMessageId = String(testRef?.context?.messageId ?? "").trim();
+    let sawOpposedIds = false;
+
+    while (Date.now() - startedAt < PANEL_UNARMED_CLEANUP_MAX_WAIT_MS) {
+      const message = initialMessageId ? game?.messages?.get?.(initialMessageId) : null;
+      const opposedIds = Object.values(
+        message?.system?.test?.context?.opposedIds
+        ?? testRef?.context?.opposedIds
+        ?? {}
+      )
+        .map((id) => String(id ?? "").trim())
+        .filter(Boolean);
+
+      if (opposedIds.length > 0) sawOpposedIds = true;
+
+      // No opposed chain discovered within grace window: safe to delete.
+      if (!sawOpposedIds && (Date.now() - startedAt) >= PANEL_UNARMED_OPPOSED_DISCOVERY_GRACE_MS) {
+        await deleteIfPresent();
+        return;
+      }
+
+      const allComputed = opposedIds.every((id) => {
+        const opposedMessage = game?.messages?.get?.(id);
+        return opposedMessage?.type === "opposed" && opposedMessage?.system?.result?.computed === true;
+      });
+      if (opposedIds.length > 0 && allComputed) {
+        await deleteIfPresent();
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, PANEL_UNARMED_CLEANUP_POLL_MS));
+    }
+
+    // Fallback cleanup after max wait.
+    await deleteIfPresent();
+  };
+
+  let callbackResult = null;
+  try {
+    callbackResult = await callback(unarmedAbility);
+    return callbackResult;
+  } finally {
+    void cleanupWhenSafe(callbackResult);
+  }
+}
+
+function armAutoEnduranceDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState } = {}) {
+  if (!isPanelAutoDefenceEnabled()) return;
+  if (!sourceToken?.actor || !targetToken?.actor?.isOwner) return;
+
+  let timeoutId = null;
+  const cleanup = (hookId) => {
+    Hooks.off("createChatMessage", hookId);
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = null;
+  };
+
+  const hookId = Hooks.on("createChatMessage", async (message) => {
+    if (message?.type !== "opposed") return;
+    if (message.system?.defender?.token !== targetToken.id) return;
+
+    const attackerMessage = game.messages.get(message.system?.attackerMessage);
+    const attackerActorUuid = attackerMessage?.system?.test?.actor;
+    if (attackerActorUuid && attackerActorUuid !== sourceToken.actor.uuid) return;
+
+    cleanup(hookId);
+    const started = Date.now();
+    while (Date.now() - started < OPPOSED_LINK_WAIT_MS) {
+      if (targetToken.actor.system?.opposed?.id === message.id) break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+
+    await towCombatOverlayRollSkill(targetToken.actor, "endurance", { autoRoll: true });
+
+    const automation = getOverlayAutomationRef();
+    if (typeof automation.armAutoApplyDamageForOpposed === "function") {
+      automation.armAutoApplyDamageForOpposed(message, {
+        sourceActor: sourceToken.actor,
+        sourceBeforeState
+      });
+    }
+  });
+
+  timeoutId = setTimeout(() => cleanup(hookId), AUTO_DEFENCE_WAIT_MS);
+}
+
+async function runPanelUnarmedAttackOnTarget(sourceToken, targetToken, attackItem, { autoRoll = true } = {}) {
+  const sourceActor = sourceToken?.actor ?? sourceToken?.document?.actor ?? null;
+  if (!sourceActor || !targetToken || !attackItem) return;
+  const automation = getOverlayAutomationRef();
+  const sourceBeforeState = automation.snapshotActorState(sourceActor);
+  const restoreStaggerPrompt = automation.armDefaultStaggerChoiceWound(AUTO_STAGGER_PATCH_MS);
+  armAutoEnduranceDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState });
+
+  try {
+    return await withTemporaryUserTargets(targetToken, () => towCombatOverlaySetupAbilityTestWithDamage(sourceActor, attackItem, {
+      autoRoll,
+      context: { targets: [targetToken] }
+    }));
+  } finally {
+    setTimeout(() => restoreStaggerPrompt(), AUTO_APPLY_WAIT_MS);
+  }
+}
+
 async function withTemporaryUserTargets(targetToken, callback) {
   const targetId = String(targetToken?.id ?? "").trim();
   if (!targetId || typeof callback !== "function") return callback?.();
@@ -616,6 +803,9 @@ async function runPanelHelpAction(actor, sourceToken, { autoRoll = true, targetT
 
 function startPanelAttackPickMode(panelElement, slotElement, sourceToken, attackItem, originEvent = null, options = {}) {
   const preferDefaultDialog = options?.preferDefaultDialog === true;
+  const onTargetAttack = (typeof options?.onTargetAttack === "function")
+    ? options.onTargetAttack
+    : null;
   const controlPanelState = getControlPanelState();
   if (!controlPanelState || !sourceToken || !attackItem) return;
   clearPanelAttackPickMode();
@@ -652,6 +842,10 @@ function startPanelAttackPickMode(panelElement, slotElement, sourceToken, attack
     const useDefaultDialog = preferDefaultDialog || towCombatOverlayIsAltModifier(event);
     attackTriggered = true;
     clearPanelAttackPickMode();
+    if (onTargetAttack) {
+      await onTargetAttack(targetToken, { autoRoll: !useDefaultDialog });
+      return;
+    }
     await runPanelAttackOnTarget(sourceToken, targetToken, attackItem, { autoRoll: !useDefaultDialog });
   };
 
@@ -917,6 +1111,39 @@ async function handlePanelSlotClick(slotElement, event) {
   const sourceToken = getSingleControlledToken();
   const sourceActor = sourceToken?.actor ?? sourceToken?.document?.actor ?? null;
   if (!sourceToken || !sourceActor) return;
+
+  if (itemId === PANEL_UNARMED_ACTION_ID) {
+    const altHeld = towCombatOverlayIsAltModifier(event);
+    const shiftHeld = towCombatOverlayIsShiftModifier(event);
+    const panelElement = slotElement.closest(`#${PANEL_ID}`);
+    if (!(panelElement instanceof HTMLElement)) return;
+
+    if (altHeld && shiftHeld) {
+      clearPanelAttackPickMode();
+      await withTemporaryPanelUnarmedAbility(sourceActor, async (unarmedAbility) => (
+        towCombatOverlaySetupAbilityTestWithDamage(sourceActor, unarmedAbility, { autoRoll: false })
+      ));
+      return;
+    }
+
+    if (shiftHeld) {
+      clearPanelAttackPickMode();
+      await withTemporaryPanelUnarmedAbility(sourceActor, async (unarmedAbility) => (
+        towCombatOverlaySetupAbilityTestWithDamage(sourceActor, unarmedAbility, { autoRoll: true })
+      ));
+      return;
+    }
+
+    startPanelAttackPickMode(panelElement, slotElement, sourceToken, { id: PANEL_UNARMED_ACTION_ID }, event, {
+      preferDefaultDialog: altHeld,
+      onTargetAttack: async (targetToken, { autoRoll }) => {
+        await withTemporaryPanelUnarmedAbility(sourceActor, async (unarmedAbility) => (
+          runPanelUnarmedAttackOnTarget(sourceToken, targetToken, unarmedAbility, { autoRoll })
+        ));
+      }
+    });
+    return;
+  }
 
   const attackItem = sourceActor.items?.get?.(itemId) ?? null;
   if (!attackItem) return;
@@ -1750,7 +1977,7 @@ function normalizeDescriptionSource(descriptionSource) {
 
 function getPanelItemGroupsForActor(actor) {
   const toList = (value) => (Array.isArray(value) ? value : []);
-  const abilityItems = toList(actor?.itemTypes?.ability);
+  const abilityItems = toList(actor?.itemTypes?.ability).filter((item) => !isPanelGeneratedUnarmedItem(item));
   const talentItems = toList(actor?.itemTypes?.talent);
   const spellItems = toList(actor?.itemTypes?.spell);
   const blessingItems = toList(actor?.itemTypes?.blessing);
@@ -1788,6 +2015,14 @@ function getPanelItemGroupsForActor(actor) {
   const attacks = abilityItems
     .filter((item) => item?.system?.isAttack === true)
     .concat(weaponItems.filter((item) => item?.system?.isEquipped || item?.system?.equipped?.value));
+  attacks.unshift({
+    id: PANEL_UNARMED_ACTION_ID,
+    name: "Unarmed",
+    img: PANEL_ACTION_ICON_BY_KEY.unarmed ?? PANEL_FALLBACK_ITEM_ICON,
+    system: {
+      description: "Opposed attack using Brawn vs Endurance."
+    }
+  });
   const abilities = abilityItems
     .filter((item) => item?.system?.isAttack !== true)
     .concat(talentItems);
@@ -1943,7 +2178,9 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
     slotElement.dataset.tooltipTitle = itemName;
     const itemKey = String(item?.id ?? "").trim().toLowerCase();
     if (groupKey === "attacks") {
-      const attackHint = "<em>Click: pick target, then auto-roll attack. Shift+click: auto-roll self attack. Alt+click: pick target, then open default Foundry attack dialog (no auto-roll). Alt+Shift+click: open default Foundry self-roll dialog (no auto-roll).</em>";
+      const attackHint = itemKey === PANEL_UNARMED_ACTION_ID
+        ? "<em>Click: pick target then auto-roll unarmed attack (Brawn vs Endurance). Shift+click: self auto-roll. Alt+click: pick target then open default attack dialog. Alt+Shift+click: open default self-roll dialog.</em>"
+        : "<em>Click: pick target, then auto-roll attack. Shift+click: auto-roll self attack. Alt+click: pick target, then open default Foundry attack dialog (no auto-roll). Alt+Shift+click: open default Foundry self-roll dialog (no auto-roll).</em>";
       slotElement.dataset.tooltipDescription = itemDescription
         ? `${attackHint}<br><br>${itemDescription}`
         : attackHint;

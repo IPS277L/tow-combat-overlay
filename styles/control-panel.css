@@ -13,17 +13,18 @@
     + (var(--tow-control-panel-groups-padding) * 2)
     + (var(--tow-control-panel-padding) * 2)
   );
-  --tow-panel-bg-0: #ece9e1;
-  --tow-panel-bg-1: #e4e0d5;
-  --tow-panel-bg-2: #d8d2c5;
-  --tow-panel-border: #bdb7aa;
-  --tow-panel-border-strong: #8d7f65;
-  --tow-panel-text: #25221d;
-  --tow-panel-subtext: #5c5448;
+  --tow-panel-bg-0: #2e2d2a;
+  --tow-panel-bg-1: #262522;
+  --tow-panel-bg-2: #1d1c1a;
+  --tow-panel-border: #5f5a52;
+  --tow-panel-border-strong: #8b816f;
+  --tow-panel-text: #e6dfd0;
+  --tow-panel-subtext: #c4baa8;
   --tow-panel-slot-bg: #f5f2ea;
   --tow-panel-slot-bg-hover: #e9e4d8;
   --tow-panel-slot-border: #c6bfae;
   --tow-panel-slot-icon: #5a5347;
+  --tow-panel-seam-color: rgba(29, 28, 26, 0.96);
   position: fixed;
   z-index: 10010;
   display: flex;
@@ -31,12 +32,18 @@
   gap: 4px;
   padding: var(--tow-control-panel-padding);
   border: 0;
-  border-radius: 0;
+  border-radius: 0 8px 8px 0;
   background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--tow-panel-bg-0) 86%, #ffffff 14%) 0%,
-    color-mix(in srgb, var(--tow-panel-bg-1) 92%, #000000 8%) 52%,
-    color-mix(in srgb, var(--tow-panel-bg-2) 88%, #000000 12%) 100%
+    90deg,
+    var(--tow-panel-seam-color) 0%,
+    rgba(29, 28, 26, 0.78) 52%,
+    rgba(29, 28, 26, 0.42) 100%
+  ),
+  linear-gradient(
+    90deg,
+    rgba(165, 129, 69, 0.34) 0%,
+    rgba(134, 104, 55, 0.26) 50%,
+    rgba(108, 83, 43, 0.20) 100%
   );
   box-shadow: none;
   user-select: none;
@@ -72,11 +79,12 @@
     + (var(--tow-control-panel-groups-padding) * 2)
     + (var(--tow-control-panel-padding) * 2)
   );
-  --tow-panel-bg-0: #ece9e1;
-  --tow-panel-bg-1: #e4e0d5;
-  --tow-panel-bg-2: #d8d2c5;
-  --tow-panel-border: #bdb7aa;
-  --tow-panel-text: #25221d;
+  --tow-panel-bg-0: #2e2d2a;
+  --tow-panel-bg-1: #262522;
+  --tow-panel-bg-2: #1d1c1a;
+  --tow-panel-border: #5f5a52;
+  --tow-panel-text: #e6dfd0;
+  --tow-panel-seam-color: rgba(29, 28, 26, 0.96);
   position: fixed;
   z-index: 10011;
   display: flex;
@@ -357,7 +365,7 @@
   width: var(--tow-control-panel-status-size);
   height: var(--tow-control-panel-status-size);
   border: 1px solid rgba(205, 205, 205, 0.7);
-  border-radius: 4px;
+  border-radius: 50%;
   background: rgba(84, 84, 84, 0.9);
   display: inline-flex;
   align-items: center;
@@ -420,24 +428,24 @@
 }
 
 .tow-combat-overlay-control-panel__status-abilities .tow-combat-overlay-control-panel__slot {
-  border: 1px solid rgba(198, 191, 174, 0.6);
-  border-radius: 3px;
-  background: transparent;
+  border: 1px solid rgba(205, 205, 205, 0.7);
+  border-radius: 50%;
+  background: rgba(84, 84, 84, 0.9);
   box-shadow: none;
   overflow: hidden;
 }
 
 .tow-combat-overlay-control-panel__status-abilities .tow-combat-overlay-control-panel__slot:hover,
 .tow-combat-overlay-control-panel__status-abilities .tow-combat-overlay-control-panel__slot:focus-visible {
-  border-color: rgba(236, 233, 225, 0.8);
-  background: transparent;
+  border-color: rgba(238, 233, 220, 0.95);
+  background: rgba(222, 217, 205, 0.68);
   box-shadow: none;
 }
 
 .tow-combat-overlay-control-panel__status-abilities .tow-combat-overlay-control-panel__slot-image {
   width: 95%;
   height: 95%;
-  border-radius: 2px;
+  border-radius: 50%;
   object-fit: cover;
   filter: saturate(0.92) contrast(0.98);
   margin: auto;
@@ -612,13 +620,31 @@
 }
 
 /* Keep utility placeholder groups quieter than core combat item groups. */
+.tow-combat-overlay-control-panel__slot[data-item-group="actions"],
+.tow-combat-overlay-control-panel__slot[data-item-group="manoeuvre"],
+.tow-combat-overlay-control-panel__slot[data-item-group="recover"] {
+  border-color: rgba(238, 233, 220, 0.95);
+  background: rgba(222, 217, 205, 0.68);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.52),
+    0 0 0 1px rgba(126, 116, 98, 0.24);
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-group="attacks"][data-item-id="unarmed"] {
+  border-color: rgba(238, 233, 220, 0.95);
+  background: rgba(222, 217, 205, 0.68);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.52),
+    0 0 0 1px rgba(126, 116, 98, 0.24);
+}
+
 .tow-combat-overlay-control-panel__slot[data-item-group="actions"] .tow-combat-overlay-control-panel__slot-image,
 .tow-combat-overlay-control-panel__slot[data-item-group="manoeuvre"] .tow-combat-overlay-control-panel__slot-image,
 .tow-combat-overlay-control-panel__slot[data-item-group="recover"] .tow-combat-overlay-control-panel__slot-image {
   width: 90%;
   height: 90%;
-  opacity: 0.92;
-  filter: saturate(0.65) contrast(0.95);
+  opacity: 0.9;
+  filter: saturate(0.6) contrast(0.92);
 }
 
 .tow-combat-overlay-control-panel__slot[data-item-group="actions"]:hover .tow-combat-overlay-control-panel__slot-image,
@@ -628,6 +654,28 @@
 .tow-combat-overlay-control-panel__slot[data-item-group="manoeuvre"]:focus-visible .tow-combat-overlay-control-panel__slot-image,
 .tow-combat-overlay-control-panel__slot[data-item-group="recover"]:focus-visible .tow-combat-overlay-control-panel__slot-image {
   opacity: 0.96;
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-group="actions"]:hover,
+.tow-combat-overlay-control-panel__slot[data-item-group="manoeuvre"]:hover,
+.tow-combat-overlay-control-panel__slot[data-item-group="recover"]:hover,
+.tow-combat-overlay-control-panel__slot[data-item-group="actions"]:focus-visible,
+.tow-combat-overlay-control-panel__slot[data-item-group="manoeuvre"]:focus-visible,
+.tow-combat-overlay-control-panel__slot[data-item-group="recover"]:focus-visible {
+  border-color: rgba(238, 233, 220, 0.95);
+  background: rgba(222, 217, 205, 0.78);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.56),
+    0 0 0 1px rgba(126, 116, 98, 0.28);
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-group="attacks"][data-item-id="unarmed"]:hover,
+.tow-combat-overlay-control-panel__slot[data-item-group="attacks"][data-item-id="unarmed"]:focus-visible {
+  border-color: rgba(238, 233, 220, 0.95);
+  background: rgba(222, 217, 205, 0.78);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.56),
+    0 0 0 1px rgba(126, 116, 98, 0.28);
 }
 
 .tow-combat-overlay-control-panel__slot-icon {
@@ -743,12 +791,13 @@
   gap: var(--tow-selection-stat-gap);
   width: var(--tow-selection-rail-width);
   padding: 8px 2px 8px 0;
-  border-radius: 0;
+  border-radius: 6px 0 0 6px;
   background: linear-gradient(
     270deg,
-    rgba(12, 12, 12, 0.72) 0%,
-    rgba(12, 12, 12, 0.42) 45%,
-    rgba(12, 12, 12, 0) 100%
+    var(--tow-panel-seam-color) 0%,
+    rgba(29, 28, 26, 0.78) 48%,
+    rgba(29, 28, 26, 0.42) 78%,
+    rgba(29, 28, 26, 0) 100%
   );
   pointer-events: auto;
 }
@@ -759,9 +808,9 @@
   inset: 0;
   background: linear-gradient(
     270deg,
-    rgba(8, 8, 8, 0.30) 0%,
-    rgba(8, 8, 8, 0.12) 40%,
-    rgba(8, 8, 8, 0) 100%
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.04) 42%,
+    rgba(255, 255, 255, 0) 100%
   );
   pointer-events: none;
 }
