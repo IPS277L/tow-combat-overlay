@@ -60,31 +60,29 @@ const PANEL_VIEWPORT_MARGIN_PX = 8;
 const PANEL_SELECTION_GAP_PX = 0;
 const PANEL_FALLBACK_ITEM_ICON = "icons/svg/item-bag.svg";
 const PANEL_RESILIENCE_ICON = "icons/svg/shield.svg";
-const PANEL_SPEED_ICON = PANEL_FALLBACK_ITEM_ICON;
-const PANEL_TYPE_ICON = "icons/svg/mystery-man.svg";
 const PANEL_ROLL_ICON = PANEL_FALLBACK_ITEM_ICON;
 const PANEL_DICE_ICON = PANEL_FALLBACK_ITEM_ICON;
 const PANEL_DEBUG_ITEMS = false;
 const PANEL_ATTACK_PICK_CURSOR = "crosshair";
 const PANEL_MANOEUVRE_ICON_BY_KEY = {
-  run: "systems/whtow/assets/icons/give-ground.svg",
-  charge: "systems/whtow/assets/icons/conditions/prone.svg",
-  moveQuietly: "systems/whtow/assets/icons/conditions/distracted.svg",
-  moveCarefully: "systems/whtow/assets/icons/conditions/defenceless.svg"
+  run: "icons/svg/item-bag.svg",
+  charge: "icons/svg/shield.svg",
+  moveQuietly: "icons/svg/mystery-man.svg",
+  moveCarefully: "icons/svg/item-bag.svg"
 };
 const PANEL_MANOEUVRE_ORDER = ["run", "charge", "moveQuietly", "moveCarefully"];
 const PANEL_RECOVER_ICON_BY_KEY = {
-  recover: "systems/whtow/assets/icons/conditions/staggered.svg",
-  treat: "systems/whtow/assets/icons/conditions/critical.svg",
-  condition: "systems/whtow/assets/icons/conditions/dead.svg"
+  recover: "icons/svg/item-bag.svg",
+  treat: "icons/svg/shield.svg",
+  condition: "icons/svg/mystery-man.svg"
 };
 const PANEL_RECOVER_ORDER = ["recover", "treat", "condition"];
 const PANEL_ACTIONS_ORDER = ["aim", "help", "improvise", "defence"];
 const PANEL_ACTION_ICON_BY_KEY = {
-  aim: "systems/whtow/assets/icons/conditions/distracted.svg",
-  help: "systems/whtow/assets/icons/conditions/defenceless.svg",
-  improvise: "systems/whtow/assets/icons/conditions/broken.svg",
-  defence: "systems/whtow/assets/icons/conditions/defenceless.svg"
+  aim: "icons/svg/mystery-man.svg",
+  help: "icons/svg/shield.svg",
+  improvise: "icons/svg/item-bag.svg",
+  defence: "icons/svg/shield.svg"
 };
 const { tooltips: MODULE_TOOLTIPS } = getTowCombatOverlayConstants();
 
@@ -266,6 +264,36 @@ function applyPanelPosition(panelElement, left, top) {
   panelElement.style.top = `${Math.round(safeTop)}px`;
 }
 
+function applyPanelPositionWithSelectionClamp(controlPanelState, panelElement, left, top) {
+  const bounds = getPanelBounds(panelElement);
+  let minLeft = bounds.minLeft;
+  let maxLeft = bounds.maxLeft;
+  let minTop = bounds.minTop;
+  let maxTop = bounds.maxTop;
+
+  const selectionPanelElement = controlPanelState?.selectionElement;
+  if (selectionPanelElement instanceof HTMLElement && selectionPanelElement.isConnected) {
+    const panelRect = panelElement.getBoundingClientRect();
+    const selectionRect = selectionPanelElement.getBoundingClientRect();
+    const selectionVisible = selectionRect.width > 0 && selectionRect.height > 0 && selectionPanelElement.style.display !== "none";
+
+    if (selectionVisible) {
+      const leftOverflow = Math.max(0, panelRect.left - selectionRect.left);
+      const topOverflow = Math.max(0, panelRect.top - selectionRect.top);
+      const bottomOverflow = Math.max(0, selectionRect.bottom - panelRect.bottom);
+
+      minLeft += leftOverflow;
+      minTop += topOverflow;
+      maxTop -= bottomOverflow;
+    }
+  }
+
+  const safeLeft = clampPanelCoordinate(left, minLeft, maxLeft);
+  const safeTop = clampPanelCoordinate(top, minTop, maxTop);
+  panelElement.style.left = `${Math.round(safeLeft)}px`;
+  panelElement.style.top = `${Math.round(safeTop)}px`;
+}
+
 function applyInitialPanelPosition(panelElement) {
   const saved = readSavedPanelPosition();
   if (saved) {
@@ -325,18 +353,9 @@ function createSelectionPanelElement() {
             </button>
             <button type="button" class="tow-combat-overlay-control-panel__selection-stat-row" data-selection-stat-row="speed">
               <span class="tow-combat-overlay-control-panel__selection-stat-value" data-selection-stat="speed">-</span>
-              <img class="tow-combat-overlay-control-panel__selection-stat-icon" src="${PANEL_SPEED_ICON}" alt="" />
+              <img class="tow-combat-overlay-control-panel__selection-stat-icon" src="${PANEL_FALLBACK_ITEM_ICON}" alt="" />
             </button>
             <div class="tow-combat-overlay-control-panel__selection-mini-controls">
-              <button
-                type="button"
-                class="tow-combat-overlay-control-panel__selection-text-control tow-combat-overlay-control-panel__type-icon"
-                data-panel-type-icon="tokenType"
-                aria-label="Token Type"
-              >
-                <span class="tow-combat-overlay-control-panel__modifier-text" data-action-label="tokenType">-</span>
-                <img class="tow-combat-overlay-control-panel__selection-stat-icon" src="${PANEL_TYPE_ICON}" alt="" />
-              </button>
               <button
                 type="button"
                 class="tow-combat-overlay-control-panel__selection-text-control tow-combat-overlay-control-panel__modifier-icon"
@@ -371,7 +390,11 @@ function syncSelectionPanelPosition(controlPanelState) {
   const selectionPanelElement = controlPanelState?.selectionElement;
   if (!(panelElement instanceof HTMLElement)) return;
   if (!(selectionPanelElement instanceof HTMLElement)) return;
+
   const panelRect = panelElement.getBoundingClientRect();
+  const selectionSizePx = Math.max(1, Math.round(panelRect.height));
+  selectionPanelElement.style.setProperty("--tow-control-panel-selection-size", `${selectionSizePx}px`);
+
   const selectionRect = selectionPanelElement.getBoundingClientRect();
   const selectionImageBlock = selectionPanelElement.querySelector(".tow-combat-overlay-control-panel__selection");
   const imageBottomOffset = (selectionImageBlock instanceof HTMLElement)
@@ -379,7 +402,8 @@ function syncSelectionPanelPosition(controlPanelState) {
     : selectionPanelElement.offsetHeight;
   const left = panelRect.left - selectionRect.width - PANEL_SELECTION_GAP_PX;
   const top = panelRect.bottom - imageBottomOffset;
-  applyPanelPosition(selectionPanelElement, left, top);
+  selectionPanelElement.style.left = `${Math.round(left)}px`;
+  selectionPanelElement.style.top = `${Math.round(top)}px`;
 }
 
 function bindPanelSlotEvent(slotElement) {
@@ -1386,6 +1410,7 @@ function bindSelectionPanelStatEvents(selectionPanelElement) {
   const speedRow = selectionPanelElement.querySelector("[data-selection-stat-row='speed']");
   const resilienceRow = selectionPanelElement.querySelector("[data-selection-stat-row='resilience']");
   const woundsRow = selectionPanelElement.querySelector("[data-selection-stat-row='wounds']");
+
   if (speedRow instanceof HTMLElement) {
     bindPanelTooltipEvent(speedRow, () => getPanelStatTooltipData("speed"));
     speedRow.addEventListener("click", (event) => event.preventDefault());
@@ -1422,13 +1447,20 @@ function bindSelectionPanelStatEvents(selectionPanelElement) {
   }
 }
 
-function bindPanelTypeIconTooltipEvent(rootElement) {
-  if (!(rootElement instanceof HTMLElement)) return;
-  const typeElement = rootElement.querySelector("[data-panel-type-icon='tokenType']");
-  if (!(typeElement instanceof HTMLElement)) return;
-  bindPanelTooltipEvent(typeElement, () => getPanelStatTooltipData("tokenType"));
-  typeElement.addEventListener("click", (event) => event.preventDefault());
-  typeElement.addEventListener("contextmenu", (event) => event.preventDefault());
+function bindSelectionNameTooltipEvent(selectionPanelElement) {
+  if (!(selectionPanelElement instanceof HTMLElement)) return;
+  const nameElement = selectionPanelElement.querySelector(".tow-combat-overlay-control-panel__selection-name");
+  if (!(nameElement instanceof HTMLElement)) return;
+  bindPanelTooltipEvent(nameElement, () => {
+    const token = getSingleControlledToken();
+    if (!token) return null;
+    const tokenName = getPrimaryTokenName(token) || "Token";
+    const typeLabel = getPrimaryTokenTypeLabel(token) || "-";
+    return {
+      title: tokenName,
+      description: `Type: ${typeLabel}`
+    };
+  });
 }
 
 function bindPanelStatusesTooltipEvents(panelElement) {
@@ -1799,6 +1831,8 @@ function resolveDynamicGridLayout(itemCount) {
 
 function getGroupGridElement(panelElement, groupKey) {
   return panelElement.querySelector(
+    `.tow-combat-overlay-control-panel__group-grid[data-item-group="${groupKey}"]`
+  ) ?? panelElement.querySelector(
     `.tow-combat-overlay-control-panel__item-group[data-item-group="${groupKey}"] .tow-combat-overlay-control-panel__group-grid`
   );
 }
@@ -1829,8 +1863,9 @@ function applyGroupGridLayout(panelElement, groupKey, slotCount) {
   const gridElement = getGroupGridElement(panelElement, groupKey);
   if (!(gridElement instanceof HTMLElement)) return;
   const groupElement = gridElement.closest(".tow-combat-overlay-control-panel__item-group");
-  const isStatusStripAbilities = groupElement instanceof HTMLElement
-    && groupElement.classList.contains("tow-combat-overlay-control-panel__status-abilities");
+  const isStatusStripAbilities = gridElement.classList.contains("tow-combat-overlay-control-panel__status-abilities")
+    || (groupElement instanceof HTMLElement
+      && groupElement.classList.contains("tow-combat-overlay-control-panel__status-abilities"));
 
   if (isStatusStripAbilities) {
     const count = Math.max(1, Math.trunc(Number(slotCount) || 1));
@@ -1857,7 +1892,7 @@ function applyGroupGridLayout(panelElement, groupKey, slotCount) {
 function updateGroupSlots(panelElement, groupKey, groupItems = []) {
   const groupElement = panelElement.querySelector(
     `.tow-combat-overlay-control-panel__item-group[data-item-group="${groupKey}"]`
-  );
+  ) ?? getGroupGridElement(panelElement, groupKey);
   if (groupElement instanceof HTMLElement) {
     groupElement.style.display = (groupItems.length > 0) ? "" : "none";
   }
@@ -2090,9 +2125,10 @@ function isDragBlockedTarget(targetElement) {
   if (!(targetElement instanceof Element)) return true;
   const blockedSelector = [
     ".tow-combat-overlay-control-panel__slot",
-    ".tow-combat-overlay-control-panel__selection",
-    ".tow-combat-overlay-control-panel__stats",
-    ".tow-combat-overlay-control-panel__statuses",
+    ".tow-combat-overlay-control-panel__status-icon",
+    ".tow-combat-overlay-control-panel__selection-stat-row",
+    ".tow-combat-overlay-control-panel__selection-text-control",
+    ".tow-combat-overlay-control-panel__selection-mod-button",
     "button",
     "input",
     "select",
@@ -2103,14 +2139,14 @@ function isDragBlockedTarget(targetElement) {
   return !!targetElement.closest(blockedSelector);
 }
 
-function bindControlPanelDrag(controlPanelState, panelElement, { onMoved = null } = {}) {
+function bindControlPanelDrag(controlPanelState, panelElement, { onMoved = null, dragSources = [] } = {}) {
   let dragData = null;
 
   const onPointerMove = (event) => {
     if (!dragData) return;
     const deltaX = Number(event.clientX) - dragData.startClientX;
     const deltaY = Number(event.clientY) - dragData.startClientY;
-    applyPanelPosition(panelElement, dragData.startLeft + deltaX, dragData.startTop + deltaY);
+    applyPanelPositionWithSelectionClamp(controlPanelState, panelElement, dragData.startLeft + deltaX, dragData.startTop + deltaY);
     if (typeof onMoved === "function") onMoved();
   };
 
@@ -2144,14 +2180,19 @@ function bindControlPanelDrag(controlPanelState, panelElement, { onMoved = null 
 
   const onResize = () => {
     const rect = panelElement.getBoundingClientRect();
-    applyPanelPosition(panelElement, rect.left, rect.top);
+    applyPanelPositionWithSelectionClamp(controlPanelState, panelElement, rect.left, rect.top);
     if (typeof onMoved === "function") onMoved();
   };
 
-  panelElement.addEventListener("pointerdown", onPointerDown);
+  const sources = [
+    panelElement,
+    ...(Array.isArray(dragSources) ? dragSources : []).filter((source) => source instanceof HTMLElement)
+  ];
+  for (const sourceElement of sources) sourceElement.addEventListener("pointerdown", onPointerDown);
   window.addEventListener("resize", onResize);
 
   controlPanelState.onPointerDown = onPointerDown;
+  controlPanelState.dragSourceElements = sources;
   controlPanelState.onResize = onResize;
   controlPanelState.onPointerMove = onPointerMove;
   controlPanelState.onPointerUp = onPointerUp;
@@ -2185,11 +2226,12 @@ export async function towCombatOverlayEnsureControlPanel() {
   bindPanelActionControls(panelElement);
   bindPanelActionControls(selectionPanelElement);
   bindSelectionPanelStatEvents(selectionPanelElement);
-  bindPanelTypeIconTooltipEvent(selectionPanelElement);
+  bindSelectionNameTooltipEvent(selectionPanelElement);
   bindPanelStatusesTooltipEvents(panelElement);
   controlPanelState.element = panelElement;
   controlPanelState.selectionElement = selectionPanelElement;
   bindControlPanelDrag(controlPanelState, panelElement, {
+    dragSources: [selectionPanelElement],
     onMoved: () => syncSelectionPanelPosition(controlPanelState)
   });
   bindPanelSelectionSync(controlPanelState, panelElement);
@@ -2214,8 +2256,14 @@ export function towCombatOverlayRemoveControlPanel() {
   const updateActiveEffectHookId = controlPanelState?.updateActiveEffectHookId;
   const deleteActiveEffectHookId = controlPanelState?.deleteActiveEffectHookId;
 
-  if (panelElement instanceof HTMLElement && typeof onPointerDown === "function") {
-    panelElement.removeEventListener("pointerdown", onPointerDown);
+  if (typeof onPointerDown === "function") {
+    const dragSourceElements = Array.isArray(controlPanelState?.dragSourceElements)
+      ? controlPanelState.dragSourceElements
+      : (panelElement instanceof HTMLElement ? [panelElement] : []);
+    for (const sourceElement of dragSourceElements) {
+      if (!(sourceElement instanceof HTMLElement)) continue;
+      sourceElement.removeEventListener("pointerdown", onPointerDown);
+    }
   }
   if (typeof onPointerMove === "function") window.removeEventListener("pointermove", onPointerMove);
   if (typeof onPointerUp === "function") {

@@ -1,7 +1,18 @@
 .tow-combat-overlay-control-panel {
-  --tow-control-panel-slot-size: 52px;
+  --tow-control-panel-slot-size: 48px;
   --tow-control-panel-gap: 4px;
-  --tow-control-panel-selection-size: calc((var(--tow-control-panel-slot-size) * 2) + var(--tow-control-panel-gap));
+  --tow-control-panel-groups-padding: 4px;
+  --tow-control-panel-padding: 8px;
+  --tow-control-panel-status-size: 27px;
+  --tow-control-panel-status-gap: 4px;
+  --tow-control-panel-top-strip-height: calc((var(--tow-control-panel-status-size) * 2) + var(--tow-control-panel-status-gap) + 8px);
+  --tow-main-backdrop-height: 190px;
+  --tow-control-panel-selection-size: calc(
+    (var(--tow-control-panel-slot-size) * 2)
+    + var(--tow-control-panel-gap)
+    + (var(--tow-control-panel-groups-padding) * 2)
+    + (var(--tow-control-panel-padding) * 2)
+  );
   --tow-panel-bg-0: #ece9e1;
   --tow-panel-bg-1: #e4e0d5;
   --tow-panel-bg-2: #d8d2c5;
@@ -18,22 +29,49 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 8px;
-  border: 1px solid var(--tow-panel-border);
-  border-radius: 6px;
-  background: linear-gradient(180deg, var(--tow-panel-bg-0) 0%, var(--tow-panel-bg-1) 55%, var(--tow-panel-bg-2) 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    0 7px 18px rgba(26, 22, 16, 0.26);
+  padding: var(--tow-control-panel-padding);
+  border: 0;
+  border-radius: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--tow-panel-bg-0) 86%, #ffffff 14%) 0%,
+    color-mix(in srgb, var(--tow-panel-bg-1) 92%, #000000 8%) 52%,
+    color-mix(in srgb, var(--tow-panel-bg-2) 88%, #000000 12%) 100%
+  );
+  box-shadow: none;
   user-select: none;
   cursor: default;
   overflow: visible;
 }
 
+.tow-combat-overlay-control-panel::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 0;
+  right: 0;
+  top: calc(100% - var(--tow-main-backdrop-height));
+  bottom: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  pointer-events: none;
+}
+
 .tow-combat-overlay-selection-panel {
-  --tow-control-panel-slot-size: 60px;
-  --tow-control-panel-gap: 5px;
-  --tow-control-panel-selection-size: 190px;
+  --tow-control-panel-status-size: 27px;
+  --tow-control-panel-status-gap: 4px;
+  --tow-control-panel-slot-size: 48px;
+  --tow-control-panel-gap: 4px;
+  --tow-control-panel-groups-padding: 3px;
+  --tow-control-panel-padding: 8px;
+  --tow-control-panel-selection-size: calc(
+    (var(--tow-control-panel-slot-size) * 2)
+    + var(--tow-control-panel-gap)
+    + (var(--tow-control-panel-groups-padding) * 2)
+    + (var(--tow-control-panel-padding) * 2)
+  );
   --tow-panel-bg-0: #ece9e1;
   --tow-panel-bg-1: #e4e0d5;
   --tow-panel-bg-2: #d8d2c5;
@@ -60,6 +98,8 @@
   display: flex;
   align-items: flex-start;
   gap: 8px;
+  width: var(--tow-control-panel-selection-size);
+  height: var(--tow-control-panel-selection-size);
 }
 
 .tow-combat-overlay-selection-panel__portrait-column {
@@ -68,12 +108,15 @@
   gap: 0;
   width: var(--tow-control-panel-selection-size);
   min-width: var(--tow-control-panel-selection-size);
+  height: var(--tow-control-panel-selection-size);
+  min-height: var(--tow-control-panel-selection-size);
 }
 
 .tow-combat-overlay-selection-panel .tow-combat-overlay-control-panel__selection {
-  width: var(--tow-control-panel-selection-size);
-  min-width: var(--tow-control-panel-selection-size);
-  height: var(--tow-control-panel-selection-size);
+  width: 100%;
+  min-width: 100%;
+  height: 100%;
+  min-height: 100%;
 }
 
 .tow-combat-overlay-selection-panel__statuses {
@@ -93,9 +136,18 @@
 }
 
 .tow-combat-overlay-control-panel__body {
+  position: relative;
+  z-index: 0;
   display: flex;
   align-items: flex-end;
   gap: 6px;
+  padding: 8px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.tow-combat-overlay-control-panel__body::before {
+  content: none;
 }
 
 .tow-combat-overlay-control-panel__section {
@@ -119,7 +171,7 @@
 }
 
 .tow-combat-overlay-control-panel__selection {
-  --tow-selection-rail-width: 92px;
+  --tow-selection-rail-width: 78px;
   --tow-selection-name-height: 27px;
   width: var(--tow-control-panel-selection-size);
   min-width: var(--tow-control-panel-selection-size);
@@ -141,7 +193,7 @@
 
 .tow-combat-overlay-control-panel__selection-name {
   position: absolute;
-  top: calc(-1 * (var(--tow-selection-name-height) + 1px));
+  top: calc(-1 * (var(--tow-selection-name-height) + 4px));
   left: 50%;
   transform: translateX(-50%);
   width: max-content;
@@ -160,17 +212,18 @@
   background: transparent;
   color: #fff5df;
   font-family: "CaslonPro", var(--font-primary, Signika), serif;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   line-height: 1;
   text-align: center;
   text-transform: none;
   letter-spacing: 0;
   text-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.95),
+    0 2px 3px rgba(0, 0, 0, 0.98),
     0 0 1px rgba(0, 0, 0, 0.9);
   box-shadow: none;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: help;
 }
 
 .tow-combat-overlay-control-panel__selection-name-main {
@@ -254,21 +307,23 @@
 }
 
 .tow-combat-overlay-control-panel__statuses {
-  --tow-control-panel-status-size: 27px;
-  --tow-control-panel-status-gap: 4px;
   position: absolute;
-  left: 8px;
+  left: 0;
   right: auto;
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 0px);
   transform: none;
   width: max-content;
   min-width: 0;
   margin: 0;
-  padding: 0;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: var(--tow-control-panel-status-gap);
+  gap: 8px;
   align-items: flex-start;
   justify-content: flex-start;
   overflow: visible;
@@ -291,14 +346,14 @@
 .tow-combat-overlay-control-panel__status-icon {
   width: var(--tow-control-panel-status-size);
   height: var(--tow-control-panel-status-size);
-  border: 1px solid rgba(198, 191, 174, 0.9);
+  border: 1px solid rgba(205, 205, 205, 0.7);
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.28);
+  background: transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.45;
-  filter: saturate(0.2) grayscale(0.65);
+  opacity: 1;
+  filter: none;
 }
 
 .tow-combat-overlay-control-panel__status-icon img {
@@ -306,16 +361,23 @@
   height: calc(var(--tow-control-panel-status-size) - 5px);
   object-fit: contain;
   pointer-events: none;
+  opacity: 0.72;
+  filter: saturate(0.45) grayscale(0.3);
 }
 
 .tow-combat-overlay-control-panel__status-icon.is-active {
-  border-color: #8d7f65;
-  background: rgba(236, 233, 225, 0.72);
+  background: rgba(222, 217, 205, 0.68);
   opacity: 1;
   filter: none;
+  border-color: rgba(238, 233, 220, 0.95);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.48),
-    0 0 0 1px rgba(141, 127, 101, 0.24);
+    inset 0 1px 0 rgba(255, 255, 255, 0.52),
+    0 0 0 1px rgba(126, 116, 98, 0.24);
+}
+
+.tow-combat-overlay-control-panel__status-icon.is-active img {
+  opacity: 1;
+  filter: none;
 }
 
 .tow-combat-overlay-control-panel__type-icon {
@@ -348,7 +410,7 @@
 }
 
 .tow-combat-overlay-control-panel__status-abilities .tow-combat-overlay-control-panel__slot {
-  border: 0;
+  border: 1px solid rgba(198, 191, 174, 0.6);
   border-radius: 3px;
   background: transparent;
   box-shadow: none;
@@ -357,14 +419,14 @@
 
 .tow-combat-overlay-control-panel__status-abilities .tow-combat-overlay-control-panel__slot:hover,
 .tow-combat-overlay-control-panel__status-abilities .tow-combat-overlay-control-panel__slot:focus-visible {
-  border: 0;
+  border-color: rgba(236, 233, 225, 0.8);
   background: transparent;
   box-shadow: none;
 }
 
 .tow-combat-overlay-control-panel__status-abilities .tow-combat-overlay-control-panel__slot-image {
-  width: 90%;
-  height: 90%;
+  width: 95%;
+  height: 95%;
   border-radius: 2px;
   object-fit: cover;
   filter: saturate(0.92) contrast(0.98);
@@ -437,10 +499,13 @@
   display: flex;
   align-items: stretch;
   align-self: flex-start;
-  gap: 8px;
-  margin-left: 2px;
-  padding-left: 0;
-  border-left: 0;
+  gap: 6px;
+  margin-left: 0;
+  padding: 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .tow-combat-overlay-control-panel__item-group {
@@ -455,13 +520,21 @@
 }
 
 .tow-combat-overlay-control-panel__item-group + .tow-combat-overlay-control-panel__item-group {
-  padding-left: 6px;
-  border-left: 1px solid rgba(189, 183, 170, 0.85);
+  padding-left: 0;
+  border-left: 0;
 }
 
 .tow-combat-overlay-control-panel__statuses-top .tow-combat-overlay-control-panel__item-group + .tow-combat-overlay-control-panel__item-group {
   padding-left: 0;
   border-left: 0;
+}
+
+.tow-combat-overlay-control-panel__statuses-top .tow-combat-overlay-control-panel__item-group {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 
@@ -474,11 +547,12 @@
 
 .tow-combat-overlay-control-panel__slot {
   position: relative;
+  box-sizing: border-box;
   width: var(--tow-control-panel-slot-size);
   height: var(--tow-control-panel-slot-size);
   margin: 0;
   padding: 0;
-  border: 0;
+  border: 1px solid rgba(188, 188, 188, 0.32);
   border-radius: 4px;
   background: var(--tow-panel-slot-bg);
   color: var(--tow-panel-slot-icon);
@@ -487,6 +561,12 @@
   align-items: center;
   justify-content: center;
   font: inherit;
+}
+
+.tow-combat-overlay-control-panel__item-groups .tow-combat-overlay-control-panel__slot {
+  background: linear-gradient(180deg, rgb(140, 128, 106) 0%, rgb(121, 109, 90) 100%);
+  border-color: rgba(234, 223, 198, 0.38);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .tow-combat-overlay-control-panel__slot[data-item-type="attack"] {
@@ -498,10 +578,10 @@
 }
 
 .tow-combat-overlay-control-panel__slot-image {
-  width: calc(var(--tow-control-panel-slot-size) - 7px);
-  height: calc(var(--tow-control-panel-slot-size) - 7px);
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border-radius: 2px;
+  border-radius: 4px;
   pointer-events: none;
 }
 
@@ -511,6 +591,33 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.56),
     0 0 0 1px rgba(141, 127, 101, 0.28);
+}
+
+.tow-combat-overlay-control-panel__item-groups .tow-combat-overlay-control-panel__slot:hover,
+.tow-combat-overlay-control-panel__item-groups .tow-combat-overlay-control-panel__slot:focus-visible {
+  background: linear-gradient(180deg, rgb(157, 144, 120) 0%, rgb(137, 124, 102) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 0 0 1px rgba(234, 223, 198, 0.32);
+}
+
+/* Keep utility placeholder groups quieter than core combat item groups. */
+.tow-combat-overlay-control-panel__slot[data-item-group="actions"] .tow-combat-overlay-control-panel__slot-image,
+.tow-combat-overlay-control-panel__slot[data-item-group="manoeuvre"] .tow-combat-overlay-control-panel__slot-image,
+.tow-combat-overlay-control-panel__slot[data-item-group="recover"] .tow-combat-overlay-control-panel__slot-image {
+  width: 90%;
+  height: 90%;
+  opacity: 0.92;
+  filter: saturate(0.65) contrast(0.95);
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-group="actions"]:hover .tow-combat-overlay-control-panel__slot-image,
+.tow-combat-overlay-control-panel__slot[data-item-group="manoeuvre"]:hover .tow-combat-overlay-control-panel__slot-image,
+.tow-combat-overlay-control-panel__slot[data-item-group="recover"]:hover .tow-combat-overlay-control-panel__slot-image,
+.tow-combat-overlay-control-panel__slot[data-item-group="actions"]:focus-visible .tow-combat-overlay-control-panel__slot-image,
+.tow-combat-overlay-control-panel__slot[data-item-group="manoeuvre"]:focus-visible .tow-combat-overlay-control-panel__slot-image,
+.tow-combat-overlay-control-panel__slot[data-item-group="recover"]:focus-visible .tow-combat-overlay-control-panel__slot-image {
+  opacity: 0.96;
 }
 
 .tow-combat-overlay-control-panel__slot-icon {
@@ -611,7 +718,7 @@
 .tow-combat-overlay-control-panel__selection-side-stack {
   --tow-control-panel-status-size: 27px;
   --tow-control-panel-status-gap: 4px;
-  --tow-selection-stat-font-size: 18px;
+  --tow-selection-stat-font-size: 16px;
   --tow-selection-stat-gap: 3px;
   position: absolute;
   right: 0;
@@ -625,7 +732,7 @@
   justify-content: space-between;
   gap: var(--tow-selection-stat-gap);
   width: var(--tow-selection-rail-width);
-  padding: 6px 4px 6px 0;
+  padding: 8px 2px 8px 0;
   border-radius: 0;
   background: linear-gradient(
     270deg,
@@ -634,6 +741,19 @@
     rgba(12, 12, 12, 0) 100%
   );
   pointer-events: auto;
+}
+
+.tow-combat-overlay-control-panel__selection-side-stack::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    270deg,
+    rgba(8, 8, 8, 0.30) 0%,
+    rgba(8, 8, 8, 0.12) 40%,
+    rgba(8, 8, 8, 0) 100%
+  );
+  pointer-events: none;
 }
 
 .tow-combat-overlay-selection-panel .tow-combat-overlay-control-panel__selection-mini-controls {
@@ -723,8 +843,8 @@
 
 .tow-combat-overlay-control-panel__selection-stat-icon {
   display: inline-block;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   object-fit: contain;
   pointer-events: none;
   opacity: 1;
@@ -771,24 +891,21 @@
 }
 
 .tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="speed"] {
+  position: static;
   order: 3;
 }
 
-.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="speed"] .tow-combat-overlay-control-panel__selection-stat-value {
-  text-transform: none;
-  font-size: var(--tow-selection-stat-font-size);
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="speed"] .tow-combat-overlay-control-panel__selection-stat-icon {
+  order: 1;
 }
 
 .tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="wounds"] .tow-combat-overlay-control-panel__selection-stat-value,
-.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="resilience"] .tow-combat-overlay-control-panel__selection-stat-value {
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="resilience"] .tow-combat-overlay-control-panel__selection-stat-value,
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="speed"] .tow-combat-overlay-control-panel__selection-stat-value {
   font-size: var(--tow-selection-stat-font-size);
 }
 
 .tow-combat-overlay-selection-panel .tow-combat-overlay-control-panel__selection-mini-controls {
-  order: 4;
-}
-
-.tow-combat-overlay-selection-panel .tow-combat-overlay-control-panel__selection-mini-controls [data-panel-type-icon="tokenType"] {
   order: 4;
 }
 
@@ -818,4 +935,22 @@
   font-weight: 700;
   line-height: 1.1;
   vertical-align: baseline;
+}
+
+/* DEBUG borders enabled */
+.tow-combat-overlay-control-panel { outline: 1px solid #ff1744 !important; }
+.tow-combat-overlay-control-panel__selection { outline: 1px solid #76ff03 !important; }
+.tow-combat-overlay-control-panel__statuses { outline: 1px solid #d500f9 !important; }
+.tow-combat-overlay-control-panel__item-groups { outline: 1px solid #ff9100 !important; }
+.tow-combat-overlay-control-panel__group-grid { outline: 1px solid #f50057 !important; }
+.tow-combat-overlay-control-panel__slot { outline: 1px solid #00c853 !important; }
+
+/* DEBUG borders hidden (rules kept above for quick re-enable) */
+.tow-combat-overlay-control-panel,
+.tow-combat-overlay-control-panel__selection,
+.tow-combat-overlay-control-panel__statuses,
+.tow-combat-overlay-control-panel__item-groups,
+.tow-combat-overlay-control-panel__group-grid,
+.tow-combat-overlay-control-panel__slot {
+  outline: none !important;
 }
