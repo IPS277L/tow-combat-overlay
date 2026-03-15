@@ -1488,23 +1488,44 @@ async function handlePanelSlotClick(slotElement, event) {
   if (!attackItem) return;
   const altHeld = towCombatOverlayIsAltModifier(event);
   const shiftHeld = towCombatOverlayIsShiftModifier(event);
+  const panelElement = slotElement.closest(`#${PANEL_ID}`);
+  if (!(panelElement instanceof HTMLElement)) return;
+
+  const consumeAttackResource = async () => {
+    const gate = await ensurePanelAttackResourceStateBeforeUse(sourceActor, attackItem);
+    if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
+    return gate;
+  };
+  const attackAmmoState = resolvePanelAttackAmmoState(attackItem);
+  if (attackAmmoState.isRanged && attackAmmoState.usesReloadFlow && attackAmmoState.current <= 0) {
+    await consumeAttackResource();
+    return;
+  }
+
 
   if (altHeld && shiftHeld) {
     clearPanelAttackPickMode();
+    const gate = await consumeAttackResource();
+    if (gate?.blocked) return;
     await towCombatOverlaySetupAbilityTestWithDamage(sourceActor, attackItem, { autoRoll: false });
     return;
   }
 
   if (shiftHeld) {
     clearPanelAttackPickMode();
+    const gate = await consumeAttackResource();
+    if (gate?.blocked) return;
     await towCombatOverlaySetupAbilityTestWithDamage(sourceActor, attackItem, { autoRoll: true });
     return;
   }
 
-  const panelElement = slotElement.closest(`#${PANEL_ID}`);
-  if (!(panelElement instanceof HTMLElement)) return;
   startPanelAttackPickMode(panelElement, slotElement, sourceToken, attackItem, event, {
-    preferDefaultDialog: altHeld
+    preferDefaultDialog: altHeld,
+    onTargetAttack: async (targetToken, { autoRoll }) => {
+      const gate = await consumeAttackResource();
+      if (gate?.blocked) return;
+      await runPanelAttackOnTarget(sourceToken, targetToken, attackItem, { autoRoll });
+    }
   });
 }
 
@@ -2480,6 +2501,158 @@ function applyGroupGridLayout(panelElement, groupKey, slotCount) {
   gridElement.style.gridAutoFlow = "column";
 }
 
+function resolvePanelAttackAmmoMeta(item) {
+  if (!item) return { isRanged: false, ammoMax: 1, reloadTarget: 0, usesReloadFlow: false };
+  const attackSkill = String(item?.system?.attack?.skill ?? "").trim().toLowerCase();
+  const weaponSkill = String(item?.system?.skill ?? "").trim().toLowerCase();
+  const isRanged = item?.system?.isRanged === true
+    || ["shooting", "throwing"].includes(attackSkill)
+    || ["shooting", "throwing"].includes(weaponSkill);
+  if (!isRanged) return { isRanged: false, ammoMax: 1, reloadTarget: 0, usesReloadFlow: false };
+
+  const ammoCandidates = [
+    Number(item?.system?.ammo?.current),
+    Number(item?.system?.ammo?.value),
+    Number(item?.system?.ammunition?.current),
+    Number(item?.system?.ammunition?.value),
+    Number(item?.system?.shots?.current),
+    Number(item?.system?.shots?.value),
+    Number(item?.system?.capacity),
+    Number(item?.system?.clip)
+  ].filter((value) => Number.isFinite(value) && value > 0);
+  const ammoMax = Math.max(1, Math.trunc(ammoCandidates[0] ?? 1));
+  const reloadTargetRaw = Number(item?.system?.reload?.value);
+  const reloadTarget = Number.isFinite(reloadTargetRaw) ? Math.max(0, Math.trunc(reloadTargetRaw)) : 0;
+  return {
+    isRanged: true,
+    ammoMax,
+    reloadTarget,
+    usesReloadFlow: reloadTarget > 0
+  };
+}
+
+function resolvePanelAttackAmmoState(item) {
+  const meta = resolvePanelAttackAmmoMeta(item);
+  if (!meta.isRanged) return { ...meta, current: 0, reloadProgress: 0 };
+
+  const flags = item?.flags?.[MODULE_ID]?.panelAttackAmmo ?? {};
+  const rawCurrent = Number(flags?.current);
+  const rawReloadProgress = Number(flags?.reloadProgress);
+  const current = Number.isFinite(rawCurrent)
+    ? Math.max(0, Math.min(meta.ammoMax, Math.trunc(rawCurrent)))
+    : meta.ammoMax;
+  const reloadProgress = Number.isFinite(rawReloadProgress)
+    ? Math.max(0, Math.min(meta.reloadTarget, Math.trunc(rawReloadProgress)))
+    : 0;
+  return { ...meta, current, reloadProgress };
+}
+
+async function writePanelAttackAmmoState(item, { current, reloadProgress } = {}) {
+  if (!item || typeof item.update !== "function") return;
+  const updates = {};
+  if (Number.isFinite(Number(current))) {
+    updates[`flags.${MODULE_ID}.panelAttackAmmo.current`] = Math.max(0, Math.trunc(Number(current)));
+  }
+  if (Number.isFinite(Number(reloadProgress))) {
+    updates[`flags.${MODULE_ID}.panelAttackAmmo.reloadProgress`] = Math.max(0, Math.trunc(Number(reloadProgress)));
+  }
+  if (!Object.keys(updates).length) return;
+  await item.update(updates);
+}
+
+function armAutoSubmitReloadTestDialog(actor) {
+  towCombatOverlayArmAutoSubmitDialog({
+    hookName: "renderTestDialog",
+    matches: (app) => app?.actor?.id === actor?.id && String(app?.skill ?? "").trim().toLowerCase() === "dexterity",
+    submitErrorMessage: "Reload test submit() is unavailable."
+  });
+}
+
+async function rollPanelReloadForAttack(actor, attackItem) {
+  if (!actor || !attackItem) return 0;
+  armAutoSubmitReloadTestDialog(actor);
+
+  let test = null;
+  if (typeof attackItem?.system?.rollReloadTest === "function") {
+    test = await attackItem.system.rollReloadTest(actor);
+  } else {
+    test = await getTowCombatOverlaySystemAdapter().setupSkillTest(
+      actor,
+      "dexterity",
+      createTowCombatOverlayRollContext(actor, { appendTitle: ` - Reloading ${String(attackItem?.name ?? "Weapon")}` })
+    );
+  }
+
+  const rawSuccesses = Number(test?.result?.successes ?? 0);
+  return Number.isFinite(rawSuccesses) ? Math.max(0, Math.trunc(rawSuccesses)) : 0;
+}
+
+async function ensurePanelAttackResourceStateBeforeUse(actor, attackItem) {
+  const state = resolvePanelAttackAmmoState(attackItem);
+  if (!state.isRanged || !state.usesReloadFlow) return { blocked: false, state };
+
+  if (state.current > 0) {
+    await writePanelAttackAmmoState(attackItem, { current: state.current - 1 });
+    return { blocked: false, state: { ...state, current: state.current - 1 } };
+  }
+
+  const gainedSuccesses = await rollPanelReloadForAttack(actor, attackItem);
+  const newProgress = Math.max(0, Math.min(state.reloadTarget, state.reloadProgress + gainedSuccesses));
+  const completedReload = newProgress >= state.reloadTarget;
+  if (completedReload) {
+    await writePanelAttackAmmoState(attackItem, {
+      current: state.ammoMax,
+      reloadProgress: 0
+    });
+    return {
+      blocked: true,
+      reloaded: true,
+      state: { ...state, current: state.ammoMax, reloadProgress: 0 }
+    };
+  }
+
+  await writePanelAttackAmmoState(attackItem, {
+    current: 0,
+    reloadProgress: newProgress
+  });
+  return {
+    blocked: true,
+    reloaded: false,
+    state: { ...state, current: 0, reloadProgress: newProgress }
+  };
+}
+
+function updatePanelSlotAmmoBadge(slotElement, item, groupKey) {
+  if (!(slotElement instanceof HTMLElement)) return;
+  let ammoBadge = slotElement.querySelector(".tow-combat-overlay-control-panel__slot-ammo");
+  if (!(ammoBadge instanceof HTMLElement)) {
+    ammoBadge = document.createElement("span");
+    ammoBadge.classList.add("tow-combat-overlay-control-panel__slot-ammo");
+    ammoBadge.setAttribute("aria-hidden", "true");
+    slotElement.appendChild(ammoBadge);
+  }
+
+  if (groupKey !== "attacks" || !item || item.__empty === true) {
+    ammoBadge.style.display = "none";
+    ammoBadge.textContent = "";
+    return;
+  }
+
+  const state = resolvePanelAttackAmmoState(item);
+  if (!state.isRanged) {
+    ammoBadge.style.display = "none";
+    ammoBadge.textContent = "";
+    return;
+  }
+
+  if (state.usesReloadFlow && state.current <= 0) {
+    ammoBadge.textContent = `${Math.max(0, state.reloadProgress)}/${Math.max(1, state.reloadTarget)}`;
+  } else {
+    ammoBadge.textContent = String(Math.max(1, Math.trunc(state.current || state.ammoMax || 1)));
+  }
+  ammoBadge.style.display = "inline-flex";
+}
+
 function updateGroupSlots(panelElement, groupKey, groupItems = []) {
   const groupElement = panelElement.querySelector(
     `.tow-combat-overlay-control-panel__item-group[data-item-group="${groupKey}"]`
@@ -2530,6 +2703,7 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
       image.alt = "";
       image.style.display = "none";
       if (iconPlaceholder instanceof HTMLElement) iconPlaceholder.style.display = "";
+      updatePanelSlotAmmoBadge(slotElement, null, emptyGroupKey);
       continue;
     }
 
@@ -2548,9 +2722,13 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
       const attackHint = itemKey === PANEL_UNARMED_ACTION_ID
         ? "<em>Click: pick target then auto-roll unarmed attack (Brawn vs Endurance). Shift+click: self auto-roll. Alt+click: pick target then open default attack dialog. Alt+Shift+click: open default self-roll dialog.</em>"
         : "<em>Click: pick target, then auto-roll attack. Shift+click: auto-roll self attack. Alt+click: pick target, then open default Foundry attack dialog (no auto-roll). Alt+Shift+click: open default Foundry self-roll dialog (no auto-roll).</em>";
+      const attackAmmoState = resolvePanelAttackAmmoState(item);
+      const reloadProgressHint = (attackAmmoState.isRanged && attackAmmoState.usesReloadFlow && attackAmmoState.current <= 0)
+        ? `<br><br>Reload progress: ${Math.max(0, attackAmmoState.reloadProgress)} / ${Math.max(1, attackAmmoState.reloadTarget)} successes.`
+        : "";
       slotElement.dataset.tooltipDescription = itemDescription
-        ? `${attackHint}<br><br>${itemDescription}`
-        : attackHint;
+        ? `${attackHint}${reloadProgressHint}<br><br>${itemDescription}`
+        : `${attackHint}${reloadProgressHint}`;
     } else if (resolvedGroupKey === "actions") {
       let actionsHint = "<em>Click: auto-flow action (auto-roll / auto-pick first). Alt+click: default Foundry action dialogs.</em>";
       if (itemKey === "aim") {
@@ -2588,6 +2766,7 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
     image.alt = itemName;
     image.style.display = "block";
     if (iconPlaceholder instanceof HTMLElement) iconPlaceholder.style.display = "none";
+    updatePanelSlotAmmoBadge(slotElement, item, resolvedGroupKey);
   }
 }
 function updatePanelSlots(panelElement, token = null) {
