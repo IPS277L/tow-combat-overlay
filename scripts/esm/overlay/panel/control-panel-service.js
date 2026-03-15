@@ -58,41 +58,45 @@ const PANEL_ID = "tow-combat-overlay-control-panel";
 const PANEL_SELECTION_ID = "tow-combat-overlay-selection-panel";
 const PANEL_TEMPLATE_PATH = "modules/tow-combat-overlay/templates/overlay/control-panel.hbs";
 const PANEL_LOCAL_STORAGE_KEY = "tow-combat-overlay.control-panel-position.v1";
+const PANEL_BUTTON_ORDER_LOCAL_STORAGE_KEY = "tow-combat-overlay.control-panel-button-order.v1";
+const PANEL_REORDER_UNLOCKED_LOCAL_STORAGE_KEY = "tow-combat-overlay.control-panel-reorder-unlocked.v1";
 const PANEL_STATE_KEY = "__towCombatOverlayControlPanelState";
 const PANEL_VIEWPORT_MARGIN_PX = 8;
 const PANEL_SELECTION_GAP_PX = 0;
 const PANEL_FALLBACK_ITEM_ICON = "icons/svg/item-bag.svg";
 const PANEL_RESILIENCE_ICON = "icons/svg/shield.svg";
-const PANEL_ROLL_ICON = PANEL_FALLBACK_ITEM_ICON;
-const PANEL_DICE_ICON = PANEL_FALLBACK_ITEM_ICON;
+const PANEL_SPEED_ICON = "icons/svg/wingfoot.svg";
+const PANEL_ROLL_ICON = "icons/svg/d20-grey.svg";
+const PANEL_DICE_ICON = "icons/svg/d10-grey.svg";
 const PANEL_DEBUG_ITEMS = false;
 const PANEL_ATTACK_PICK_CURSOR = "crosshair";
 const PANEL_MANOEUVRE_ICON_BY_KEY = {
-  run: "icons/svg/item-bag.svg",
-  charge: "icons/svg/shield.svg",
-  moveQuietly: "icons/svg/mystery-man.svg",
-  moveCarefully: "icons/svg/item-bag.svg"
+  run: "icons/skills/movement/feet-winged-boots-brown.webp",
+  charge: "icons/skills/melee/strike-sword-steel-yellow.webp",
+  moveQuietly: "icons/magic/nature/stealth-hide-beast-eyes-green.webp",
+  moveCarefully: "icons/magic/nature/root-vine-entangle-foot-green.webp"
 };
-const PANEL_MANOEUVRE_ORDER = ["run", "charge", "moveQuietly", "moveCarefully"];
+const PANEL_MANOEUVRE_ORDER = ["charge", "run", "moveQuietly", "moveCarefully"];
 const PANEL_RECOVER_ICON_BY_KEY = {
-  recover: "icons/svg/item-bag.svg",
-  treat: "icons/svg/shield.svg",
-  condition: "icons/svg/mystery-man.svg"
+  recover: "icons/consumables/potions/bottle-round-label-cork-red.webp",
+  treat: "icons/skills/wounds/injury-stapled-flesh-tan.webp",
+  condition: "icons/skills/wounds/injury-pain-body-orange.webp"
 };
-const PANEL_RECOVER_ORDER = ["recover", "treat", "condition"];
-const PANEL_ACTIONS_ORDER = ["aim", "help", "improvise", "defence"];
+const PANEL_RECOVER_ORDER = ["treat", "condition", "recover"];
+const PANEL_ACTIONS_ORDER = ["help", "defence", "aim", "improvise"];
 const PANEL_ACTION_ICON_BY_KEY = {
-  aim: "icons/svg/mystery-man.svg",
-  help: "icons/svg/shield.svg",
-  improvise: "icons/svg/item-bag.svg",
-  defence: "icons/svg/shield.svg",
-  unarmed: "icons/svg/sword.svg"
+  aim: "icons/skills/targeting/crosshair-ringed-gray.webp",
+  help: "icons/skills/social/diplomacy-handshake.webp",
+  improvise: "icons/magic/time/hourglass-tilted-glowing-gold.webp",
+  defence: "icons/equipment/shield/heater-wooden-antlers-blue.webp",
+  unarmed: "icons/weapons/clubs/club-banded-steel.webp"
 };
 const PANEL_UNARMED_FLAG_KEY = "generatedUnarmedAction";
 const PANEL_UNARMED_ACTION_ID = "unarmed";
 const PANEL_UNARMED_CLEANUP_POLL_MS = 250;
 const PANEL_UNARMED_CLEANUP_MAX_WAIT_MS = AUTO_APPLY_WAIT_MS + AUTO_DEFENCE_WAIT_MS + 4000;
 const PANEL_UNARMED_OPPOSED_DISCOVERY_GRACE_MS = 2000;
+const PANEL_REORDERABLE_GROUP_KEYS = new Set(["manoeuvre", "recover", "actions", "attacks", "magic"]);
 const {
   moduleId: MODULE_ID,
   settings: MODULE_SETTINGS,
@@ -228,6 +232,29 @@ function getControlPanelState() {
   return game[PANEL_STATE_KEY];
 }
 
+function resolvePanelButtonOrderScope(token = null) {
+  const tokenUuid = String(token?.document?.uuid ?? token?.document?.id ?? token?.id ?? "").trim();
+  if (tokenUuid) return `token:${tokenUuid}`;
+  const actorUuid = String(token?.actor?.uuid ?? token?.document?.actor?.uuid ?? "").trim();
+  if (actorUuid) return `actor:${actorUuid}`;
+  return "global";
+}
+
+function getPanelButtonOrderStorageKey(scope = "global") {
+  const rawScope = String(scope ?? "global").trim() || "global";
+  return `${PANEL_BUTTON_ORDER_LOCAL_STORAGE_KEY}:${rawScope}`;
+}
+
+
+function getPanelReorderUnlockedStorageKey(scope = "global") {
+  const rawScope = String(scope ?? "global").trim() || "global";
+  return `${PANEL_REORDER_UNLOCKED_LOCAL_STORAGE_KEY}:${rawScope}`;
+}
+function getCurrentPanelButtonOrderScope() {
+  const controlPanelState = getControlPanelState();
+  return String(controlPanelState?.buttonOrderScope ?? "global").trim() || "global";
+}
+
 function clampPanelCoordinate(value, min, max) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return min;
@@ -263,6 +290,243 @@ function writeSavedPanelPosition(panelElement) {
   }
 }
 
+function toPanelButtonKey(groupKey, itemId) {
+  const group = String(groupKey ?? "").trim();
+  const id = String(itemId ?? "").trim();
+  if (!group || !id) return "";
+  return `${group}:${id}`;
+}
+
+function parsePanelButtonKey(value) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+  const separatorIndex = raw.indexOf(":");
+  if (separatorIndex <= 0 || separatorIndex >= raw.length - 1) return null;
+  const groupKey = raw.slice(0, separatorIndex).trim();
+  const itemId = raw.slice(separatorIndex + 1).trim();
+  if (!groupKey || !itemId) return null;
+  return { groupKey, itemId };
+}
+
+function isSyntheticEmptySlotKey(value) {
+  const parsed = parsePanelButtonKey(value);
+  if (!parsed) return false;
+  return String(parsed.itemId ?? "").startsWith("empty-slot-");
+}
+
+function getDefaultPanelButtonKeyOrder() {
+  const preferredSequence = [
+    ["manoeuvre", "charge"],
+    ["manoeuvre", "run"],
+    ["manoeuvre", "moveQuietly"],
+    ["manoeuvre", "moveCarefully"],
+    ["recover", "recover"],
+    ["recover", "treat"],
+    ["actions", "help"],
+    ["recover", "condition"],
+    ["actions", "defence"],
+    ["actions", "aim"],
+    ["attacks", PANEL_UNARMED_ACTION_ID],
+    ["actions", "improvise"]
+  ];
+  return preferredSequence
+    .map(([groupKey, itemId]) => toPanelButtonKey(groupKey, itemId))
+    .filter(Boolean);
+}
+
+function readSavedPanelButtonKeyOrder(scope = "global") {
+  try {
+    const raw = window.localStorage.getItem(getPanelButtonOrderStorageKey(scope));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+    const keys = parsed
+      .map((entry) => String(entry ?? "").trim())
+      .filter((entry) => !!parsePanelButtonKey(entry));
+    return keys.length ? Array.from(new Set(keys)) : null;
+  } catch (_error) {
+    return null;
+  }
+}
+function writeSavedPanelButtonKeyOrder(buttonKeys, scope = "global") {
+  if (!Array.isArray(buttonKeys)) return;
+  const keys = buttonKeys
+    .map((entry) => String(entry ?? "").trim())
+    .filter((entry) => !!parsePanelButtonKey(entry));
+  if (!keys.length) return;
+  try {
+    window.localStorage.setItem(getPanelButtonOrderStorageKey(scope), JSON.stringify(Array.from(new Set(keys))));
+  } catch (_error) {
+    // Ignore storage errors.
+  }
+}
+
+function clearSavedPanelButtonKeyOrder(scope = "global") {
+  try {
+    window.localStorage.removeItem(getPanelButtonOrderStorageKey(scope));
+  } catch (_error) {
+    // Ignore storage errors.
+  }
+}
+function readSavedPanelReorderUnlocked(scope = "global") {
+  try {
+    return window.localStorage.getItem(getPanelReorderUnlockedStorageKey(scope)) === "true";
+  } catch (_error) {
+    return false;
+  }
+}
+
+function writeSavedPanelReorderUnlocked(unlocked, scope = "global") {
+  try {
+    if (unlocked) window.localStorage.setItem(getPanelReorderUnlockedStorageKey(scope), "true");
+    else window.localStorage.removeItem(getPanelReorderUnlockedStorageKey(scope));
+  } catch (_error) {
+    // Ignore storage errors.
+  }
+}
+
+function isPanelButtonReorderUnlocked() {
+  const controlPanelState = getControlPanelState();
+  return !!controlPanelState?.buttonReorderUnlocked;
+}
+
+function getPanelReorderToggleTooltipData(unlocked) {
+  if (unlocked) {
+    return {
+      title: "Button Order: Unlocked",
+      description: "<em>Drag and drop enabled.</em><br><br>Click to lock button order."
+    };
+  }
+  return {
+    title: "Button Order: Locked",
+    description: "<em>Buttons execute their actions.</em><br><br>Click to unlock and rearrange buttons."
+  };
+}
+
+function syncPanelReorderToggleButton(panelElement) {
+  if (!(panelElement instanceof HTMLElement)) return;
+  const button = panelElement.querySelector("[data-action='toggle-button-reorder']");
+  if (!(button instanceof HTMLButtonElement)) return;
+  const unlocked = isPanelButtonReorderUnlocked();
+  const tooltipData = getPanelReorderToggleTooltipData(unlocked);
+  button.dataset.state = unlocked ? "unlocked" : "locked";
+  button.setAttribute("aria-pressed", unlocked ? "true" : "false");
+  button.setAttribute("aria-label", unlocked ? "Lock button order" : "Unlock button order");
+  button.dataset.tooltipTitle = tooltipData.title;
+  button.dataset.tooltipDescription = tooltipData.description;
+  button.removeAttribute("title");
+  panelElement.classList.toggle("is-reorder-unlocked", unlocked);
+  const icon = button.querySelector(".tow-combat-overlay-control-panel__reorder-toggle-icon");
+  if (icon instanceof HTMLElement) icon.textContent = unlocked ? "U" : "L";
+}
+
+function bindPanelReorderToggle(panelElement) {
+  if (!(panelElement instanceof HTMLElement)) return;
+  const button = panelElement.querySelector("[data-action='toggle-button-reorder']");
+  if (!(button instanceof HTMLButtonElement)) return;
+  bindPanelTooltipEvent(button, () => getPanelReorderToggleTooltipData(isPanelButtonReorderUnlocked()));
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const controlPanelState = getControlPanelState();
+    if (!controlPanelState) return;
+    const scope = getCurrentPanelButtonOrderScope();
+    const unlocked = !isPanelButtonReorderUnlocked();
+    controlPanelState.buttonReorderUnlocked = unlocked;
+    writeSavedPanelReorderUnlocked(unlocked, scope);
+    syncPanelReorderToggleButton(panelElement);
+  });
+  syncPanelReorderToggleButton(panelElement);
+}
+
+
+function bindPanelReorderReset(panelElement) {
+  if (!(panelElement instanceof HTMLElement)) return;
+  const button = panelElement.querySelector("[data-action='reset-button-order']");
+  if (!(button instanceof HTMLButtonElement)) return;
+  const tooltipTitle = "Reset Button Order";
+  const tooltipDescription = "Reset the selected token action buttons to default order.";
+  button.dataset.tooltipTitle = tooltipTitle;
+  button.dataset.tooltipDescription = tooltipDescription;
+  button.removeAttribute("title");
+  bindPanelTooltipEvent(button, () => ({ title: tooltipTitle, description: tooltipDescription }));
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const scope = getCurrentPanelButtonOrderScope();
+    clearSavedPanelButtonKeyOrder(scope);
+    const controlPanelState = getControlPanelState();
+    if (controlPanelState?.element instanceof HTMLElement) {
+      updateSelectionDisplay(controlPanelState.element);
+    }
+  });
+}
+function movePanelButtonKeyBeforeTarget(sourceKey, targetKey) {
+  const source = String(sourceKey ?? "").trim();
+  const target = String(targetKey ?? "").trim();
+  if (!source || !target || source === target) return false;
+
+  const scope = getCurrentPanelButtonOrderScope();
+  const defaultOrder = getDefaultPanelButtonKeyOrder();
+  const savedOrder = readSavedPanelButtonKeyOrder(scope) ?? [];
+  const merged = Array.from(new Set([...savedOrder, ...defaultOrder]));
+
+  // Allow reordering of runtime/dynamic buttons that are not in default order.
+  if (!merged.includes(source)) merged.push(source);
+  if (!merged.includes(target)) merged.push(target);
+
+  const sourceIndex = merged.indexOf(source);
+  const targetIndex = merged.indexOf(target);
+  if (sourceIndex < 0 || targetIndex < 0) return false;
+
+  // Swap source and target positions for predictable visual drag/drop in a 2-row grid.
+  const temp = merged[sourceIndex];
+  merged[sourceIndex] = merged[targetIndex];
+  merged[targetIndex] = temp;
+
+  // Keep only one synthetic empty-slot anchor to avoid growing extra empty placeholders.
+  const normalized = [];
+  let hasSynthetic = false;
+  for (const key of merged) {
+    const parsed = parsePanelButtonKey(key);
+    if (!parsed) continue;
+    if (isSyntheticEmptySlotKey(key)) {
+      if (hasSynthetic) continue;
+      hasSynthetic = true;
+    }
+    normalized.push(key);
+  }
+
+  writeSavedPanelButtonKeyOrder(normalized, scope);
+  return true;
+}
+function getSlotPanelButtonKey(slotElement) {
+  if (!(slotElement instanceof HTMLElement)) return "";
+  const itemType = String(slotElement.dataset.itemType ?? "").trim();
+  const itemGroup = String(slotElement.dataset.itemGroup ?? "").trim();
+
+  if (itemType === "empty") {
+    const explicitKey = String(slotElement.dataset.itemOrderKey ?? "").trim();
+    if (explicitKey && parsePanelButtonKey(explicitKey)) return explicitKey;
+    const fallbackId = String(slotElement.dataset.itemId ?? "").trim() || "empty";
+    return toPanelButtonKey(itemGroup || "all", fallbackId);
+  }
+
+  if (itemType !== "item") return "";
+  if (!PANEL_REORDERABLE_GROUP_KEYS.has(itemGroup)) return "";
+
+  const explicitKey = String(slotElement.dataset.itemOrderKey ?? "").trim();
+  if (explicitKey && parsePanelButtonKey(explicitKey)) return explicitKey;
+
+  const itemId = String(slotElement.dataset.itemId ?? "").trim();
+  return toPanelButtonKey(itemGroup, itemId);
+}
+function isMainActionPanelSlot(slotElement) {
+  if (!(slotElement instanceof HTMLElement)) return false;
+  const gridElement = slotElement.closest(".tow-combat-overlay-control-panel__group-grid[data-item-group='all']");
+  if (!(gridElement instanceof HTMLElement)) return false;
+  return !!getSlotPanelButtonKey(slotElement);
+}
 function getPanelBounds(panelElement) {
   const rect = panelElement.getBoundingClientRect();
   const panelWidth = Math.max(1, Math.round(rect.width || panelElement.offsetWidth || 1));
@@ -374,7 +638,7 @@ function createSelectionPanelElement() {
             </button>
             <button type="button" class="tow-combat-overlay-control-panel__selection-stat-row" data-selection-stat-row="speed">
               <span class="tow-combat-overlay-control-panel__selection-stat-value" data-selection-stat="speed">-</span>
-              <img class="tow-combat-overlay-control-panel__selection-stat-icon" src="${PANEL_FALLBACK_ITEM_ICON}" alt="" />
+              <img class="tow-combat-overlay-control-panel__selection-stat-icon tow-combat-overlay-control-panel__selection-stat-icon--speed" src="${PANEL_SPEED_ICON}" alt="" />
             </button>
             <div class="tow-combat-overlay-control-panel__selection-mini-controls">
               <button
@@ -393,7 +657,7 @@ function createSelectionPanelElement() {
                 aria-label="Dice Modifier"
               >
                 <span class="tow-combat-overlay-control-panel__modifier-text" data-action-label="diceModifier">+0d10</span>
-                <img class="tow-combat-overlay-control-panel__selection-stat-icon" src="${PANEL_DICE_ICON}" alt="" />
+                <img class="tow-combat-overlay-control-panel__selection-stat-icon tow-combat-overlay-control-panel__selection-stat-icon--dice" src="${PANEL_DICE_ICON}" alt="" />
               </button>
             </div>
           </div>
@@ -430,6 +694,7 @@ function syncSelectionPanelPosition(controlPanelState) {
 function bindPanelSlotEvent(slotElement) {
   slotElement.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
+    if (isPanelButtonReorderUnlocked() && isMainActionPanelSlot(slotElement)) return;
     event.preventDefault();
     void handlePanelSlotClick(slotElement, event);
   });
@@ -441,6 +706,60 @@ function bindPanelSlotEvent(slotElement) {
     if (String(slotElement.dataset.itemGroup ?? "") !== "temporaryEffects") return;
     void handlePanelSlotClick(slotElement, event);
   });
+
+  slotElement.draggable = true;
+  slotElement.addEventListener("dragstart", (event) => {    if (!isPanelButtonReorderUnlocked() || !isMainActionPanelSlot(slotElement)) {
+      event.preventDefault();
+      return;
+    }
+    const sourceKey = getSlotPanelButtonKey(slotElement);
+    if (!sourceKey) {
+      event.preventDefault();
+      return;
+    }
+    const controlPanelState = getControlPanelState();
+    if (controlPanelState) controlPanelState.draggedPanelButtonKey = sourceKey;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", sourceKey);
+    }
+  });
+
+  slotElement.addEventListener("dragover", (event) => {    if (!isPanelButtonReorderUnlocked() || !isMainActionPanelSlot(slotElement)) return;
+    const targetKey = getSlotPanelButtonKey(slotElement);
+    if (!targetKey) return;
+    const controlPanelState = getControlPanelState();
+    const sourceKey = String(
+      controlPanelState?.draggedPanelButtonKey
+      ?? event.dataTransfer?.getData("text/plain")
+      ?? ""
+    ).trim();
+    if (!sourceKey || sourceKey === targetKey) return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+  });
+
+  slotElement.addEventListener("drop", (event) => {    if (!isPanelButtonReorderUnlocked() || !isMainActionPanelSlot(slotElement)) return;
+    const targetKey = getSlotPanelButtonKey(slotElement);
+    const controlPanelState = getControlPanelState();
+    const sourceKey = String(
+      controlPanelState?.draggedPanelButtonKey
+      ?? event.dataTransfer?.getData("text/plain")
+      ?? ""
+    ).trim();
+    if (!sourceKey || !targetKey || sourceKey === targetKey) return;
+    event.preventDefault();
+    if (!movePanelButtonKeyBeforeTarget(sourceKey, targetKey)) return;
+    if (controlPanelState?.element instanceof HTMLElement) {
+      updateSelectionDisplay(controlPanelState.element);
+    }
+  });
+
+  slotElement.addEventListener("dragend", () => {
+    const controlPanelState = getControlPanelState();
+    if (controlPanelState) controlPanelState.draggedPanelButtonKey = "";
+  });
+
   const onShowTooltip = (event) => {
     const title = String(slotElement.dataset.tooltipTitle ?? "").trim();
     const description = String(slotElement.dataset.tooltipDescription ?? "").trim();
@@ -461,7 +780,6 @@ function bindPanelSlotEvent(slotElement) {
   slotElement.addEventListener("pointerleave", onHideTooltip);
   slotElement.addEventListener("pointercancel", onHideTooltip);
 }
-
 function bindPanelTooltipEvent(targetElement, getTooltipData) {
   if (!(targetElement instanceof HTMLElement) || typeof getTooltipData !== "function") return;
   const onShowTooltip = (event) => {
@@ -527,7 +845,6 @@ function clearPanelAttackPickMode() {
 
   delete controlPanelState.pendingAttackPick;
 }
-
 async function runPanelAttackOnTarget(sourceToken, targetToken, attackItem, { autoRoll = true } = {}) {
   const sourceActor = sourceToken?.actor ?? sourceToken?.document?.actor ?? null;
   if (!sourceActor || !targetToken || !attackItem) return;
@@ -1007,8 +1324,12 @@ function startPanelHelpPickMode(panelElement, slotElement, sourceToken, originEv
 }
 
 async function handlePanelSlotClick(slotElement, event) {
-  const itemGroup = String(slotElement.dataset.itemGroup ?? "");
-  const itemId = String(slotElement.dataset.itemId ?? "");
+  const rawItemGroup = String(slotElement.dataset.itemGroup ?? "").trim();
+  const rawItemId = String(slotElement.dataset.itemId ?? "").trim();
+  const orderKey = String(slotElement.dataset.itemOrderKey ?? "").trim();
+  const parsedOrderKey = parsePanelButtonKey(orderKey);
+  const itemGroup = rawItemGroup || String(parsedOrderKey?.groupKey ?? "").trim();
+  const itemId = rawItemId || String(parsedOrderKey?.itemId ?? "").trim();
   if (itemGroup === "temporaryEffects" && itemId) {
     if (event?.button !== 2) return;
     const actor = getSingleControlledActor();
@@ -1106,6 +1427,16 @@ async function handlePanelSlotClick(slotElement, event) {
     return;
   }
 
+  if ((itemGroup === "magic" || itemGroup === "abilities") && itemId) {
+    const actor = getSingleControlledActor();
+    const sourceItemName = String(slotElement.dataset.itemName ?? "").trim().toLowerCase();
+    const item = actor?.items?.get?.(itemId)
+      ?? actor?.items?.find?.((entry) => String(entry?.name ?? "").trim().toLowerCase() === sourceItemName)
+      ?? null;
+    if (item?.sheet?.render) item.sheet.render(true);
+    return;
+  }
+
   if (itemGroup !== "attacks" || !itemId) return;
 
   const sourceToken = getSingleControlledToken();
@@ -1145,7 +1476,10 @@ async function handlePanelSlotClick(slotElement, event) {
     return;
   }
 
-  const attackItem = sourceActor.items?.get?.(itemId) ?? null;
+  const slotItemName = String(slotElement.dataset.itemName ?? "").trim().toLowerCase();
+  const attackItem = sourceActor.items?.get?.(itemId)
+    ?? sourceActor.items?.find?.((item) => String(item?.name ?? "").trim().toLowerCase() === slotItemName)
+    ?? null;
   if (!attackItem) return;
   const altHeld = towCombatOverlayIsAltModifier(event);
   const shiftHeld = towCombatOverlayIsShiftModifier(event);
@@ -1174,8 +1508,11 @@ async function runDefaultPanelActorAction(actor, actionKey) {
   if (!actor || !key) return;
 
   const runWithActionRollContext = async (callback) => withPatchedActionSkillTestContext(actor, callback);
+  const normalizedKey = key.toLowerCase();
 
-  if (typeof actor?.system?.doAction === "function") {
+  // Old World core can throw on improvise when invoked through doAction().
+  // Prefer ActionUse/script path for improvise to avoid invalid ActiveEffect payload.
+  if (normalizedKey !== "improvise" && typeof actor?.system?.doAction === "function") {
     await runWithActionRollContext(() => actor.system.doAction(key));
     return;
   }
@@ -1848,7 +2185,12 @@ function toReadableTypeLabel(rawType) {
 }
 
 function getPrimaryTokenName(token) {
-  return String(token?.name ?? token?.document?.name ?? token?.actor?.name ?? "Selected token").trim();
+  const actor = token?.document?.actor ?? token?.actor ?? null;
+  const actorName = String(actor?.name ?? "").trim();
+  const nameplateName = String(token?.nameplate?.text ?? "").trim();
+  const documentName = String(token?.document?.name ?? "").trim();
+  const fallbackName = String(token?.name ?? actorName ?? "").trim();
+  return actorName || nameplateName || documentName || fallbackName || "Selected token";
 }
 
 function getPrimaryTokenTypeLabel(token) {
@@ -2121,7 +2463,7 @@ function applyGroupGridLayout(panelElement, groupKey, slotCount) {
   const { columns, rows } = resolveDynamicGridLayout(slotCount);
   gridElement.style.gridTemplateColumns = `repeat(${columns}, var(--tow-control-panel-slot-size))`;
   gridElement.style.gridTemplateRows = `repeat(${rows}, var(--tow-control-panel-slot-size))`;
-  gridElement.style.gridAutoFlow = "";
+  gridElement.style.gridAutoFlow = "column";
 }
 
 function updateGroupSlots(panelElement, groupKey, groupItems = []) {
@@ -2138,7 +2480,12 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
   }
 
   applyGroupGridLayout(panelElement, groupKey, groupItems.length);
-  const slotElements = ensureGroupSlotElements(panelElement, groupKey, groupItems.length);
+  let renderSlotCount = groupItems.length;
+  if (groupKey === "all" && groupItems.length > 1) {
+    const { columns, rows } = resolveDynamicGridLayout(groupItems.length);
+    renderSlotCount = Math.max(groupItems.length, columns * rows);
+  }
+  const slotElements = ensureGroupSlotElements(panelElement, groupKey, renderSlotCount);
   if (!slotElements.length) return;
 
   for (let index = 0; index < slotElements.length; index += 1) {
@@ -2155,10 +2502,13 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
       slotElement.appendChild(image);
     }
 
-    if (!item) {
+    if (!item || item.__empty === true) {
+      const emptyGroupKey = String(item?.panelGroup ?? groupKey ?? "").trim() || groupKey;
+      const emptyOrderKey = String(item?.panelButtonKey ?? "").trim() || toPanelButtonKey(emptyGroupKey, `empty-slot-${index}`);
       slotElement.dataset.itemType = "empty";
-      slotElement.dataset.itemGroup = groupKey;
+      slotElement.dataset.itemGroup = emptyGroupKey;
       slotElement.dataset.itemId = "";
+      slotElement.dataset.itemOrderKey = emptyOrderKey;
       slotElement.dataset.tooltipTitle = "";
       slotElement.dataset.tooltipDescription = "";
       slotElement.setAttribute("aria-label", `Slot ${index + 1}`);
@@ -2169,22 +2519,25 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
       continue;
     }
 
+    const resolvedGroupKey = String(item?.panelGroup ?? groupKey ?? "").trim() || groupKey;
     const itemName = String(item?.name ?? `Item ${index + 1}`).trim();
     const itemDescription = normalizeItemDescription(item);
     const itemImage = String(item?.img ?? "").trim() || PANEL_FALLBACK_ITEM_ICON;
     slotElement.dataset.itemType = "item";
-    slotElement.dataset.itemGroup = groupKey;
+    slotElement.dataset.itemGroup = resolvedGroupKey;
     slotElement.dataset.itemId = String(item?.id ?? "");
+    slotElement.dataset.itemName = itemName;
+    slotElement.dataset.itemOrderKey = String(item?.panelButtonKey ?? toPanelButtonKey(resolvedGroupKey, item?.id));
     slotElement.dataset.tooltipTitle = itemName;
     const itemKey = String(item?.id ?? "").trim().toLowerCase();
-    if (groupKey === "attacks") {
+    if (resolvedGroupKey === "attacks") {
       const attackHint = itemKey === PANEL_UNARMED_ACTION_ID
         ? "<em>Click: pick target then auto-roll unarmed attack (Brawn vs Endurance). Shift+click: self auto-roll. Alt+click: pick target then open default attack dialog. Alt+Shift+click: open default self-roll dialog.</em>"
         : "<em>Click: pick target, then auto-roll attack. Shift+click: auto-roll self attack. Alt+click: pick target, then open default Foundry attack dialog (no auto-roll). Alt+Shift+click: open default Foundry self-roll dialog (no auto-roll).</em>";
       slotElement.dataset.tooltipDescription = itemDescription
         ? `${attackHint}<br><br>${itemDescription}`
         : attackHint;
-    } else if (groupKey === "actions") {
+    } else if (resolvedGroupKey === "actions") {
       let actionsHint = "<em>Click: auto-flow action (auto-roll / auto-pick first). Alt+click: default Foundry action dialogs.</em>";
       if (itemKey === "aim") {
         actionsHint = "<em>Click: pick target then auto-roll. Shift+click: self auto-roll. Alt+click: pick target then manual dialog. Alt+Shift+click: self manual dialog.</em>";
@@ -2196,22 +2549,22 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
         actionsHint = "<em>Click: auto defence. Alt+click: manual defence selection dialog.</em>";
       }
       slotElement.dataset.tooltipDescription = itemDescription ? `${actionsHint}<br><br>${itemDescription}` : actionsHint;
-    } else if (groupKey === "recover") {
+    } else if (resolvedGroupKey === "recover") {
       const recoverHint = "<em>Click: run selected Recover action with auto flow. Alt+click: open default Recover chooser dialog.</em>";
       slotElement.dataset.tooltipDescription = itemDescription
         ? `${recoverHint}<br><br>${itemDescription}`
         : recoverHint;
-    } else if (groupKey === "manoeuvre") {
+    } else if (resolvedGroupKey === "manoeuvre") {
       const manoeuvreHint = "<em>Click: auto-roll manoeuvre checks (no dialogs). Alt+click: default Foundry manoeuvre flow (with dialogs).</em>";
       slotElement.dataset.tooltipDescription = itemDescription
         ? `${manoeuvreHint}<br><br>${itemDescription}`
         : manoeuvreHint;
-    } else if (groupKey === "temporaryEffects") {
+    } else if (resolvedGroupKey === "temporaryEffects") {
       const infoHint = "<em>Right click: remove temporary effect.</em>";
       slotElement.dataset.tooltipDescription = itemDescription
         ? `${infoHint}<br><br>${itemDescription}`
         : infoHint;
-    } else if (groupKey === "abilities" || groupKey === "magic") {
+    } else if (resolvedGroupKey === "abilities" || resolvedGroupKey === "magic") {
       const infoHint = "<em>Reference only in this panel (no quick click action).</em>";
       slotElement.dataset.tooltipDescription = itemDescription
         ? `${infoHint}<br><br>${itemDescription}`
@@ -2226,21 +2579,106 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
     if (iconPlaceholder instanceof HTMLElement) iconPlaceholder.style.display = "none";
   }
 }
-
 function updatePanelSlots(panelElement, token = null) {
   const actor = token?.actor ?? token?.document?.actor ?? null;
   const groups = actor
     ? getPanelItemGroupsForActor(actor)
     : { actions: [], attacks: [], abilities: [], temporaryEffects: [], manoeuvre: [], recover: [], magic: [] };
-  updateGroupSlots(panelElement, "actions", groups.actions);
-  updateGroupSlots(panelElement, "attacks", groups.attacks);
+  const buttonOrderScope = resolvePanelButtonOrderScope(token);
+  const controlPanelState = getControlPanelState();
+  if (controlPanelState) controlPanelState.buttonOrderScope = buttonOrderScope;
+  const reorderUnlocked = readSavedPanelReorderUnlocked(buttonOrderScope);
+  if (controlPanelState) controlPanelState.buttonReorderUnlocked = reorderUnlocked;
+  syncPanelReorderToggleButton(panelElement);
+
+  const groupKeys = ["manoeuvre", "recover", "actions", "attacks", "magic"];
+  const groupedItems = Object.fromEntries(groupKeys.map((key) => {
+    const items = Array.isArray(groups[key]) ? groups[key] : [];
+    const normalizedItems = items
+      .filter(Boolean)
+      .map((item, index) => {
+        const stableId = String(item?.id ?? item?.key ?? item?.name ?? `${key}-${index}`).trim();
+        const panelButtonKey = toPanelButtonKey(key, stableId);
+        return {
+          ...item,
+          panelGroup: key,
+          panelButtonKey
+        };
+      });
+    return [key, normalizedItems];
+  }));
+
+  const keyToItem = new Map();
+  for (const groupKey of groupKeys) {
+    const items = groupedItems[groupKey] ?? [];
+    for (const item of items) {
+      const buttonKey = String(item?.panelButtonKey ?? "").trim();
+      if (!buttonKey) continue;
+      keyToItem.set(buttonKey, item);
+    }
+  }
+
+  const defaultLayoutKeys = getDefaultPanelButtonKeyOrder()
+    .map((key) => String(key ?? "").trim())
+    .filter((key) => !!parsePanelButtonKey(key))
+    .filter((key) => !isSyntheticEmptySlotKey(key));
+  const defaultLayoutKeySet = new Set(defaultLayoutKeys);
+
+  const savedLayoutKeysRaw = (readSavedPanelButtonKeyOrder(buttonOrderScope) ?? [])
+    .map((key) => String(key ?? "").trim())
+    .filter((key) => !!parsePanelButtonKey(key));
+  const savedLayoutKeys = [];
+  let hasSyntheticSavedKey = false;
+  for (const key of savedLayoutKeysRaw) {
+    if (isSyntheticEmptySlotKey(key)) {
+      if (hasSyntheticSavedKey) continue;
+      hasSyntheticSavedKey = true;
+      savedLayoutKeys.push(key);
+      continue;
+    }
+    if (defaultLayoutKeySet.has(key) || keyToItem.has(key)) savedLayoutKeys.push(key);
+  }
+
+  const layoutKeys = Array.from(new Set([
+    ...savedLayoutKeys,
+    ...defaultLayoutKeys
+  ]));
+
+  const flattenedItems = [];
+  const consumedKeys = new Set();
+  for (const buttonKey of layoutKeys) {
+    const key = String(buttonKey ?? "").trim();
+    if (!key || consumedKeys.has(key)) continue;
+    const item = keyToItem.get(key) ?? null;
+    if (item) {
+      flattenedItems.push(item);
+    } else if (defaultLayoutKeySet.has(key) || isSyntheticEmptySlotKey(key)) {
+      const parsed = parsePanelButtonKey(key);
+      flattenedItems.push({
+        __empty: true,
+        panelButtonKey: key,
+        panelGroup: String(parsed?.groupKey ?? "all")
+      });
+    }
+    consumedKeys.add(key);
+  }
+
+  // Preserve behavior for dynamic/runtime buttons not part of saved/default layout yet.
+  const fallbackGroupOrder = ["manoeuvre", "recover", "actions", "attacks", "magic"];
+  for (const key of fallbackGroupOrder) {
+    const items = Array.isArray(groupedItems[key]) ? groupedItems[key] : [];
+    for (const item of items) {
+      const itemKey = String(item?.panelButtonKey ?? "").trim();
+      if (itemKey && consumedKeys.has(itemKey)) continue;
+      flattenedItems.push(item);
+      if (itemKey) consumedKeys.add(itemKey);
+    }
+  }
+
+  updateGroupSlots(panelElement, "all", flattenedItems);
   updateGroupSlots(panelElement, "abilities", groups.abilities);
   updateGroupSlots(panelElement, "temporaryEffects", groups.temporaryEffects);
-  updateGroupSlots(panelElement, "manoeuvre", groups.manoeuvre);
-  updateGroupSlots(panelElement, "recover", groups.recover);
-  updateGroupSlots(panelElement, "magic", groups.magic);
 }
-
 function updateStatusDisplay(panelElement, token = null) {
   const statusElements = Array.from(panelElement?.querySelectorAll?.(".tow-combat-overlay-control-panel__status-icon[data-status-id]") ?? []);
   if (!statusElements.length) return;
@@ -2339,6 +2777,8 @@ function updateSelectionDisplay(panelElement) {
 function bindPanelSelectionSync(controlPanelState, panelElement) {
   const onControlToken = () => updateSelectionDisplay(panelElement);
   const onCanvasReady = () => updateSelectionDisplay(panelElement);
+  const onRefreshToken = () => updateSelectionDisplay(panelElement);
+  const onUpdateToken = () => updateSelectionDisplay(panelElement);
   const onUpdateActor = () => updateSelectionDisplay(panelElement);
   const onCreateItem = () => updateSelectionDisplay(panelElement);
   const onUpdateItem = () => updateSelectionDisplay(panelElement);
@@ -2348,6 +2788,8 @@ function bindPanelSelectionSync(controlPanelState, panelElement) {
   const onDeleteActiveEffect = () => updateSelectionDisplay(panelElement);
   const controlTokenHookId = Hooks.on("controlToken", onControlToken);
   const canvasReadyHookId = Hooks.on("canvasReady", onCanvasReady);
+  const refreshTokenHookId = Hooks.on("refreshToken", onRefreshToken);
+  const updateTokenHookId = Hooks.on("updateToken", onUpdateToken);
   const updateActorHookId = Hooks.on("updateActor", onUpdateActor);
   const createItemHookId = Hooks.on("createItem", onCreateItem);
   const updateItemHookId = Hooks.on("updateItem", onUpdateItem);
@@ -2358,6 +2800,8 @@ function bindPanelSelectionSync(controlPanelState, panelElement) {
 
   controlPanelState.controlTokenHookId = controlTokenHookId;
   controlPanelState.canvasReadyHookId = canvasReadyHookId;
+  controlPanelState.refreshTokenHookId = refreshTokenHookId;
+  controlPanelState.updateTokenHookId = updateTokenHookId;
   controlPanelState.updateActorHookId = updateActorHookId;
   controlPanelState.createItemHookId = createItemHookId;
   controlPanelState.updateItemHookId = updateItemHookId;
@@ -2367,6 +2811,8 @@ function bindPanelSelectionSync(controlPanelState, panelElement) {
   controlPanelState.deleteActiveEffectHookId = deleteActiveEffectHookId;
   controlPanelState.onControlToken = onControlToken;
   controlPanelState.onCanvasReady = onCanvasReady;
+  controlPanelState.onRefreshToken = onRefreshToken;
+  controlPanelState.onUpdateToken = onUpdateToken;
   controlPanelState.onUpdateActor = onUpdateActor;
   controlPanelState.onCreateItem = onCreateItem;
   controlPanelState.onUpdateItem = onUpdateItem;
@@ -2463,6 +2909,9 @@ function removeStaleControlPanels() {
 export async function towCombatOverlayEnsureControlPanel() {
   const controlPanelState = getControlPanelState();
   if (!controlPanelState) return;
+  if (typeof controlPanelState.buttonReorderUnlocked !== "boolean") {
+    controlPanelState.buttonReorderUnlocked = readSavedPanelReorderUnlocked();
+  }
 
   const hasMainPanel = controlPanelState.element instanceof HTMLElement && controlPanelState.element.isConnected;
   const hasSelectionPanel = controlPanelState.selectionElement instanceof HTMLElement && controlPanelState.selectionElement.isConnected;
@@ -2480,6 +2929,8 @@ export async function towCombatOverlayEnsureControlPanel() {
   selectionPanelElement.style.visibility = "";
 
   bindPanelActionControls(panelElement);
+  bindPanelReorderToggle(panelElement);
+  bindPanelReorderReset(panelElement);
   bindPanelActionControls(selectionPanelElement);
   bindSelectionPanelStatEvents(selectionPanelElement);
   bindSelectionNameTooltipEvent(selectionPanelElement);
@@ -2504,6 +2955,8 @@ export function towCombatOverlayRemoveControlPanel() {
   const onResize = controlPanelState?.onResize;
   const controlTokenHookId = controlPanelState?.controlTokenHookId;
   const canvasReadyHookId = controlPanelState?.canvasReadyHookId;
+  const refreshTokenHookId = controlPanelState?.refreshTokenHookId;
+  const updateTokenHookId = controlPanelState?.updateTokenHookId;
   const updateActorHookId = controlPanelState?.updateActorHookId;
   const createItemHookId = controlPanelState?.createItemHookId;
   const updateItemHookId = controlPanelState?.updateItemHookId;
@@ -2529,6 +2982,8 @@ export function towCombatOverlayRemoveControlPanel() {
   if (typeof onResize === "function") window.removeEventListener("resize", onResize);
   if (controlTokenHookId != null) Hooks.off("controlToken", controlTokenHookId);
   if (canvasReadyHookId != null) Hooks.off("canvasReady", canvasReadyHookId);
+  if (refreshTokenHookId != null) Hooks.off("refreshToken", refreshTokenHookId);
+  if (updateTokenHookId != null) Hooks.off("updateToken", updateTokenHookId);
   if (updateActorHookId != null) Hooks.off("updateActor", updateActorHookId);
   if (createItemHookId != null) Hooks.off("createItem", createItemHookId);
   if (updateItemHookId != null) Hooks.off("updateItem", updateItemHookId);
@@ -2542,3 +2997,68 @@ export function towCombatOverlayRemoveControlPanel() {
   removeStaleControlPanels();
   if (game && Object.prototype.hasOwnProperty.call(game, PANEL_STATE_KEY)) delete game[PANEL_STATE_KEY];
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

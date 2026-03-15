@@ -105,7 +105,7 @@
 .tow-combat-overlay-selection-panel__main {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 0px;
   width: var(--tow-control-panel-selection-size);
   height: var(--tow-control-panel-selection-size);
 }
@@ -191,13 +191,13 @@
   background: transparent;
   box-shadow: none;
 }
-
 .tow-combat-overlay-control-panel__selection-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: none;
 }
+
 
 .tow-combat-overlay-control-panel__selection-name {
   position: absolute;
@@ -218,13 +218,13 @@
   border-radius: 0;
   border: 0;
   background: transparent;
-  color: #fff5df;
+  color: var(--tow-panel-text);
   font-family: "CaslonPro", var(--font-primary, Signika), serif;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   line-height: 1;
   text-align: center;
-  text-transform: none;
+  text-transform: uppercase;
   letter-spacing: 0;
   text-shadow:
     0 2px 3px rgba(0, 0, 0, 0.98),
@@ -240,6 +240,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-transform: uppercase;
 }
 
 .tow-combat-overlay-control-panel__selection-placeholder {
@@ -250,7 +251,7 @@
   justify-content: center;
   font-family: "CaslonPro", var(--font-primary, Signika), serif;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 400;
   color: #f2e7cc;
   opacity: 0.9;
 }
@@ -437,8 +438,8 @@
 
 .tow-combat-overlay-control-panel__status-abilities .tow-combat-overlay-control-panel__slot:hover,
 .tow-combat-overlay-control-panel__status-abilities .tow-combat-overlay-control-panel__slot:focus-visible {
-  border-color: rgba(238, 233, 220, 0.95);
-  background: rgba(222, 217, 205, 0.68);
+  border: 1px solid rgba(205, 205, 205, 0.7);
+  background: rgba(84, 84, 84, 0.9);
   box-shadow: none;
 }
 
@@ -473,7 +474,6 @@
   font-weight: 700;
   line-height: 1;
   text-align: center;
-  text-transform: none;
   white-space: nowrap;
   pointer-events: none;
 }
@@ -513,6 +513,80 @@
   cursor: grabbing;
 }
 
+.tow-combat-overlay-control-panel__reorder-controls {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  align-self: flex-start;
+}
+
+.tow-combat-overlay-control-panel__reorder-reset {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  min-height: 22px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(188, 188, 188, 0.28);
+  border-radius: 4px;
+  background: rgba(84, 84, 84, 0.75);
+  color: #f2ece0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  cursor: pointer;
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tow-combat-overlay-control-panel__reorder-reset:hover,
+.tow-combat-overlay-control-panel__reorder-reset:focus-visible {
+  background: rgba(104, 104, 104, 0.85);
+}
+.tow-combat-overlay-control-panel__reorder-toggle {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  min-height: 22px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(188, 188, 188, 0.28);
+  border-radius: 4px;
+  background: rgba(84, 84, 84, 0.75);
+  color: #f2ece0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  cursor: pointer;
+  font: inherit;
+}
+
+.tow-combat-overlay-control-panel__reorder-toggle:hover,
+.tow-combat-overlay-control-panel__reorder-toggle:focus-visible {
+  background: rgba(104, 104, 104, 0.85);
+}
+
+.tow-combat-overlay-control-panel__reorder-toggle[data-state="unlocked"] {
+  background: rgba(174, 145, 86, 0.82);
+  border-color: rgba(238, 233, 220, 0.6);
+  color: #2a2319;
+}
+
+.tow-combat-overlay-control-panel__reorder-toggle-icon {
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.tow-combat-overlay-control-panel.is-reorder-unlocked .tow-combat-overlay-control-panel__item-groups .tow-combat-overlay-control-panel__slot {
+  cursor: move;
+}
 .tow-combat-overlay-control-panel__item-groups {
   display: flex;
   align-items: stretch;
@@ -570,7 +644,7 @@
   height: var(--tow-control-panel-slot-size);
   margin: 0;
   padding: 0;
-  border: 1px solid rgba(188, 188, 188, 0.32);
+  border: 1px solid rgba(188, 188, 188, 0.22);
   border-radius: 4px;
   background: var(--tow-panel-slot-bg);
   color: var(--tow-panel-slot-icon);
@@ -583,16 +657,16 @@
 
 .tow-combat-overlay-control-panel__item-groups .tow-combat-overlay-control-panel__slot {
   background: linear-gradient(180deg, rgb(140, 128, 106) 0%, rgb(121, 109, 90) 100%);
-  border-color: rgba(234, 223, 198, 0.38);
+  border-color: rgba(234, 223, 198, 0.24);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .tow-combat-overlay-control-panel__slot[data-item-type="attack"] {
-  border-color: #a77a3d;
+  border-color: rgba(234, 223, 198, 0.24);
 }
 
 .tow-combat-overlay-control-panel__slot[data-item-type="ability"] {
-  border-color: #8f8a7e;
+  border-color: rgba(234, 223, 198, 0.24);
 }
 
 .tow-combat-overlay-control-panel__slot-image {
@@ -608,7 +682,7 @@
   background: var(--tow-panel-slot-bg-hover);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.56),
-    0 0 0 1px rgba(141, 127, 101, 0.28);
+    0 0 0 1px rgba(141, 127, 101, 0.16);
 }
 
 .tow-combat-overlay-control-panel__item-groups .tow-combat-overlay-control-panel__slot:hover,
@@ -616,35 +690,36 @@
   background: linear-gradient(180deg, rgb(157, 144, 120) 0%, rgb(137, 124, 102) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.24),
-    0 0 0 1px rgba(234, 223, 198, 0.32);
+    0 0 0 1px rgba(234, 223, 198, 0.2);
 }
 
 /* Keep utility placeholder groups quieter than core combat item groups. */
 .tow-combat-overlay-control-panel__slot[data-item-group="actions"],
 .tow-combat-overlay-control-panel__slot[data-item-group="manoeuvre"],
 .tow-combat-overlay-control-panel__slot[data-item-group="recover"] {
-  border-color: rgba(238, 233, 220, 0.95);
+  border-color: rgba(238, 233, 220, 0.5);
   background: rgba(222, 217, 205, 0.68);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.52),
-    0 0 0 1px rgba(126, 116, 98, 0.24);
+    0 0 0 1px rgba(126, 116, 98, 0.12);
 }
 
 .tow-combat-overlay-control-panel__slot[data-item-group="attacks"][data-item-id="unarmed"] {
-  border-color: rgba(238, 233, 220, 0.95);
+  border-color: rgba(238, 233, 220, 0.5);
   background: rgba(222, 217, 205, 0.68);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.52),
-    0 0 0 1px rgba(126, 116, 98, 0.24);
+    0 0 0 1px rgba(126, 116, 98, 0.12);
 }
 
 .tow-combat-overlay-control-panel__slot[data-item-group="actions"] .tow-combat-overlay-control-panel__slot-image,
 .tow-combat-overlay-control-panel__slot[data-item-group="manoeuvre"] .tow-combat-overlay-control-panel__slot-image,
 .tow-combat-overlay-control-panel__slot[data-item-group="recover"] .tow-combat-overlay-control-panel__slot-image {
-  width: 90%;
-  height: 90%;
-  opacity: 0.9;
-  filter: saturate(0.6) contrast(0.92);
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  opacity: 1;
+  filter: none;
 }
 
 .tow-combat-overlay-control-panel__slot[data-item-group="actions"]:hover .tow-combat-overlay-control-panel__slot-image,
@@ -653,7 +728,7 @@
 .tow-combat-overlay-control-panel__slot[data-item-group="actions"]:focus-visible .tow-combat-overlay-control-panel__slot-image,
 .tow-combat-overlay-control-panel__slot[data-item-group="manoeuvre"]:focus-visible .tow-combat-overlay-control-panel__slot-image,
 .tow-combat-overlay-control-panel__slot[data-item-group="recover"]:focus-visible .tow-combat-overlay-control-panel__slot-image {
-  opacity: 0.96;
+  opacity: 1;
 }
 
 .tow-combat-overlay-control-panel__slot[data-item-group="actions"]:hover,
@@ -662,22 +737,47 @@
 .tow-combat-overlay-control-panel__slot[data-item-group="actions"]:focus-visible,
 .tow-combat-overlay-control-panel__slot[data-item-group="manoeuvre"]:focus-visible,
 .tow-combat-overlay-control-panel__slot[data-item-group="recover"]:focus-visible {
-  border-color: rgba(238, 233, 220, 0.95);
+  border-color: rgba(238, 233, 220, 0.6);
   background: rgba(222, 217, 205, 0.78);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.56),
-    0 0 0 1px rgba(126, 116, 98, 0.28);
+    0 0 0 1px rgba(126, 116, 98, 0.16);
 }
 
 .tow-combat-overlay-control-panel__slot[data-item-group="attacks"][data-item-id="unarmed"]:hover,
 .tow-combat-overlay-control-panel__slot[data-item-group="attacks"][data-item-id="unarmed"]:focus-visible {
-  border-color: rgba(238, 233, 220, 0.95);
+  border-color: rgba(238, 233, 220, 0.6);
   background: rgba(222, 217, 205, 0.78);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.56),
-    0 0 0 1px rgba(126, 116, 98, 0.28);
+    0 0 0 1px rgba(126, 116, 98, 0.16);
 }
 
+.tow-combat-overlay-control-panel__slot[data-item-type="empty"] {
+  background: #3a3a3a;
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-type="empty"]:hover,
+.tow-combat-overlay-control-panel__slot[data-item-type="empty"]:focus-visible {
+  background: #3a3a3a;
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-type="empty"] .tow-combat-overlay-control-panel__slot-icon {
+  display: block;
+  width: calc(100%);
+  height: calc(100%);
+  min-width: calc(100%);
+  min-height: calc(100%);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: #3a3a3a;
+  box-shadow: none;
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+}
 .tow-combat-overlay-control-panel__slot-icon {
   pointer-events: none;
   min-width: 30px;
@@ -691,7 +791,7 @@
     0 1px 2px rgba(0, 0, 0, 0.18);
   font-family: "CaslonPro", var(--font-primary, Signika), serif;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 400;
   line-height: 1;
   color: #5a5347;
   opacity: 1;
@@ -776,8 +876,10 @@
 .tow-combat-overlay-control-panel__selection-side-stack {
   --tow-control-panel-status-size: 27px;
   --tow-control-panel-status-gap: 4px;
-  --tow-selection-stat-font-size: 16px;
+  --tow-selection-stat-font-size: 15px;
   --tow-selection-stat-gap: 3px;
+  
+  --tow-selection-stat-icon-filter: brightness(0) saturate(100%) invert(90%) sepia(15%) saturate(210%) hue-rotate(357deg) brightness(103%) contrast(92%);
   position: absolute;
   right: 0;
   top: 0;
@@ -790,7 +892,7 @@
   justify-content: space-between;
   gap: var(--tow-selection-stat-gap);
   width: var(--tow-selection-rail-width);
-  padding: 8px 2px 8px 0;
+  padding: 10px 0 10px 0;
   border-radius: 6px 0 0 6px;
   background: linear-gradient(
     270deg,
@@ -799,6 +901,8 @@
     rgba(29, 28, 26, 0.42) 78%,
     rgba(29, 28, 26, 0) 100%
   );
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  color: var(--tow-panel-text);
   pointer-events: auto;
 }
 
@@ -828,11 +932,14 @@
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: #fff5df;
+  color: var(--tow-panel-text);
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: var(--tow-selection-stat-font-size);
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 3px;
+  gap: 5px;
   cursor: pointer;
   box-shadow: none;
   -webkit-tap-highlight-color: transparent;
@@ -866,6 +973,7 @@
   display: inline-block;
   width: auto;
   max-width: none;
+  font-family: inherit;
   font-size: var(--tow-selection-stat-font-size);
   font-weight: 700;
   text-align: right;
@@ -874,10 +982,8 @@
   text-overflow: clip;
   line-height: 1;
   padding: 0;
-  color: #fff5df;
-  text-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.95),
-    0 0 1px rgba(0, 0, 0, 0.9);
+  color: var(--tow-panel-text);
+  text-shadow: none;
 }
 
 .tow-combat-overlay-control-panel__selection-stat-row {
@@ -888,44 +994,47 @@
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: #f6ead3;
+  color: var(--tow-panel-text);
+  font-size: var(--tow-selection-stat-font-size);
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 3px;
+  gap: 5px;
   min-height: 0;
   height: auto;
-  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-family: inherit;
   line-height: 1;
   cursor: default;
 }
 
 .tow-combat-overlay-control-panel__selection-stat-icon {
   display: inline-block;
-  width: 16px;
-  height: 16px;
+  width: 1em;
+  height: 1em;
   object-fit: contain;
   pointer-events: none;
   opacity: 1;
-  filter:
-    brightness(0) saturate(100%)
-    invert(95%) sepia(11%) saturate(622%) hue-rotate(329deg) brightness(106%) contrast(100%)
-    drop-shadow(0 1px 2px rgba(0, 0, 0, 0.95));
+  filter: var(--tow-selection-stat-icon-filter);
   transform: none;
+}
+
+.tow-combat-overlay-control-panel__selection-stat-icon--speed,
+.tow-combat-overlay-control-panel__selection-stat-icon--dice {
+  width: 1em;
+  height: 1em;
 }
 
 .tow-combat-overlay-control-panel__selection-stat-value {
   display: inline-block;
   height: auto;
+  font-family: inherit;
   font-size: var(--tow-selection-stat-font-size);
   font-weight: 700;
-  color: #fff5df;
+  color: var(--tow-panel-text);
   text-align: right;
   white-space: nowrap;
   line-height: 1;
-  text-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.95),
-    0 0 1px rgba(0, 0, 0, 0.9);
+  text-shadow: none;
   transform: none;
 }
 
@@ -933,7 +1042,7 @@
   position: static;
   order: 1;
   cursor: pointer;
-  gap: 3px;
+  gap: 5px;
 }
 
 .tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="wounds"] .tow-combat-overlay-control-panel__selection-stat-icon {
@@ -976,6 +1085,7 @@
   order: 5;
 }
 
+
 .tow-combat-overlay-control-panel__selection-stat-row:focus,
 .tow-combat-overlay-control-panel__selection-stat-row:focus-visible,
 .tow-combat-overlay-control-panel__selection-stat-row:active {
@@ -1013,3 +1123,26 @@
 .tow-combat-overlay-control-panel__slot {
   outline: none !important;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
