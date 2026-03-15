@@ -571,9 +571,9 @@
 }
 
 .tow-combat-overlay-control-panel__reorder-toggle[data-state="unlocked"] {
-  background: rgba(174, 145, 86, 0.82);
-  border-color: rgba(238, 233, 220, 0.6);
-  color: #2a2319;
+  background: #e9dfcc;
+  border-color: #c9bda6;
+  color: #3a3328;
 }
 
 .tow-combat-overlay-control-panel__reorder-toggle-icon {

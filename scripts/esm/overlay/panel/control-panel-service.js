@@ -219,10 +219,9 @@ function getConditionTooltipData(conditionId) {
   const shortDescription = localizedDescription
     ? (localizedDescription.split(/(?<=[.!?])\s+/)[0] ?? localizedDescription).trim()
     : "";
-  const hint = "<em>Click: apply/remove status</em>";
   return {
     title: String(name || "Condition"),
-    description: shortDescription ? `${hint}<br><br>${shortDescription}` : hint
+    description: shortDescription
   };
 }
 
@@ -394,12 +393,12 @@ function getPanelReorderToggleTooltipData(unlocked) {
   if (unlocked) {
     return {
       title: "Button Order: Unlocked",
-      description: "<em>Drag and drop enabled.</em><br><br>Click to lock button order."
+      description: "<em>Click to lock button order.</em><br><br>Drag and drop is enabled."
     };
   }
   return {
     title: "Button Order: Locked",
-    description: "<em>Buttons execute their actions.</em><br><br>Click to unlock and rearrange buttons."
+    description: "<em>Click to unlock and rearrange buttons.</em><br><br>Drag and drop is disabled."
   };
 }
 
@@ -445,7 +444,7 @@ function bindPanelReorderReset(panelElement) {
   const button = panelElement.querySelector("[data-action='reset-button-order']");
   if (!(button instanceof HTMLButtonElement)) return;
   const tooltipTitle = "Reset Button Order";
-  const tooltipDescription = "Reset the selected token action buttons to default order.";
+  const tooltipDescription = "<em>Click to reset the selected token action buttons to default order.</em>";
   button.dataset.tooltipTitle = tooltipTitle;
   button.dataset.tooltipDescription = tooltipDescription;
   button.removeAttribute("title");
@@ -461,7 +460,21 @@ function bindPanelReorderReset(panelElement) {
     }
   });
 }
-function movePanelButtonKeyBeforeTarget(sourceKey, targetKey) {
+function getVisibleMainPanelButtonKeys(panelElement) {
+  if (!(panelElement instanceof HTMLElement)) return [];
+  const slots = Array.from(
+    panelElement.querySelectorAll(".tow-combat-overlay-control-panel__group-grid[data-item-group='all'] .tow-combat-overlay-control-panel__slot")
+  );
+  if (!slots.length) return [];
+  const keys = [];
+  for (const slot of slots) {
+    const key = getSlotPanelButtonKey(slot);
+    if (!key || !parsePanelButtonKey(key)) continue;
+    keys.push(key);
+  }
+  return keys;
+}
+function movePanelButtonKeyBeforeTarget(sourceKey, targetKey, panelElement = null) {
   const source = String(sourceKey ?? "").trim();
   const target = String(targetKey ?? "").trim();
   if (!source || !target || source === target) return false;
@@ -469,7 +482,8 @@ function movePanelButtonKeyBeforeTarget(sourceKey, targetKey) {
   const scope = getCurrentPanelButtonOrderScope();
   const defaultOrder = getDefaultPanelButtonKeyOrder();
   const savedOrder = readSavedPanelButtonKeyOrder(scope) ?? [];
-  const merged = Array.from(new Set([...savedOrder, ...defaultOrder]));
+  const visibleOrder = getVisibleMainPanelButtonKeys(panelElement);
+  const merged = Array.from(new Set([...visibleOrder, ...savedOrder, ...defaultOrder]));
 
   // Allow reordering of runtime/dynamic buttons that are not in default order.
   if (!merged.includes(source)) merged.push(source);
@@ -484,18 +498,8 @@ function movePanelButtonKeyBeforeTarget(sourceKey, targetKey) {
   merged[sourceIndex] = merged[targetIndex];
   merged[targetIndex] = temp;
 
-  // Keep only one synthetic empty-slot anchor to avoid growing extra empty placeholders.
-  const normalized = [];
-  let hasSynthetic = false;
-  for (const key of merged) {
-    const parsed = parsePanelButtonKey(key);
-    if (!parsed) continue;
-    if (isSyntheticEmptySlotKey(key)) {
-      if (hasSynthetic) continue;
-      hasSynthetic = true;
-    }
-    normalized.push(key);
-  }
+  // Preserve all synthetic empty-slot keys so each visible empty cell can be reordered.
+  const normalized = merged.filter((key) => !!parsePanelButtonKey(key));
 
   writeSavedPanelButtonKeyOrder(normalized, scope);
   return true;
@@ -749,7 +753,8 @@ function bindPanelSlotEvent(slotElement) {
     ).trim();
     if (!sourceKey || !targetKey || sourceKey === targetKey) return;
     event.preventDefault();
-    if (!movePanelButtonKeyBeforeTarget(sourceKey, targetKey)) return;
+    const panelElement = slotElement.closest(".tow-combat-overlay-control-panel") ?? controlPanelState?.element ?? null;
+    if (!movePanelButtonKeyBeforeTarget(sourceKey, targetKey, panelElement)) return;
     if (controlPanelState?.element instanceof HTMLElement) {
       updateSelectionDisplay(controlPanelState.element);
     }
@@ -1653,6 +1658,17 @@ async function runPanelActorAction(actor, actionKey, { autoRoll = true } = {}) {
   await runDefaultPanelActorAction(actor, key);
 }
 
+function getCoreActionDescription(actionData) {
+  return normalizeDescriptionSource(
+    actionData?.description
+    ?? actionData?.summary
+    ?? actionData?.details
+    ?? actionData?.text
+    ?? actionData?.hint
+    ?? ""
+  );
+}
+
 function getPanelActionEntries() {
   const actionsConfig = game?.oldworld?.config?.actions ?? {};
   return PANEL_ACTIONS_ORDER
@@ -1663,7 +1679,7 @@ function getPanelActionEntries() {
           name: "Defence",
           img: PANEL_ACTION_ICON_BY_KEY.defence,
           system: {
-            description: ""
+            description: "Defend against incoming attacks using your available defence options."
           }
         };
       }
@@ -1680,7 +1696,7 @@ function getPanelActionEntries() {
         name: label,
         img: image,
         system: {
-          description: ""
+          description: getCoreActionDescription(action)
         }
       };
     })
@@ -1693,18 +1709,12 @@ function getPanelManoeuvreSubActionEntries() {
   return keys.map((key) => {
     const entry = subActions[key] ?? {};
     const name = String(entry?.label ?? key).trim() || key;
-    const description = String(entry?.description ?? "").trim();
-    const skill = String(entry?.test?.skill ?? "").trim();
-    const descriptionParts = [];
-    if (description) descriptionParts.push(description);
-    if (skill) descriptionParts.push(`Test: ${toReadableTypeLabel(skill)}.`);
-    descriptionParts.push("<em>Click: run manoeuvre action.</em>");
     return {
       id: key,
       name,
       img: PANEL_MANOEUVRE_ICON_BY_KEY[key] ?? PANEL_FALLBACK_ITEM_ICON,
       system: {
-        description: descriptionParts.join(" ")
+        description: getCoreActionDescription(entry)
       }
     };
   });
@@ -1801,14 +1811,18 @@ function getPanelRecoverActionEntries() {
     condition: "Remove Condition"
   };
 
-  return PANEL_RECOVER_ORDER.map((key) => ({
-    id: key,
-    name: labels[key] ?? key,
-    img: PANEL_RECOVER_ICON_BY_KEY[key] ?? PANEL_FALLBACK_ITEM_ICON,
-    system: {
-      description: String(recoverAction?.label ?? "Recover action")
-    }
-  }));
+  return PANEL_RECOVER_ORDER.map((key) => {
+    const subAction = recoverAction?.subActions?.[key] ?? null;
+    const description = getCoreActionDescription(subAction ?? recoverAction);
+    return {
+      id: key,
+      name: labels[key] ?? key,
+      img: PANEL_RECOVER_ICON_BY_KEY[key] ?? PANEL_FALLBACK_ITEM_ICON,
+      system: {
+        description
+      }
+    };
+  });
 }
 
 async function runPanelRecoverAction(actor, subAction, { autoRoll = true } = {}) {
@@ -2565,10 +2579,7 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
         ? `${infoHint}<br><br>${itemDescription}`
         : infoHint;
     } else if (resolvedGroupKey === "abilities" || resolvedGroupKey === "magic") {
-      const infoHint = "<em>Reference only in this panel (no quick click action).</em>";
-      slotElement.dataset.tooltipDescription = itemDescription
-        ? `${infoHint}<br><br>${itemDescription}`
-        : infoHint;
+      slotElement.dataset.tooltipDescription = itemDescription;
     } else {
       slotElement.dataset.tooltipDescription = itemDescription;
     }
@@ -2628,11 +2639,8 @@ function updatePanelSlots(panelElement, token = null) {
     .map((key) => String(key ?? "").trim())
     .filter((key) => !!parsePanelButtonKey(key));
   const savedLayoutKeys = [];
-  let hasSyntheticSavedKey = false;
   for (const key of savedLayoutKeysRaw) {
     if (isSyntheticEmptySlotKey(key)) {
-      if (hasSyntheticSavedKey) continue;
-      hasSyntheticSavedKey = true;
       savedLayoutKeys.push(key);
       continue;
     }
