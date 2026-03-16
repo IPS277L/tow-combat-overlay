@@ -19,14 +19,40 @@ import { runActorOpLock } from "../shared/shared-service.js";
 
 const { logPrefix: MODULE_LOG_PREFIX } = getTowCombatOverlayConstants();
 const WOUND_ITEM_NAME = () => towCombatOverlayLocalize("TOWCOMBATOVERLAY.Item.WoundName", "Wound");
+const LOCAL_WOUND_SYNC_STATE = {
+  deadSyncInFlight: new Set(),
+  deadSyncTimers: new Map(),
+  deadToWoundSyncTimers: new Map(),
+  deadPresenceByActor: new Map()
+};
+
+function getWoundSyncState() {
+  return game?.[MODULE_KEY] ?? LOCAL_WOUND_SYNC_STATE;
+}
+
+function getActorWoundItems(actor) {
+  if (!actor) return [];
+  const collectionWounds = Array.isArray(actor.items?.contents)
+    ? actor.items.contents.filter((item) => item?.type === WOUND_ITEM_TYPE)
+    : [];
+  const typedWounds = Array.isArray(actor.itemTypes?.wound)
+    ? actor.itemTypes.wound.filter((item) => item?.type === WOUND_ITEM_TYPE)
+    : [];
+  if (!collectionWounds.length) return typedWounds;
+  if (!typedWounds.length) return collectionWounds;
+  const byId = new Map();
+  for (const wound of [...collectionWounds, ...typedWounds]) {
+    const key = String(wound?.id ?? wound?._id ?? "");
+    if (!key) continue;
+    if (!byId.has(key)) byId.set(key, wound);
+  }
+  return Array.from(byId.values());
+}
 
 export function towCombatOverlayGetWoundCount(tokenDocument) {
   const actor = tokenDocument?.actor;
   if (!actor) return null;
-  const liveItems = actor.items?.contents ?? [];
-  const itemWounds = Array.isArray(liveItems)
-    ? liveItems.filter((item) => item.type === WOUND_ITEM_TYPE).length
-    : (Array.isArray(actor.itemTypes?.wound) ? actor.itemTypes.wound.length : 0);
+  const itemWounds = getActorWoundItems(actor).length;
   const isMinion = actor.type === "npc" && actor.system?.type === "minion";
   if (isMinion && actor.hasCondition?.("dead")) return Math.max(1, itemWounds);
   return itemWounds;
@@ -34,10 +60,7 @@ export function towCombatOverlayGetWoundCount(tokenDocument) {
 
 export function towCombatOverlayGetActorWoundItemCount(actor) {
   if (!actor) return 0;
-  const items = actor.items?.contents ?? [];
-  if (Array.isArray(items)) return items.filter((item) => item.type === WOUND_ITEM_TYPE).length;
-  if (Array.isArray(actor.itemTypes?.wound)) return actor.itemTypes.wound.length;
-  return 0;
+  return getActorWoundItems(actor).length;
 }
 
 export function towCombatOverlayGetMaxWoundLimit(actor) {
@@ -60,8 +83,7 @@ export async function towCombatOverlaySyncNpcDeadFromWounds(actor) {
   if (!actor || actor.type !== "npc" || !towCombatOverlayCanEditActor(actor)) return;
   if (actor.system?.type === "minion") return;
   if (!actor.system?.hasThresholds || typeof actor.system?.thresholdAtWounds !== "function") return;
-  const state = game[MODULE_KEY];
-  if (!state) return;
+  const state = getWoundSyncState();
   if (!state.deadSyncInFlight) state.deadSyncInFlight = new Set();
 
   const actorKey = actor.uuid ?? actor.id;
@@ -93,8 +115,7 @@ export async function towCombatOverlaySyncNpcDeadFromWounds(actor) {
 
 export function towCombatOverlayQueueDeadSyncFromWounds(actor) {
   if (!actor) return;
-  const state = game[MODULE_KEY];
-  if (!state) return;
+  const state = getWoundSyncState();
   if (!state.deadSyncTimers) state.deadSyncTimers = new Map();
 
   const actorKey = actor.uuid ?? actor.id;
@@ -114,16 +135,11 @@ export function towCombatOverlayQueueDeadSyncFromWounds(actor) {
 
 export async function towCombatOverlaySyncWoundsFromDeadState(actor) {
   if (!actor || !towCombatOverlayCanEditActor(actor)) return;
-  const state = game[MODULE_KEY];
-  if (!state) return;
+  const state = getWoundSyncState();
   if (!state.deadPresenceByActor) state.deadPresenceByActor = new Map();
-  if (!state.deadToWoundSyncSuppressUntil) state.deadToWoundSyncSuppressUntil = new Map();
 
   const actorKey = actor.uuid ?? actor.id;
   if (!actorKey) return;
-  const suppressUntil = Number(state.deadToWoundSyncSuppressUntil.get(actorKey) ?? 0);
-  if (suppressUntil > Date.now()) return;
-  if (suppressUntil > 0) state.deadToWoundSyncSuppressUntil.delete(actorKey);
 
   const hasDead = !!actor.hasCondition?.("dead");
   const wasDead = state.deadPresenceByActor.get(actorKey) === true;
@@ -151,11 +167,11 @@ export async function towCombatOverlaySyncWoundsFromDeadState(actor) {
   await runActorOpLock(actor, "dead-wound-sync", async () => {
     const maxPasses = Math.max(1, towCombatOverlayGetActorWoundItemCount(actor) + 2);
     for (let i = 0; i < maxPasses; i++) {
-      const wounds = (actor.items?.contents ?? []).filter((item) => item.type === WOUND_ITEM_TYPE);
+      const wounds = getActorWoundItems(actor);
       if (!wounds.length) break;
       const toDelete = wounds.find((wound) => wound.system?.treated !== true) ?? wounds[wounds.length - 1];
-      if (!toDelete?.id || !actor.items.get(toDelete.id)) break;
-      await actor.deleteEmbeddedDocuments("Item", [toDelete.id]);
+      if (typeof toDelete?.delete !== "function") break;
+      await toDelete.delete();
     }
   }).catch((error) => {
     console.error(`${MODULE_LOG_PREFIX} Failed to clear wounds after removing dead condition.`, error);
@@ -164,8 +180,7 @@ export async function towCombatOverlaySyncWoundsFromDeadState(actor) {
 
 export function towCombatOverlayQueueWoundSyncFromDeadState(actor) {
   if (!actor) return;
-  const state = game[MODULE_KEY];
-  if (!state) return;
+  const state = getWoundSyncState();
   if (!state.deadToWoundSyncTimers) state.deadToWoundSyncTimers = new Map();
 
   const actorKey = actor.uuid ?? actor.id;
@@ -183,8 +198,7 @@ export function towCombatOverlayQueueWoundSyncFromDeadState(actor) {
 
 export function towCombatOverlayPrimeDeadPresence(actor) {
   if (!actor) return;
-  const state = game[MODULE_KEY];
-  if (!state) return;
+  const state = getWoundSyncState();
   if (!state.deadPresenceByActor) state.deadPresenceByActor = new Map();
   const actorKey = actor.uuid ?? actor.id;
   if (!actorKey || state.deadPresenceByActor.has(actorKey)) return;
@@ -214,42 +228,30 @@ export async function towCombatOverlayRemoveWound(actor) {
     return;
   }
 
-  const state = game[MODULE_KEY];
-  const actorKey = actor?.uuid ?? actor?.id ?? null;
-  if (state && actorKey) {
-    if (!state.deadToWoundSyncSuppressUntil) state.deadToWoundSyncSuppressUntil = new Map();
-    state.deadToWoundSyncSuppressUntil.set(actorKey, Date.now() + 800);
-  }
-
   await runActorOpLock(actor, "remove-wound", async () => {
-    const wounds = (actor.items?.contents ?? []).filter((item) => item.type === WOUND_ITEM_TYPE);
+    const wounds = getActorWoundItems(actor);
     const isMinion = actor.type === "npc" && actor.system?.type === "minion";
-    const hasThresholds = actor.type === "npc" && actor.system?.hasThresholds === true;
-    const cap = hasThresholds ? towCombatOverlayGetMaxWoundLimit(actor) : null;
+    const isThresholdNpc = actor.type === "npc" && actor.system?.hasThresholds === true;
+    const cap = isThresholdNpc ? towCombatOverlayGetMaxWoundLimit(actor) : null;
     if (!wounds.length) {
       if (isMinion && actor.hasCondition?.("dead")) {
         await towCombatOverlayRemoveActorCondition(actor, "dead");
       }
-      if (hasThresholds && actor.hasCondition?.("dead")) {
+      if (isThresholdNpc && actor.hasCondition?.("dead")) {
         await towCombatOverlayRemoveActorCondition(actor, "dead");
       }
       return;
     }
 
     const toDelete = wounds.find((wound) => wound.system?.treated !== true) ?? wounds[wounds.length - 1];
-    if (toDelete?.id && actor.items.get(toDelete.id)) {
-      await actor.deleteEmbeddedDocuments("Item", [toDelete.id]);
-    } else if (typeof toDelete?.delete === "function") {
-      await toDelete.delete();
-    } else {
-      return;
-    }
+    if (typeof toDelete?.delete !== "function") return;
+    await toDelete.delete();
 
     if (isMinion && actor.hasCondition?.("dead")) {
       const remaining = towCombatOverlayGetActorWoundItemCount(actor);
       if (remaining <= 0) await towCombatOverlayRemoveActorCondition(actor, "dead");
     }
-    if (hasThresholds && Number.isFinite(cap) && actor.hasCondition?.("dead")) {
+    if (isThresholdNpc && Number.isFinite(cap) && actor.hasCondition?.("dead")) {
       const remaining = towCombatOverlayGetActorWoundItemCount(actor);
       if (remaining < cap) await towCombatOverlayRemoveActorCondition(actor, "dead");
     }

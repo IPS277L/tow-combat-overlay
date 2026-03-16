@@ -2,10 +2,7 @@ import { towCombatOverlayEnsurePromiseClose } from "../combat/attack-service.js"
 import { registerTowCombatOverlayApi } from "../combat/overlay-api-service.js";
 import { getTowCombatOverlayConstants } from "../runtime/constants.js";
 import { registerTowCombatOverlayActionsRuntimeApi } from "./register-actions-api.js";
-import {
-  registerTowCombatOverlayHooks,
-  unregisterTowCombatOverlayHooks
-} from "./register-overlay-hooks.js";
+import { registerTowCombatOverlayDeadWoundSyncHooks } from "./register-dead-wound-sync-hooks.js";
 import { getTowCombatOverlayOverlayApi } from "./register-public-apis.js";
 import {
   isTowCombatOverlaySettingEnabled,
@@ -106,6 +103,7 @@ export function registerTowCombatOverlayModuleHooks() {
   Hooks.once("ready", () => {
     ensureTowCombatOverlayStylesheetLoaded();
     registerTowCombatOverlayRuntimeApis();
+    registerTowCombatOverlayDeadWoundSyncHooks();
     syncTowCombatOverlayEnabledSetting();
   });
 }

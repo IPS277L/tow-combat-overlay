@@ -68,11 +68,18 @@ function getMaxWoundLimit(actor) {
 
 export async function runActorOpLock(actor, opKey, operation) {
   const state = game[MODULE_KEY];
-  if (!state || !actor || !opKey || typeof operation !== "function") return;
+  if (!actor || !opKey || typeof operation !== "function") return;
+  if (!state) {
+    await operation();
+    return;
+  }
   if (!state.statusRemoveInFlight) state.statusRemoveInFlight = new Set();
   if (!state.statusRemoveQueue) state.statusRemoveQueue = new Map();
   const actorKey = actor.uuid ?? actor.id;
-  if (!actorKey) return;
+  if (!actorKey) {
+    await operation();
+    return;
+  }
 
   const lockKey = `${actorKey}:${String(opKey)}`;
   const queueKey = actorKey;
