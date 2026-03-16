@@ -107,22 +107,37 @@ function towCombatOverlayArmAutoSubmitAbilityDialog(actor, ability) {
   });
 }
 
+function towCombatOverlayArmAutoSubmitWeaponDialog(actor, weapon) {
+  towCombatOverlayArmAutoSubmitDialog({
+    hookName: "renderWeaponDialog",
+    matches: (app) => app?.actor?.id === actor.id && app?.weapon?.id === weapon.id,
+    submitErrorMessage: "WeaponDialog.submit() is unavailable."
+  });
+}
+
 export async function towCombatOverlaySetupAbilityTestWithDamage(actor, ability, { autoRoll = false, context = {} } = {}) {
-  towCombatOverlayArmDamageAppend(actor, ability);
+  const attackItem = ability;
+  const isWeaponAttack = String(attackItem?.type ?? "").trim().toLowerCase() === "weapon";
+  towCombatOverlayArmDamageAppend(actor, attackItem);
   const rollContext = createTowCombatOverlayRollContext(actor, context);
 
   let testRef;
 
   if (autoRoll) {
-    towCombatOverlayArmAutoSubmitAbilityDialog(actor, ability);
-    testRef = await getTowCombatOverlaySystemAdapter().setupAbilityTest(actor, ability, rollContext);
+    if (isWeaponAttack) towCombatOverlayArmAutoSubmitWeaponDialog(actor, attackItem);
+    else towCombatOverlayArmAutoSubmitAbilityDialog(actor, attackItem);
+    testRef = isWeaponAttack
+      ? await getTowCombatOverlaySystemAdapter().setupWeaponTest(actor, attackItem, rollContext)
+      : await getTowCombatOverlaySystemAdapter().setupAbilityTest(actor, attackItem, rollContext);
   } else {
-    testRef = await getTowCombatOverlaySystemAdapter().setupAbilityTest(actor, ability, rollContext);
+    testRef = isWeaponAttack
+      ? await getTowCombatOverlaySystemAdapter().setupWeaponTest(actor, attackItem, rollContext)
+      : await getTowCombatOverlaySystemAdapter().setupAbilityTest(actor, attackItem, rollContext);
   }
 
   if (!testRef) return null;
 
-  const flatDamage = testRef.testData?.damage ?? ability.system.damage?.value ?? 0;
+  const flatDamage = testRef.testData?.damage ?? attackItem?.system?.damage?.value ?? 0;
   const message = await towCombatOverlayWaitForChatMessage(testRef.context?.messageId);
   await towCombatOverlayRenderDamageDisplay(message, { damage: flatDamage });
   return testRef;

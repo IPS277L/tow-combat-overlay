@@ -12,6 +12,14 @@ function createTowCombatOverlaySystemAdapter() {
       return actor.setupAbilityTest(ability, context, options);
     },
 
+    setupWeaponTest(actor, weapon, context = {}, options = {}) {
+      if (!actor || typeof actor.setupWeaponTest !== "function") {
+        ui.notifications.error(MODULE_NOTIFICATIONS.apiUnavailable.abilityTest);
+        return null;
+      }
+      return actor.setupWeaponTest(weapon, context, options);
+    },
+
     setupSkillTest(actor, skill, context = {}) {
       if (!actor || typeof actor.setupSkillTest !== "function") {
         ui.notifications.error(MODULE_NOTIFICATIONS.apiUnavailable.skillTest);

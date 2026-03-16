@@ -117,9 +117,13 @@ export async function towCombatOverlaySyncWoundsFromDeadState(actor) {
   const state = game[MODULE_KEY];
   if (!state) return;
   if (!state.deadPresenceByActor) state.deadPresenceByActor = new Map();
+  if (!state.deadToWoundSyncSuppressUntil) state.deadToWoundSyncSuppressUntil = new Map();
 
   const actorKey = actor.uuid ?? actor.id;
   if (!actorKey) return;
+  const suppressUntil = Number(state.deadToWoundSyncSuppressUntil.get(actorKey) ?? 0);
+  if (suppressUntil > Date.now()) return;
+  if (suppressUntil > 0) state.deadToWoundSyncSuppressUntil.delete(actorKey);
 
   const hasDead = !!actor.hasCondition?.("dead");
   const wasDead = state.deadPresenceByActor.get(actorKey) === true;
@@ -210,23 +214,44 @@ export async function towCombatOverlayRemoveWound(actor) {
     return;
   }
 
+  const state = game[MODULE_KEY];
+  const actorKey = actor?.uuid ?? actor?.id ?? null;
+  if (state && actorKey) {
+    if (!state.deadToWoundSyncSuppressUntil) state.deadToWoundSyncSuppressUntil = new Map();
+    state.deadToWoundSyncSuppressUntil.set(actorKey, Date.now() + 800);
+  }
+
   await runActorOpLock(actor, "remove-wound", async () => {
     const wounds = (actor.items?.contents ?? []).filter((item) => item.type === WOUND_ITEM_TYPE);
     const isMinion = actor.type === "npc" && actor.system?.type === "minion";
+    const hasThresholds = actor.type === "npc" && actor.system?.hasThresholds === true;
+    const cap = hasThresholds ? towCombatOverlayGetMaxWoundLimit(actor) : null;
     if (!wounds.length) {
       if (isMinion && actor.hasCondition?.("dead")) {
+        await towCombatOverlayRemoveActorCondition(actor, "dead");
+      }
+      if (hasThresholds && actor.hasCondition?.("dead")) {
         await towCombatOverlayRemoveActorCondition(actor, "dead");
       }
       return;
     }
 
     const toDelete = wounds.find((wound) => wound.system?.treated !== true) ?? wounds[wounds.length - 1];
-    if (!toDelete?.id || !actor.items.get(toDelete.id)) return;
-    await actor.deleteEmbeddedDocuments("Item", [toDelete.id]);
+    if (toDelete?.id && actor.items.get(toDelete.id)) {
+      await actor.deleteEmbeddedDocuments("Item", [toDelete.id]);
+    } else if (typeof toDelete?.delete === "function") {
+      await toDelete.delete();
+    } else {
+      return;
+    }
 
     if (isMinion && actor.hasCondition?.("dead")) {
       const remaining = towCombatOverlayGetActorWoundItemCount(actor);
       if (remaining <= 0) await towCombatOverlayRemoveActorCondition(actor, "dead");
+    }
+    if (hasThresholds && Number.isFinite(cap) && actor.hasCondition?.("dead")) {
+      const remaining = towCombatOverlayGetActorWoundItemCount(actor);
+      if (remaining < cap) await towCombatOverlayRemoveActorCondition(actor, "dead");
     }
   });
 }

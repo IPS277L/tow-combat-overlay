@@ -26,6 +26,7 @@ import {
   towCombatOverlayCanEditActor,
   towCombatOverlayCopyPoint,
   towCombatOverlayIsAltModifier,
+  towCombatOverlayIsCtrlModifier,
   towCombatOverlayIsShiftModifier,
   towCombatOverlayTokenAtPoint,
   towCombatOverlayWarnNoPermission
@@ -96,6 +97,9 @@ const PANEL_UNARMED_ACTION_ID = "unarmed";
 const PANEL_UNARMED_CLEANUP_POLL_MS = 250;
 const PANEL_UNARMED_CLEANUP_MAX_WAIT_MS = AUTO_APPLY_WAIT_MS + AUTO_DEFENCE_WAIT_MS + 4000;
 const PANEL_UNARMED_OPPOSED_DISCOVERY_GRACE_MS = 2000;
+const PANEL_STAGGER_PATCH_DURATION_MS = AUTO_STAGGER_PATCH_MS + AUTO_APPLY_WAIT_MS + AUTO_DEFENCE_WAIT_MS;
+const PANEL_MAIN_GRID_MIN_COLUMNS = 7;
+const PANEL_MAIN_GRID_MIN_ROWS = 2;
 const PANEL_REORDERABLE_GROUP_KEYS = new Set(["manoeuvre", "recover", "actions", "attacks", "magic"]);
 const {
   moduleId: MODULE_ID,
@@ -855,13 +859,12 @@ async function runPanelAttackOnTarget(sourceToken, targetToken, attackItem, { au
   if (!sourceActor || !targetToken || !attackItem) return;
   const automation = getOverlayAutomationRef();
   const sourceBeforeState = automation.snapshotActorState(sourceActor);
-  const restoreStaggerPrompt = automation.armDefaultStaggerChoiceWound(AUTO_STAGGER_PATCH_MS);
+  const restoreStaggerPrompt = automation.armDefaultStaggerChoiceWound(PANEL_STAGGER_PATCH_DURATION_MS);
   automation.armAutoDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState });
 
   try {
     await withTemporaryUserTargets(targetToken, () => towCombatOverlaySetupAbilityTestWithDamage(sourceActor, attackItem, {
-      autoRoll,
-      context: { targets: [targetToken] }
+      autoRoll
     }));
   } finally {
     setTimeout(() => restoreStaggerPrompt(), AUTO_APPLY_WAIT_MS);
@@ -1021,13 +1024,12 @@ async function runPanelUnarmedAttackOnTarget(sourceToken, targetToken, attackIte
   if (!sourceActor || !targetToken || !attackItem) return;
   const automation = getOverlayAutomationRef();
   const sourceBeforeState = automation.snapshotActorState(sourceActor);
-  const restoreStaggerPrompt = automation.armDefaultStaggerChoiceWound(AUTO_STAGGER_PATCH_MS);
+  const restoreStaggerPrompt = automation.armDefaultStaggerChoiceWound(PANEL_STAGGER_PATCH_DURATION_MS);
   armAutoEnduranceDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState });
 
   try {
     return await withTemporaryUserTargets(targetToken, () => towCombatOverlaySetupAbilityTestWithDamage(sourceActor, attackItem, {
-      autoRoll,
-      context: { targets: [targetToken] }
+      autoRoll
     }));
   } finally {
     setTimeout(() => restoreStaggerPrompt(), AUTO_APPLY_WAIT_MS);
@@ -1487,6 +1489,7 @@ async function handlePanelSlotClick(slotElement, event) {
     ?? null;
   if (!attackItem) return;
   const altHeld = towCombatOverlayIsAltModifier(event);
+  const ctrlHeld = towCombatOverlayIsCtrlModifier(event);
   const shiftHeld = towCombatOverlayIsShiftModifier(event);
   const panelElement = slotElement.closest(`#${PANEL_ID}`);
   if (!(panelElement instanceof HTMLElement)) return;
@@ -1497,6 +1500,24 @@ async function handlePanelSlotClick(slotElement, event) {
     return gate;
   };
   const attackAmmoState = resolvePanelAttackAmmoState(attackItem);
+  if (ctrlHeld && attackAmmoState.isRanged && attackAmmoState.usesReloadFlow) {
+    clearPanelAttackPickMode();
+    if (typeof attackItem?.update === "function") {
+      const reloadTargetRaw = Number(attackItem?.system?.reload?.value);
+      const reloadCurrentRaw = Number(attackItem?.system?.reload?.current);
+      if (Number.isFinite(reloadTargetRaw) && reloadTargetRaw > 0 && Number.isFinite(reloadCurrentRaw)) {
+        await attackItem.update({
+          "system.reload.current": Math.max(Math.trunc(reloadTargetRaw), Math.trunc(reloadCurrentRaw))
+        });
+      }
+    }
+    await writePanelAttackAmmoState(attackItem, {
+      current: attackAmmoState.ammoMax,
+      reloadProgress: 0
+    });
+    if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
+    return;
+  }
   if (attackAmmoState.isRanged && attackAmmoState.usesReloadFlow && attackAmmoState.current <= 0) {
     await consumeAttackResource();
     return;
@@ -2301,14 +2322,16 @@ function normalizeItemDescription(item) {
   return normalizeDescriptionSource(descriptionSource);
 }
 
-function normalizeDescriptionSource(descriptionSource) {
-  const escapeHtml = (value) => String(value ?? "")
+function escapePanelHtml(value) {
+  return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
 
+function normalizeDescriptionTextSource(descriptionSource) {
   let raw = descriptionSource;
   if (raw && typeof raw === "object") {
     raw = raw?.value
@@ -2333,23 +2356,103 @@ function normalizeDescriptionSource(descriptionSource) {
   temp.innerHTML = refTokenized
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/p>/gi, "</p>\n");
-  const plainText = String(temp.textContent ?? temp.innerText ?? "")
+
+  let text = String(temp.textContent ?? temp.innerText ?? "")
     .replace(/\u00a0/g, " ")
     .replace(/[ \t]+\n/g, "\n")
-    .replace(/\n[ \t]+/g, "\n");
-  const normalizedText = plainText
+    .replace(/\n[ \t]+/g, "\n")
     .split("\n")
     .map((line) => line.replace(/\s+/g, " ").trim())
     .filter(Boolean)
     .join("\n");
 
-  let markup = escapeHtml(normalizedText).replace(/\n/g, "<br>");
   for (let index = 0; index < refLabels.length; index += 1) {
     const token = `__TOW_REF_${index}__`;
-    const chip = `<span class="tow-combat-overlay-control-panel__ref-chip">${escapeHtml(refLabels[index])}</span>`;
-    markup = markup.split(token).join(chip);
+    text = text.split(token).join(refLabels[index]);
   }
-  return markup;
+  return text;
+}
+
+function normalizeDescriptionSource(descriptionSource) {
+  const normalizedText = normalizeDescriptionTextSource(descriptionSource);
+  if (!normalizedText) return "";
+  return escapePanelHtml(normalizedText).replace(/\n/g, "<br>");
+}
+
+function resolvePanelAttackSpecialPropertyText(item) {
+  if (!item) return "";
+
+  const isMeaningfulPropertyLine = (line) => {
+    const value = String(line ?? "").trim();
+    if (!value) return false;
+    if (/^[-–—]$/.test(value)) return false;
+    if (/^(1h|2h|one[- ]handed|two[- ]handed)$/i.test(value)) return false;
+    if (/^melee$/i.test(value)) return false;
+    if (/^(close|short|medium|long|extreme)(\s*-\s*(close|short|medium|long|extreme))*$/i.test(value)) return false;
+    if (/^(range|optimum range)\s*:/i.test(value)) return false;
+    return true;
+  };
+
+  const candidateSources = [
+    item?.system?.attack?.traits,
+    item?.system?.traits,
+    item?.system?.trait,
+    item?.system?.qualities,
+    item?.system?.quality,
+    item?.system?.properties,
+    item?.system?.special,
+    item?.system?.specialRules,
+    item?.system?.rules
+  ];
+
+  const lines = [];
+  const appendLines = (value) => {
+    const normalized = normalizeDescriptionTextSource(value);
+    if (!normalized) return;
+    for (const line of normalized.split("\n").map((entry) => entry.trim()).filter((entry) => isMeaningfulPropertyLine(entry))) {
+      lines.push(line);
+    }
+  };
+
+  for (const source of candidateSources) {
+    if (Array.isArray(source)) {
+      for (const entry of source) appendLines(entry);
+      continue;
+    }
+    if (source && typeof source === "object") {
+      appendLines(source?.value);
+      appendLines(source?.text);
+      appendLines(source?.public);
+      appendLines(source?.description);
+      appendLines(source?.label);
+      appendLines(source?.name);
+      continue;
+    }
+    appendLines(source);
+  }
+
+  if (!lines.length) {
+    const descriptionSource = item?.system?.description ?? item?.system?.summary ?? item?.description ?? "";
+    const firstDescriptionLine = normalizeDescriptionTextSource(descriptionSource).split("\n").map((line) => line.trim()).find(Boolean) ?? "";
+    const looksLikeExplicitProperty = /\b(on charge|ignore|ignores|success(?:es)?\s+to\s+reload|pierc|brutal|impale|bleed|stagger|prone|\+\d+\s*(?:damage|d\d+))\b/i.test(firstDescriptionLine);
+    if (isMeaningfulPropertyLine(firstDescriptionLine) && looksLikeExplicitProperty) lines.push(firstDescriptionLine);
+  }
+
+  const deduped = [];
+  const seen = new Set();
+  for (const line of lines) {
+    const key = line.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(line);
+  }
+  return deduped.join("\n");
+}
+
+function resolvePanelAttackSpecialPropertyMarkup(item) {
+  const text = resolvePanelAttackSpecialPropertyText(item);
+  if (!text) return "";
+  return escapePanelHtml(text).replace(/\n/g, "<br>");
 }
 
 function getPanelItemGroupsForActor(actor) {
@@ -2487,6 +2590,17 @@ function applyGroupGridLayout(panelElement, groupKey, slotCount) {
     return;
   }
 
+  // Main action panel keeps a stable minimum footprint: 2 rows x 7 columns.
+  if (groupKey === "all") {
+    const { columns, rows } = resolveDynamicGridLayout(slotCount);
+    const minColumns = Math.max(1, PANEL_MAIN_GRID_MIN_COLUMNS);
+    const minRows = Math.max(1, PANEL_MAIN_GRID_MIN_ROWS);
+    gridElement.style.gridTemplateColumns = `repeat(${Math.max(columns, minColumns)}, var(--tow-control-panel-slot-size))`;
+    gridElement.style.gridTemplateRows = `repeat(${Math.max(rows, minRows)}, var(--tow-control-panel-slot-size))`;
+    gridElement.style.gridAutoFlow = "column";
+    return;
+  }
+
   // Force a strict single-row footprint for single-item groups.
   if (Number(slotCount) === 1) {
     gridElement.style.gridTemplateColumns = "repeat(1, var(--tow-control-panel-slot-size))";
@@ -2570,11 +2684,14 @@ function armAutoSubmitReloadTestDialog(actor) {
 
 async function rollPanelReloadForAttack(actor, attackItem) {
   if (!actor || !attackItem) return 0;
+  armApplyRollModifiersToNextTestDialog(actor, {
+    matches: (app) => app?.actor?.id === actor?.id && String(app?.skill ?? "").trim().toLowerCase() === "dexterity"
+  });
   armAutoSubmitReloadTestDialog(actor);
 
   let test = null;
   if (typeof attackItem?.system?.rollReloadTest === "function") {
-    test = await attackItem.system.rollReloadTest(actor);
+    test = await withPatchedActionSkillTestContext(actor, () => attackItem.system.rollReloadTest(actor));
   } else {
     test = await getTowCombatOverlaySystemAdapter().setupSkillTest(
       actor,
@@ -2653,6 +2770,92 @@ function updatePanelSlotAmmoBadge(slotElement, item, groupKey) {
   ammoBadge.style.display = "inline-flex";
 }
 
+function updatePanelSlotPropertyBadge(slotElement, item, groupKey) {
+  if (!(slotElement instanceof HTMLElement)) return;
+  let propertyBadge = slotElement.querySelector(".tow-combat-overlay-control-panel__slot-property");
+  if (!(propertyBadge instanceof HTMLElement)) {
+    propertyBadge = document.createElement("span");
+    propertyBadge.classList.add("tow-combat-overlay-control-panel__slot-property");
+    propertyBadge.setAttribute("aria-hidden", "true");
+    propertyBadge.textContent = "•";
+    slotElement.appendChild(propertyBadge);
+  }
+
+  const hasSpecialProperty = (
+    groupKey === "attacks"
+    && !!item
+    && item.__empty !== true
+    && !!resolvePanelAttackSpecialPropertyText(item)
+  );
+  propertyBadge.style.display = hasSpecialProperty ? "inline-flex" : "none";
+}
+
+function resolvePanelAttackPropertyRarity(item) {
+  const raw = resolvePanelAttackSpecialPropertyText(item);
+  const count = raw
+    ? raw.split("\n").map((line) => line.trim()).filter(Boolean).length
+    : 0;
+  if (count <= 0) return "common";
+  if (count === 1) return "uncommon";
+  if (count === 2) return "rare";
+  if (count === 3) return "epic";
+  return "legendary";
+}
+
+function updatePanelSlotAttackRarity(slotElement, item, groupKey) {
+  if (!(slotElement instanceof HTMLElement)) return;
+  if (groupKey !== "attacks" || !item || item.__empty === true) {
+    delete slotElement.dataset.attackRarity;
+    const existingBadge = slotElement.querySelector(".tow-combat-overlay-control-panel__slot-property");
+    if (existingBadge instanceof HTMLElement) existingBadge.style.display = "none";
+    return;
+  }
+  slotElement.dataset.attackRarity = resolvePanelAttackPropertyRarity(item);
+  const existingBadge = slotElement.querySelector(".tow-combat-overlay-control-panel__slot-property");
+  if (existingBadge instanceof HTMLElement) existingBadge.style.display = "none";
+}
+
+function resolvePanelAttackDamageLabel(item) {
+  if (!item) return "";
+  const damageValueRaw = Number(item?.system?.damage?.value);
+  if (Number.isFinite(damageValueRaw)) {
+    return String(Math.trunc(damageValueRaw));
+  }
+
+  const formulaRaw = String(item?.system?.damage?.formula ?? "").trim();
+  if (!formulaRaw) return "";
+  const compact = formulaRaw.replace(/\s+/g, "");
+  if (compact.length <= 6) return compact;
+  return `${compact.slice(0, 6)}…`;
+}
+
+function updatePanelSlotDamageBadge(slotElement, item, groupKey) {
+  if (!(slotElement instanceof HTMLElement)) return;
+  let damageBadge = slotElement.querySelector(".tow-combat-overlay-control-panel__slot-damage");
+  if (!(damageBadge instanceof HTMLElement)) {
+    damageBadge = document.createElement("span");
+    damageBadge.classList.add("tow-combat-overlay-control-panel__slot-damage");
+    damageBadge.setAttribute("aria-hidden", "true");
+    slotElement.appendChild(damageBadge);
+  }
+
+  if (groupKey !== "attacks" || !item || item.__empty === true) {
+    damageBadge.style.display = "none";
+    damageBadge.textContent = "";
+    return;
+  }
+
+  const label = resolvePanelAttackDamageLabel(item);
+  if (!label) {
+    damageBadge.style.display = "none";
+    damageBadge.textContent = "";
+    return;
+  }
+
+  damageBadge.textContent = label;
+  damageBadge.style.display = "inline-flex";
+}
+
 function updateGroupSlots(panelElement, groupKey, groupItems = []) {
   const groupElement = panelElement.querySelector(
     `.tow-combat-overlay-control-panel__item-group[data-item-group="${groupKey}"]`
@@ -2668,9 +2871,13 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
 
   applyGroupGridLayout(panelElement, groupKey, groupItems.length);
   let renderSlotCount = groupItems.length;
-  if (groupKey === "all" && groupItems.length > 1) {
+  if (groupKey === "all" && groupItems.length > 0) {
     const { columns, rows } = resolveDynamicGridLayout(groupItems.length);
-    renderSlotCount = Math.max(groupItems.length, columns * rows);
+    renderSlotCount = Math.max(
+      groupItems.length,
+      columns * rows,
+      Math.max(1, PANEL_MAIN_GRID_MIN_COLUMNS) * Math.max(1, PANEL_MAIN_GRID_MIN_ROWS)
+    );
   }
   const slotElements = ensureGroupSlotElements(panelElement, groupKey, renderSlotCount);
   if (!slotElements.length) return;
@@ -2704,6 +2911,8 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
       image.style.display = "none";
       if (iconPlaceholder instanceof HTMLElement) iconPlaceholder.style.display = "";
       updatePanelSlotAmmoBadge(slotElement, null, emptyGroupKey);
+      updatePanelSlotAttackRarity(slotElement, null, emptyGroupKey);
+      updatePanelSlotDamageBadge(slotElement, null, emptyGroupKey);
       continue;
     }
 
@@ -2721,14 +2930,26 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
     if (resolvedGroupKey === "attacks") {
       const attackHint = itemKey === PANEL_UNARMED_ACTION_ID
         ? "<em>Click: pick target then auto-roll unarmed attack (Brawn vs Endurance). Shift+click: self auto-roll. Alt+click: pick target then open default attack dialog. Alt+Shift+click: open default self-roll dialog.</em>"
-        : "<em>Click: pick target, then auto-roll attack. Shift+click: auto-roll self attack. Alt+click: pick target, then open default Foundry attack dialog (no auto-roll). Alt+Shift+click: open default Foundry self-roll dialog (no auto-roll).</em>";
+        : "<em>Click: pick target, then auto-roll attack. Shift+click: auto-roll self attack. Alt+click: pick target, then open default Foundry attack dialog (no auto-roll). Alt+Shift+click: open default Foundry self-roll dialog (no auto-roll). Ctrl+click: instantly reload this weapon (ranged weapons with reload flow only).</em>";
       const attackAmmoState = resolvePanelAttackAmmoState(item);
       const reloadProgressHint = (attackAmmoState.isRanged && attackAmmoState.usesReloadFlow && attackAmmoState.current <= 0)
         ? `<br><br>Reload progress: ${Math.max(0, attackAmmoState.reloadProgress)} / ${Math.max(1, attackAmmoState.reloadTarget)} successes.`
         : "";
-      slotElement.dataset.tooltipDescription = itemDescription
-        ? `${attackHint}${reloadProgressHint}<br><br>${itemDescription}`
-        : `${attackHint}${reloadProgressHint}`;
+      const attackDamageLabel = resolvePanelAttackDamageLabel(item);
+      const damageHint = attackDamageLabel
+        ? `<br><br><strong>Damage:</strong> ${escapePanelHtml(attackDamageLabel)}`
+        : "";
+      const specialPropertyMarkup = resolvePanelAttackSpecialPropertyMarkup(item);
+      const specialPropertyHint = specialPropertyMarkup
+        ? `<br><br><strong>Extra properties:</strong><br>${specialPropertyMarkup}`
+        : "";
+      const hasDistinctDescription = !!itemDescription && (
+        !specialPropertyMarkup
+        || !itemDescription.includes(specialPropertyMarkup)
+      );
+      slotElement.dataset.tooltipDescription = hasDistinctDescription
+        ? `${attackHint}${damageHint}${reloadProgressHint}${specialPropertyHint}<br><br>${itemDescription}`
+        : `${attackHint}${damageHint}${reloadProgressHint}${specialPropertyHint}`;
     } else if (resolvedGroupKey === "actions") {
       let actionsHint = "<em>Click: auto-flow action (auto-roll / auto-pick first). Alt+click: default Foundry action dialogs.</em>";
       if (itemKey === "aim") {
@@ -2767,6 +2988,8 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
     image.style.display = "block";
     if (iconPlaceholder instanceof HTMLElement) iconPlaceholder.style.display = "none";
     updatePanelSlotAmmoBadge(slotElement, item, resolvedGroupKey);
+    updatePanelSlotAttackRarity(slotElement, item, resolvedGroupKey);
+    updatePanelSlotDamageBadge(slotElement, item, resolvedGroupKey);
   }
 }
 function updatePanelSlots(panelElement, token = null) {
@@ -3184,21 +3407,6 @@ export function towCombatOverlayRemoveControlPanel() {
   removeStaleControlPanels();
   if (game && Object.prototype.hasOwnProperty.call(game, PANEL_STATE_KEY)) delete game[PANEL_STATE_KEY];
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

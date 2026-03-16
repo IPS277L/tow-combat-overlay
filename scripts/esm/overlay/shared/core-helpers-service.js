@@ -126,6 +126,16 @@ export function towCombatOverlayIsAltModifier(event) {
   return game.keyboard?.isModifierActive?.(altKey) === true;
 }
 
+export function towCombatOverlayIsCtrlModifier(event) {
+  const nativeCtrl = event?.ctrlKey ?? event?.nativeEvent?.ctrlKey ?? event?.data?.originalEvent?.ctrlKey;
+  if (nativeCtrl === true) return true;
+  const modifierKeys = foundry.helpers?.interaction?.KeyboardManager?.MODIFIER_KEYS
+    ?? KeyboardManager?.MODIFIER_KEYS;
+  const ctrlKey = modifierKeys?.CONTROL ?? modifierKeys?.CTRL;
+  if (!ctrlKey) return false;
+  return game.keyboard?.isModifierActive?.(ctrlKey) === true;
+}
+
 export function towCombatOverlayCopyPoint(point) {
   if (!point) return null;
   return { x: Number(point.x ?? 0), y: Number(point.y ?? 0) };
