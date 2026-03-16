@@ -51,7 +51,8 @@ import {
   cycleTowCombatOverlayActorRollState,
   getTowCombatOverlayActorRollModifierFields,
   getTowCombatOverlayActorRollModifierState,
-  getTowCombatOverlayActorRollModifierStateLabel
+  getTowCombatOverlayActorRollModifierStateLabel,
+  setTowCombatOverlayActorRollModifierState
 } from "../../combat/roll-modifier-service.js";
 import { getTowCombatOverlaySystemAdapter } from "../../system-adapter/system-adapter.js";
 
@@ -153,6 +154,150 @@ function getActorEffectsByStatus(actor, conditionId) {
   return Array.from(actor?.effects?.contents ?? []).filter((effect) => (
     Array.from(effect?.statuses ?? []).map(String).includes(id)
   ));
+}
+
+const PANEL_WOUND_STATE_KEYS = Object.freeze(["unwounded", "wounded", "defeated"]);
+const PANEL_WOUND_STATE_LABELS = Object.freeze({
+  unwounded: "Unwounded",
+  wounded: "Wounded",
+  defeated: "Defeated"
+});
+
+function getPanelActorWoundItems(actor) {
+  if (!actor) return [];
+  const fromCollection = Array.isArray(actor.items?.contents)
+    ? actor.items.contents.filter((item) => item?.type === "wound")
+    : [];
+  const fromTyped = Array.isArray(actor.itemTypes?.wound)
+    ? actor.itemTypes.wound.filter((item) => item?.type === "wound")
+    : [];
+  if (!fromCollection.length) return fromTyped;
+  if (!fromTyped.length) return fromCollection;
+  const seen = new Set();
+  const merged = [];
+  for (const wound of [...fromCollection, ...fromTyped]) {
+    const key = String(wound?.id ?? wound?._id ?? "");
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    merged.push(wound);
+  }
+  return merged;
+}
+
+function getPanelActorWoundCount(actor) {
+  return getPanelActorWoundItems(actor).length;
+}
+
+function getPanelWoundStateActionText(actor, stateData) {
+  const description = String(stateData?.description ?? "").trim();
+  if (description) return description;
+  const effectName = String(
+    stateData?.effect?.document?.name
+    ?? actor?.effects?.get?.(stateData?.effect?.id)?.name
+    ?? ""
+  ).trim();
+  if (effectName) return effectName;
+  return "";
+}
+
+function getPanelWoundStateImage(actor, stateData) {
+  const directImage = String(
+    stateData?.effect?.document?.img
+    ?? stateData?.effect?.document?.icon
+    ?? stateData?.img
+    ?? stateData?.icon
+    ?? ""
+  ).trim();
+  if (directImage) return directImage;
+  const effectId = String(stateData?.effect?.id ?? "").trim();
+  const liveImage = String(actor?.effects?.get?.(effectId)?.img ?? "").trim();
+  if (liveImage) return liveImage;
+  return ICON_SRC_WOUND;
+}
+
+function getPanelWoundStateEntries(actor) {
+  if (!actor || actor.type !== "npc" || actor.system?.hasThresholds !== true) return [];
+  const woundsData = actor.system?.wounds ?? {};
+  return PANEL_WOUND_STATE_KEYS.map((key) => {
+    const stateData = woundsData?.[key] ?? {};
+    const action = getPanelWoundStateActionText(actor, stateData);
+    const image = getPanelWoundStateImage(actor, stateData);
+    const rangeRaw = Array.isArray(stateData?.range) ? stateData.range : [];
+    const min = Number(rangeRaw[0]);
+    const max = Number(rangeRaw[1]);
+    return {
+      key,
+      label: PANEL_WOUND_STATE_LABELS[key] ?? key,
+      action,
+      image,
+      min: Number.isFinite(min) ? Math.trunc(min) : null,
+      max: Number.isFinite(max) ? Math.trunc(max) : null
+    };
+  });
+}
+
+function resolvePanelCurrentWoundStateKey(actor, woundCount, entries) {
+  const thresholdKey = String(actor?.system?.thresholdAtWounds?.(woundCount) ?? "").trim();
+  if (PANEL_WOUND_STATE_KEYS.includes(thresholdKey)) return thresholdKey;
+  for (const entry of entries) {
+    if (!Number.isFinite(entry.min) || !Number.isFinite(entry.max)) continue;
+    if (woundCount >= entry.min && woundCount <= entry.max) return entry.key;
+  }
+  return PANEL_WOUND_STATE_KEYS[0];
+}
+
+function formatPanelWoundRangeText(entry) {
+  if (!entry) return "";
+  if (Number.isFinite(entry.min) && Number.isFinite(entry.max)) {
+    if (entry.min === entry.max) return `${entry.min}`;
+    return `${entry.min}-${entry.max}`;
+  }
+  return "any";
+}
+
+function updatePanelWoundActionIndicator(panelElement, actor) {
+  if (!(panelElement instanceof HTMLElement)) return;
+  const indicatorElement = panelElement.querySelector("[data-wound-action-indicator]");
+  if (!(indicatorElement instanceof HTMLElement)) return;
+  let indicatorImage = indicatorElement.querySelector(".tow-combat-overlay-control-panel__wound-action-indicator-image");
+  if (!(indicatorImage instanceof HTMLImageElement)) {
+    indicatorImage = document.createElement("img");
+    indicatorImage.classList.add("tow-combat-overlay-control-panel__wound-action-indicator-image");
+    indicatorImage.alt = "";
+    indicatorImage.src = "";
+    indicatorElement.replaceChildren(indicatorImage);
+  }
+
+  const entries = getPanelWoundStateEntries(actor).filter((entry) => !!entry.action);
+  if (!entries.length) {
+    indicatorElement.style.display = "none";
+    indicatorImage.src = "";
+    indicatorImage.alt = "";
+    indicatorElement.classList.remove("is-active");
+    indicatorElement.dataset.tooltipTitle = "";
+    indicatorElement.dataset.tooltipDescription = "";
+    indicatorElement.setAttribute("aria-hidden", "true");
+    return;
+  }
+
+  const woundCount = getPanelActorWoundCount(actor);
+  const currentKey = resolvePanelCurrentWoundStateKey(actor, woundCount, entries);
+  const currentEntry = entries.find((entry) => entry.key === currentKey) ?? entries[0];
+  const currentLabel = String(currentEntry?.label ?? "Wound action").trim();
+
+  const lines = entries.map((entry) => {
+    const range = formatPanelWoundRangeText(entry);
+    const prefix = entry.key === currentKey ? "<strong>&#9656; </strong>" : "";
+    return `${prefix}<strong>${escapePanelHtml(entry.label)}</strong> (${escapePanelHtml(range)}): ${escapePanelHtml(entry.action)}`;
+  });
+
+  indicatorImage.src = String(currentEntry?.image ?? ICON_SRC_WOUND);
+  indicatorImage.alt = currentLabel;
+  indicatorElement.style.display = "inline-flex";
+  indicatorElement.classList.toggle("is-active", currentKey !== "unwounded");
+  indicatorElement.dataset.tooltipTitle = "Wound Actions";
+  indicatorElement.dataset.tooltipDescription = lines.join("<br>");
+  indicatorElement.setAttribute("aria-hidden", "false");
 }
 
 async function setActorConditionState(actor, conditionId, active) {
@@ -1980,7 +2125,7 @@ function getPanelStatTooltipData(statKey) {
   if (key === "wounds") {
     const title = String(MODULE_TOOLTIPS?.wounds?.title ?? "Wounds");
     const baseDescription = String(MODULE_TOOLTIPS?.wounds?.description ?? "").trim();
-    const hint = "<em>Left click: +1 wound · Right click: -1 wound</em>";
+    const hint = "<em>Left click: +1 wound · Right click: -1 wound · Ctrl+click: reset to 0</em>";
     const cleanedBaseDescription = baseDescription
       .replace(/Left-?click adds 1 wound\.?\s*Right-?click removes 1 wound\.?/gi, "")
       .trim();
@@ -2006,11 +2151,25 @@ function bindPanelWoundsStatEvents(panelElement) {
   if (!(woundsRow instanceof HTMLElement)) return;
   woundsRow.style.cursor = "pointer";
 
+  const resetActorWoundsToZero = async (actor) => {
+    const maxPasses = Math.max(1, getPanelActorWoundCount(actor) + 5);
+    for (let i = 0; i < maxPasses; i += 1) {
+      const count = getPanelActorWoundCount(actor);
+      if (count <= 0) break;
+      await towCombatOverlayRemoveWound(actor);
+    }
+  };
+
   woundsRow.addEventListener("click", async (event) => {
     event.preventDefault();
     const token = getSingleControlledToken();
     const actor = token?.actor ?? token?.document?.actor ?? null;
     if (!actor) return;
+    if (towCombatOverlayIsCtrlModifier(event)) {
+      await resetActorWoundsToZero(actor);
+      updateSelectionDisplay(panelElement);
+      return;
+    }
     await towCombatOverlayAddWound(actor);
     updateSelectionDisplay(panelElement);
   });
@@ -2046,11 +2205,25 @@ function bindSelectionPanelStatEvents(selectionPanelElement) {
   if (woundsRow instanceof HTMLElement) {
     bindPanelTooltipEvent(woundsRow, () => getPanelStatTooltipData("wounds"));
     woundsRow.style.cursor = "pointer";
+    const resetActorWoundsToZero = async (actor) => {
+      const maxPasses = Math.max(1, getPanelActorWoundCount(actor) + 5);
+      for (let i = 0; i < maxPasses; i += 1) {
+        const count = getPanelActorWoundCount(actor);
+        if (count <= 0) break;
+        await towCombatOverlayRemoveWound(actor);
+      }
+    };
     woundsRow.addEventListener("click", async (event) => {
       event.preventDefault();
       const token = getSingleControlledToken();
       const actor = token?.actor ?? token?.document?.actor ?? null;
       if (!actor) return;
+      if (towCombatOverlayIsCtrlModifier(event)) {
+        await resetActorWoundsToZero(actor);
+        const panelElement = getControlPanelState()?.element;
+        if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
+        return;
+      }
       await towCombatOverlayAddWound(actor);
       const panelElement = getControlPanelState()?.element;
       if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
@@ -2101,6 +2274,16 @@ function bindPanelStatusesTooltipEvents(panelElement) {
       event.preventDefault();
     });
   }
+
+  const woundActionIndicator = panelElement.querySelector("[data-wound-action-indicator]");
+  if (woundActionIndicator instanceof HTMLElement) {
+    bindPanelTooltipEvent(woundActionIndicator, () => {
+      const title = String(woundActionIndicator.dataset.tooltipTitle ?? "").trim();
+      if (!title) return null;
+      const description = String(woundActionIndicator.dataset.tooltipDescription ?? "").trim();
+      return { title, description };
+    });
+  }
 }
 
 function getSingleControlledActor() {
@@ -2114,7 +2297,7 @@ function getDiceModifierTooltipData() {
   const value = `${state.diceModifier >= 0 ? "+" : ""}${state.diceModifier}d10`;
   return {
     title: "Dice Modifier",
-    description: `<em>Left click: +1d10 · Right click: -1d10</em><br><br>Current: ${value}`
+    description: `<em>Left click: +1d10 · Right click: -1d10 · Ctrl+click: reset to +0d10</em><br><br>Current: ${value}`
   };
 }
 
@@ -2124,7 +2307,7 @@ function getRollStateTooltipData() {
   const label = getTowCombatOverlayActorRollModifierStateLabel(state);
   return {
     title: "Roll State",
-    description: `<em>Left click: next state · Right click: previous state</em><br><br>Current: ${label}`
+    description: `<em>Left click: next state · Right click: previous state · Ctrl+click: set Common</em><br><br>Current: ${label}`
   };
 }
 
@@ -2184,10 +2367,24 @@ function bindPanelActionControls(panelElement) {
     button.addEventListener("click", async (event) => {
       event.preventDefault();
       if (control === "diceModifier") {
+        if (towCombatOverlayIsCtrlModifier(event)) {
+          await withEditableSingleActor((actor) => setTowCombatOverlayActorRollModifierState(actor, {
+            ...getTowCombatOverlayActorRollModifierState(actor),
+            diceModifier: 0
+          }));
+          return;
+        }
         await withEditableSingleActor((actor) => adjustTowCombatOverlayActorRollModifierDice(actor, 1));
         return;
       }
       if (control === "rollState") {
+        if (towCombatOverlayIsCtrlModifier(event)) {
+          await withEditableSingleActor((actor) => setTowCombatOverlayActorRollModifierState(actor, {
+            ...getTowCombatOverlayActorRollModifierState(actor),
+            rollState: "normal"
+          }));
+          return;
+        }
         await withEditableSingleActor((actor) => cycleTowCombatOverlayActorRollState(actor, 1));
       }
     });
@@ -2994,6 +3191,7 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
 }
 function updatePanelSlots(panelElement, token = null) {
   const actor = token?.actor ?? token?.document?.actor ?? null;
+  updatePanelWoundActionIndicator(panelElement, actor);
   const groups = actor
     ? getPanelItemGroupsForActor(actor)
     : { actions: [], attacks: [], abilities: [], temporaryEffects: [], manoeuvre: [], recover: [], magic: [] };
@@ -3407,13 +3605,6 @@ export function towCombatOverlayRemoveControlPanel() {
   removeStaleControlPanels();
   if (game && Object.prototype.hasOwnProperty.call(game, PANEL_STATE_KEY)) delete game[PANEL_STATE_KEY];
 }
-
-
-
-
-
-
-
 
 
 
