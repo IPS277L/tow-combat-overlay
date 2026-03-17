@@ -32,6 +32,7 @@ import {
   towCombatOverlayWarnNoPermission
 } from "../shared/core-helpers-service.js";
 import {
+  towCombatOverlayAddActorWound,
   towCombatOverlayAddActorCondition,
   towCombatOverlayRemoveActorCondition
 } from "../shared/actions-bridge-service.js";
@@ -85,12 +86,13 @@ const PANEL_RECOVER_ICON_BY_KEY = {
   condition: "icons/skills/wounds/injury-pain-body-orange.webp"
 };
 const PANEL_RECOVER_ORDER = ["treat", "condition", "recover"];
-const PANEL_ACTIONS_ORDER = ["help", "defence", "aim", "improvise"];
+const PANEL_ACTIONS_ORDER = ["help", "defence", "aim", "improvise", "accumulatePower"];
 const PANEL_ACTION_ICON_BY_KEY = {
   aim: "icons/skills/targeting/crosshair-ringed-gray.webp",
   help: "icons/skills/social/diplomacy-handshake.webp",
   improvise: "icons/magic/time/hourglass-tilted-glowing-gold.webp",
   defence: "icons/equipment/shield/heater-wooden-antlers-blue.webp",
+  accumulatePower: "icons/magic/symbols/rune-sigil-black-pink.webp",
   unarmed: "icons/weapons/clubs/club-banded-steel.webp"
 };
 const PANEL_UNARMED_FLAG_KEY = "generatedUnarmedAction";
@@ -101,6 +103,7 @@ const PANEL_UNARMED_OPPOSED_DISCOVERY_GRACE_MS = 2000;
 const PANEL_STAGGER_PATCH_DURATION_MS = AUTO_STAGGER_PATCH_MS + AUTO_APPLY_WAIT_MS + AUTO_DEFENCE_WAIT_MS;
 const PANEL_MAIN_GRID_MIN_COLUMNS = 7;
 const PANEL_MAIN_GRID_MIN_ROWS = 2;
+const PANEL_ACCUMULATE_POWER_FLAG_KEY = "panelAccumulatePower";
 const PANEL_REORDERABLE_GROUP_KEYS = new Set(["manoeuvre", "recover", "actions", "attacks", "magic"]);
 const {
   moduleId: MODULE_ID,
@@ -368,9 +371,10 @@ function getConditionTooltipData(conditionId) {
   const shortDescription = localizedDescription
     ? (localizedDescription.split(/(?<=[.!?])\s+/)[0] ?? localizedDescription).trim()
     : "";
+  const clickHint = "<em>Left click: toggle this condition.</em>";
   return {
     title: String(name || "Condition"),
-    description: shortDescription
+    description: shortDescription ? `${clickHint}<br><br>${shortDescription}` : clickHint
   };
 }
 
@@ -792,6 +796,10 @@ function createSelectionPanelElement() {
             <button type="button" class="tow-combat-overlay-control-panel__selection-stat-row" data-selection-stat-row="speed">
               <span class="tow-combat-overlay-control-panel__selection-stat-value" data-selection-stat="speed">-</span>
               <img class="tow-combat-overlay-control-panel__selection-stat-icon tow-combat-overlay-control-panel__selection-stat-icon--speed" src="${PANEL_SPEED_ICON}" alt="" />
+            </button>
+            <button type="button" class="tow-combat-overlay-control-panel__selection-stat-row" data-selection-stat-row="miscastDice">
+              <span class="tow-combat-overlay-control-panel__selection-stat-value" data-selection-stat="miscastDice">-</span>
+              <img class="tow-combat-overlay-control-panel__selection-stat-icon tow-combat-overlay-control-panel__selection-stat-icon--dice" src="${PANEL_DICE_ICON}" alt="" />
             </button>
             <div class="tow-combat-overlay-control-panel__selection-mini-controls">
               <button
@@ -1544,6 +1552,28 @@ async function handlePanelSlotClick(slotElement, event) {
       if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
       return;
     }
+    if (itemId === "accumulatePower") {
+      if (towCombatOverlayIsCtrlModifier(event)) {
+        await resetPanelAccumulatePowerValues(actor);
+        const panelElement = slotElement.closest(`#${PANEL_ID}`);
+        if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
+        return;
+      }
+      const miscastState = resolveActorMiscastState(actor);
+      if (miscastState.atLimit) {
+        if (typeof actor?.system?.rollMiscast === "function") {
+          await actor.system.rollMiscast();
+        }
+        const panelElement = slotElement.closest(`#${PANEL_ID}`);
+        if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
+        return;
+      }
+      const useDefaultDialog = towCombatOverlayIsAltModifier(event);
+      await runPanelAccumulatePowerAction(actor, { autoRoll: !useDefaultDialog });
+      const panelElement = slotElement.closest(`#${PANEL_ID}`);
+      if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
+      return;
+    }
     const useDefaultDialog = towCombatOverlayIsAltModifier(event);
     await runPanelActorAction(actor, itemId, { autoRoll: !useDefaultDialog });
     const panelElement = slotElement.closest(`#${PANEL_ID}`);
@@ -1856,10 +1886,69 @@ function getCoreActionDescription(actionData) {
   );
 }
 
-function getPanelActionEntries() {
+function resolveActorLatestCastingPotency(actor) {
+  const potencyRaw = Number(actor?.getFlag?.(MODULE_ID, PANEL_ACCUMULATE_POWER_FLAG_KEY)?.potency ?? NaN);
+  if (!Number.isFinite(potencyRaw)) return 0;
+  return Math.max(0, Math.trunc(potencyRaw));
+}
+
+async function setPanelAccumulatePowerPotency(actor, potency) {
+  if (!actor?.setFlag) return;
+  const value = Number.isFinite(Number(potency)) ? Math.max(0, Math.trunc(Number(potency))) : 0;
+  await actor.setFlag(MODULE_ID, PANEL_ACCUMULATE_POWER_FLAG_KEY, { potency: value });
+}
+
+function armCaptureNextCastingPotency(actor, { timeoutMs = 30000 } = {}) {
+  if (!actor?.id) return;
+  let timeoutId = null;
+  const cleanup = (hookId) => {
+    Hooks.off("createChatMessage", hookId);
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = null;
+  };
+  const hookId = Hooks.on("createChatMessage", (message) => {
+    const rollClass = String(message?.system?.context?.rollClass ?? "").trim().toLowerCase();
+    const speakerActorId = String(message?.speaker?.actor ?? "").trim();
+    if (rollClass !== "castingtest" || speakerActorId !== String(actor.id)) return;
+    const rawSuccesses = Number(message?.system?.result?.successes ?? NaN);
+    const potency = Number.isFinite(rawSuccesses) ? Math.max(0, Math.trunc(rawSuccesses)) : 0;
+    cleanup(hookId);
+    void setPanelAccumulatePowerPotency(actor, potency);
+  });
+  timeoutId = setTimeout(() => cleanup(hookId), Math.max(250, Number(timeoutMs) || 0));
+}
+
+function getPanelActionEntries(actor = null) {
   const actionsConfig = game?.oldworld?.config?.actions ?? {};
   return PANEL_ACTIONS_ORDER
     .map((key) => {
+      if (key === "accumulatePower") {
+        if (!actorHasMagicCasting(actor)) return null;
+        if (!resolvePanelCastingLore(actor)) return null;
+        const powerRaw = Number(actor?.system?.magic?.casting?.progress ?? NaN);
+        const power = Number.isFinite(powerRaw) ? Math.max(0, Math.trunc(powerRaw)) : 0;
+        const potency = resolveActorLatestCastingPotency(actor);
+        const miscastsRaw = Number(actor?.system?.magic?.miscasts ?? NaN);
+        const miscasts = Number.isFinite(miscastsRaw) ? Math.max(0, Math.trunc(miscastsRaw)) : 0;
+        const miscastsMaxRaw = Number(actor?.system?.magic?.level ?? NaN);
+        const miscastsMax = Number.isFinite(miscastsMaxRaw) ? Math.max(0, Math.trunc(miscastsMaxRaw)) : 0;
+        const miscastReady = miscastsMax > 0 && miscasts >= miscastsMax;
+        return {
+          id: key,
+          name: miscastReady ? "Dispose Miscast" : "Channel the Winds of Magic",
+          img: PANEL_ACTION_ICON_BY_KEY.accumulatePower,
+          system: {
+            accumulatedPower: power,
+            potency,
+            miscasts,
+            miscastsMax,
+            miscastReady,
+            description: miscastReady
+              ? "Miscast limit reached. Click to roll the miscast table."
+              : "Roll a casting test to accumulate power."
+          }
+        };
+      }
       if (key === "defence") {
         return {
           id: key,
@@ -2109,6 +2198,75 @@ async function runPanelManoeuvreAction(actor, subAction, { autoRoll = true } = {
   }
 }
 
+function resolvePanelCastingLore(actor) {
+  const currentLore = String(actor?.system?.magic?.casting?.lore ?? "").trim();
+  if (currentLore && currentLore.toLowerCase() !== "none") return currentLore;
+  const spells = Array.isArray(actor?.itemTypes?.spell) ? actor.itemTypes.spell : [];
+  for (const spell of spells) {
+    const lore = String(spell?.system?.lore ?? "").trim();
+    if (lore && lore.toLowerCase() !== "none") return lore;
+  }
+  return "";
+}
+
+async function runPanelAccumulatePowerAction(actor, { autoRoll = true } = {}) {
+  if (!actor || typeof actor.setupCastingTest !== "function") return;
+  const lore = resolvePanelCastingLore(actor);
+  if (!lore) {
+    ui.notifications?.error?.("No spell lore available to accumulate power.");
+    return;
+  }
+
+  if (autoRoll) {
+    armApplyRollModifiersToNextTestDialog(actor, {
+      matches: (app) => (
+        app?.actor?.id === actor.id
+        && (
+          String(app?.context?.rollClass ?? "").trim().toLowerCase() === "castingtest"
+          || app?.casting === true
+        )
+      )
+    });
+    towCombatOverlayArmAutoSubmitDialog({
+      hookName: "renderTestDialog",
+      matches: (app) => (
+        app?.actor?.id === actor.id
+        && (
+          String(app?.context?.rollClass ?? "").trim().toLowerCase() === "castingtest"
+          || app?.casting === true
+        )
+      ),
+      submitErrorMessage: "Casting test submit() is unavailable."
+    });
+  }
+
+  armCaptureNextCastingPotency(actor);
+  await actor.setupCastingTest(
+    { lore },
+    autoRoll ? createTowCombatOverlayRollContext(actor, { lore }) : {}
+  );
+}
+
+async function resetPanelAccumulatePowerValues(actor) {
+  if (!actor || typeof actor.update !== "function") return;
+  await actor.update({
+    "system.magic.casting.progress": 0
+  });
+  await setPanelAccumulatePowerPotency(actor, 0);
+}
+
+function resolveActorMiscastState(actor) {
+  const currentRaw = Number(actor?.system?.magic?.miscasts ?? NaN);
+  const current = Number.isFinite(currentRaw) ? Math.max(0, Math.trunc(currentRaw)) : 0;
+  const maxRaw = Number(actor?.system?.magic?.level ?? NaN);
+  const max = Number.isFinite(maxRaw) ? Math.max(0, Math.trunc(maxRaw)) : 0;
+  return {
+    current,
+    max,
+    atLimit: max > 0 && current >= max
+  };
+}
+
 function getPanelStatTooltipData(statKey) {
   const key = String(statKey ?? "").trim();
   if (!key) return null;
@@ -2125,7 +2283,7 @@ function getPanelStatTooltipData(statKey) {
   if (key === "wounds") {
     const title = String(MODULE_TOOLTIPS?.wounds?.title ?? "Wounds");
     const baseDescription = String(MODULE_TOOLTIPS?.wounds?.description ?? "").trim();
-    const hint = "<em>Left click: +1 wound · Right click: -1 wound · Ctrl+click: reset to 0</em>";
+    const hint = "<em>Left click: +1 wound · Right click: -1 wound · Shift+click: roll on wounds · Ctrl+click: reset to 0</em>";
     const cleanedBaseDescription = baseDescription
       .replace(/Left-?click adds 1 wound\.?\s*Right-?click removes 1 wound\.?/gi, "")
       .trim();
@@ -2133,7 +2291,13 @@ function getPanelStatTooltipData(statKey) {
     return { title, description };
   }
   if (key === "speed") return MODULE_TOOLTIPS.speed;
-  if (key === "miscastDice") return MODULE_TOOLTIPS.miscastDice;
+  if (key === "miscastDice") {
+    const title = String(MODULE_TOOLTIPS?.miscastDice?.title ?? "Miscast Dice");
+    const baseDescription = String(MODULE_TOOLTIPS?.miscastDice?.description ?? "").trim();
+    const hint = "<em>Left click: +1 die · Right click: -1 die · Shift+click: roll miscast table · Ctrl+click: reset to 0</em>";
+    const description = baseDescription ? `${hint}<br><br>${baseDescription}` : hint;
+    return { title, description };
+  }
   return null;
 }
 
@@ -2165,6 +2329,11 @@ function bindPanelWoundsStatEvents(panelElement) {
     const token = getSingleControlledToken();
     const actor = token?.actor ?? token?.document?.actor ?? null;
     if (!actor) return;
+    if (towCombatOverlayIsShiftModifier(event)) {
+      await towCombatOverlayAddActorWound(actor, { roll: true });
+      updateSelectionDisplay(panelElement);
+      return;
+    }
     if (towCombatOverlayIsCtrlModifier(event)) {
       await resetActorWoundsToZero(actor);
       updateSelectionDisplay(panelElement);
@@ -2189,6 +2358,7 @@ function bindSelectionPanelStatEvents(selectionPanelElement) {
   const speedRow = selectionPanelElement.querySelector("[data-selection-stat-row='speed']");
   const resilienceRow = selectionPanelElement.querySelector("[data-selection-stat-row='resilience']");
   const woundsRow = selectionPanelElement.querySelector("[data-selection-stat-row='wounds']");
+  const miscastDiceRow = selectionPanelElement.querySelector("[data-selection-stat-row='miscastDice']");
 
   if (speedRow instanceof HTMLElement) {
     bindPanelTooltipEvent(speedRow, () => getPanelStatTooltipData("speed"));
@@ -2218,6 +2388,12 @@ function bindSelectionPanelStatEvents(selectionPanelElement) {
       const token = getSingleControlledToken();
       const actor = token?.actor ?? token?.document?.actor ?? null;
       if (!actor) return;
+      if (towCombatOverlayIsShiftModifier(event)) {
+        await towCombatOverlayAddActorWound(actor, { roll: true });
+        const panelElement = getControlPanelState()?.element;
+        if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
+        return;
+      }
       if (towCombatOverlayIsCtrlModifier(event)) {
         await resetActorWoundsToZero(actor);
         const panelElement = getControlPanelState()?.element;
@@ -2234,6 +2410,47 @@ function bindSelectionPanelStatEvents(selectionPanelElement) {
       const actor = token?.actor ?? token?.document?.actor ?? null;
       if (!actor) return;
       await towCombatOverlayRemoveWound(actor);
+      const panelElement = getControlPanelState()?.element;
+      if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
+    });
+  }
+
+  if (miscastDiceRow instanceof HTMLElement) {
+    bindPanelTooltipEvent(miscastDiceRow, () => getPanelStatTooltipData("miscastDice"));
+    miscastDiceRow.style.cursor = "pointer";
+    miscastDiceRow.addEventListener("click", async (event) => {
+      event.preventDefault();
+      const token = getSingleControlledToken();
+      const actor = token?.actor ?? token?.document?.actor ?? null;
+      if (!actor || typeof actor.update !== "function") return;
+      if (towCombatOverlayIsShiftModifier(event)) {
+        if (typeof actor?.system?.rollMiscast === "function") {
+          await actor.system.rollMiscast();
+        }
+        const panelElement = getControlPanelState()?.element;
+        if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
+        return;
+      }
+      if (towCombatOverlayIsCtrlModifier(event)) {
+        await actor.update({ "system.magic.miscasts": 0 });
+        const panelElement = getControlPanelState()?.element;
+        if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
+        return;
+      }
+      const currentRaw = Number(actor?.system?.magic?.miscasts ?? NaN);
+      const current = Number.isFinite(currentRaw) ? Math.max(0, Math.trunc(currentRaw)) : 0;
+      await actor.update({ "system.magic.miscasts": current + 1 });
+      const panelElement = getControlPanelState()?.element;
+      if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
+    });
+    miscastDiceRow.addEventListener("contextmenu", async (event) => {
+      event.preventDefault();
+      const token = getSingleControlledToken();
+      const actor = token?.actor ?? token?.document?.actor ?? null;
+      if (!actor || typeof actor.update !== "function") return;
+      const currentRaw = Number(actor?.system?.magic?.miscasts ?? NaN);
+      const current = Number.isFinite(currentRaw) ? Math.max(0, Math.trunc(currentRaw)) : 0;
+      await actor.update({ "system.magic.miscasts": Math.max(0, current - 1) });
       const panelElement = getControlPanelState()?.element;
       if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
     });
@@ -2284,6 +2501,7 @@ function bindPanelStatusesTooltipEvents(panelElement) {
       return { title, description };
     });
   }
+
 }
 
 function getSingleControlledActor() {
@@ -2479,7 +2697,10 @@ function formatMiscastDiceValue(token) {
   const actor = token?.actor ?? token?.document?.actor;
   const miscasts = Number(actor?.system?.magic?.miscasts ?? NaN);
   if (!Number.isFinite(miscasts)) return "-";
-  return String(Math.trunc(miscasts));
+  const current = Math.max(0, Math.trunc(miscasts));
+  const maxRaw = Number(actor?.system?.magic?.level ?? NaN);
+  const max = Number.isFinite(maxRaw) ? Math.max(0, Math.trunc(maxRaw)) : 0;
+  return `${current}/${max}`;
 }
 
 function actorHasMagicCasting(actor) {
@@ -2659,7 +2880,7 @@ function getPanelItemGroupsForActor(actor) {
   const spellItems = toList(actor?.itemTypes?.spell);
   const blessingItems = toList(actor?.itemTypes?.blessing);
   const weaponItems = toList(actor?.itemTypes?.weapon);
-  const actions = getPanelActionEntries();
+  const actions = getPanelActionEntries(actor);
   const manoeuvre = getPanelManoeuvreSubActionEntries();
   const recover = getPanelRecoverActionEntries();
   const conditionKeys = new Set(
@@ -2694,7 +2915,7 @@ function getPanelItemGroupsForActor(actor) {
     .concat(weaponItems.filter((item) => item?.system?.isEquipped || item?.system?.equipped?.value));
   attacks.unshift({
     id: PANEL_UNARMED_ACTION_ID,
-    name: "Unarmed",
+    name: "Unarmed Attack",
     img: PANEL_ACTION_ICON_BY_KEY.unarmed ?? PANEL_FALLBACK_ITEM_ICON,
     system: {
       description: "Opposed attack using Brawn vs Endurance."
@@ -2947,6 +3168,24 @@ function updatePanelSlotAmmoBadge(slotElement, item, groupKey) {
   }
 
   if (groupKey !== "attacks" || !item || item.__empty === true) {
+    if (groupKey === "actions" && item && item.__empty !== true) {
+      const itemId = String(item?.id ?? "").trim().toLowerCase();
+      if (itemId === "accumulatepower") {
+        const powerRaw = Number(item?.system?.accumulatedPower ?? NaN);
+        const power = Number.isFinite(powerRaw) ? Math.max(0, Math.trunc(powerRaw)) : 0;
+        ammoBadge.textContent = String(power);
+        ammoBadge.style.display = "inline-flex";
+        return;
+      }
+    }
+    if (groupKey === "magic" && item && item.__empty !== true) {
+      const cvValue = Number(item?.system?.cv);
+      if (Number.isFinite(cvValue) && cvValue >= 0) {
+        ammoBadge.textContent = String(Math.trunc(cvValue));
+        ammoBadge.style.display = "inline-flex";
+        return;
+      }
+    }
     ammoBadge.style.display = "none";
     ammoBadge.textContent = "";
     return;
@@ -2965,6 +3204,39 @@ function updatePanelSlotAmmoBadge(slotElement, item, groupKey) {
     ammoBadge.textContent = String(Math.max(1, Math.trunc(state.current || state.ammoMax || 1)));
   }
   ammoBadge.style.display = "inline-flex";
+}
+
+function updatePanelSlotAttackAmmoVisualState(slotElement, item, groupKey, actor = null) {
+  if (!(slotElement instanceof HTMLElement)) return;
+  if (groupKey !== "attacks" || !item || item.__empty === true) delete slotElement.dataset.attackReloadEmpty;
+  else {
+    const state = resolvePanelAttackAmmoState(item);
+    const isReloadEmpty = state.isRanged && state.usesReloadFlow && state.current <= 0;
+    if (isReloadEmpty) slotElement.dataset.attackReloadEmpty = "true";
+    else delete slotElement.dataset.attackReloadEmpty;
+  }
+
+  if (groupKey !== "magic" || !item || item.__empty === true) delete slotElement.dataset.magicInsufficientCv;
+  else {
+    const rawCv = Number(item?.system?.cv ?? NaN);
+    const requiredCv = Number.isFinite(rawCv) ? Math.max(0, Math.trunc(rawCv)) : 0;
+    const sourceActor = actor ?? item?.actor ?? item?.parent ?? null;
+    const rawAccumulated = Number(sourceActor?.system?.magic?.casting?.progress ?? NaN);
+    const accumulated = Number.isFinite(rawAccumulated) ? Math.max(0, Math.trunc(rawAccumulated)) : 0;
+    if (requiredCv > accumulated) slotElement.dataset.magicInsufficientCv = "true";
+    else delete slotElement.dataset.magicInsufficientCv;
+  }
+
+  if (groupKey !== "actions" || !item || item.__empty === true || String(item?.id ?? "").trim().toLowerCase() !== "accumulatepower") {
+    delete slotElement.dataset.accumulateMiscastReady;
+  } else {
+    const miscastsRaw = Number(item?.system?.miscasts ?? NaN);
+    const miscasts = Number.isFinite(miscastsRaw) ? Math.max(0, Math.trunc(miscastsRaw)) : 0;
+    const miscastsMaxRaw = Number(item?.system?.miscastsMax ?? NaN);
+    const miscastsMax = Number.isFinite(miscastsMaxRaw) ? Math.max(0, Math.trunc(miscastsMaxRaw)) : 0;
+    if (miscastsMax > 0 && miscasts >= miscastsMax) slotElement.dataset.accumulateMiscastReady = "true";
+    else delete slotElement.dataset.accumulateMiscastReady;
+  }
 }
 
 function updatePanelSlotPropertyBadge(slotElement, item, groupKey) {
@@ -3036,13 +3308,31 @@ function updatePanelSlotDamageBadge(slotElement, item, groupKey) {
     slotElement.appendChild(damageBadge);
   }
 
-  if (groupKey !== "attacks" || !item || item.__empty === true) {
+  if (groupKey === "actions" && item && item.__empty !== true) {
+    const itemId = String(item?.id ?? "").trim().toLowerCase();
+    if (itemId === "accumulatepower") {
+      const potencyRaw = Number(item?.system?.potency ?? NaN);
+      const potency = Number.isFinite(potencyRaw) ? Math.max(0, Math.trunc(potencyRaw)) : 0;
+      damageBadge.textContent = String(potency);
+      damageBadge.style.display = "inline-flex";
+      return;
+    }
+  }
+
+  const supportsDamageBadge = groupKey === "attacks" || groupKey === "magic";
+  if (!supportsDamageBadge || !item || item.__empty === true) {
     damageBadge.style.display = "none";
     damageBadge.textContent = "";
     return;
   }
 
   const label = resolvePanelAttackDamageLabel(item);
+  if (!label && groupKey === "magic") {
+    damageBadge.textContent = "0";
+    damageBadge.style.display = "inline-flex";
+    return;
+  }
+
   if (!label) {
     damageBadge.style.display = "none";
     damageBadge.textContent = "";
@@ -3053,7 +3343,7 @@ function updatePanelSlotDamageBadge(slotElement, item, groupKey) {
   damageBadge.style.display = "inline-flex";
 }
 
-function updateGroupSlots(panelElement, groupKey, groupItems = []) {
+function updateGroupSlots(panelElement, groupKey, groupItems = [], actor = null) {
   const groupElement = panelElement.querySelector(
     `.tow-combat-overlay-control-panel__item-group[data-item-group="${groupKey}"]`
   ) ?? getGroupGridElement(panelElement, groupKey);
@@ -3108,6 +3398,7 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
       image.style.display = "none";
       if (iconPlaceholder instanceof HTMLElement) iconPlaceholder.style.display = "";
       updatePanelSlotAmmoBadge(slotElement, null, emptyGroupKey);
+      updatePanelSlotAttackAmmoVisualState(slotElement, null, emptyGroupKey, actor);
       updatePanelSlotAttackRarity(slotElement, null, emptyGroupKey);
       updatePanelSlotDamageBadge(slotElement, null, emptyGroupKey);
       continue;
@@ -3157,6 +3448,25 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
         actionsHint = "<em>Click: auto-pick first skill and auto-roll. Alt+click: manual skill selection/dialogs.</em>";
       } else if (itemKey === "defence") {
         actionsHint = "<em>Click: auto defence. Alt+click: manual defence selection dialog.</em>";
+      } else if (itemKey === "accumulatepower") {
+        const miscastReady = item?.system?.miscastReady === true;
+        actionsHint = miscastReady
+          ? "<em>Click: roll on the miscast table. Ctrl+click: reset accumulated and potency values to 0.</em>"
+          : "<em>Click: auto-roll casting test with current roll modifiers to accumulate power. Alt+click: open default manual casting dialog. Ctrl+click: reset accumulated and potency values to 0.</em>";
+        const accumulatedRaw = Number(item?.system?.accumulatedPower ?? NaN);
+        const accumulated = Number.isFinite(accumulatedRaw) ? Math.max(0, Math.trunc(accumulatedRaw)) : 0;
+        const potencyRaw = Number(item?.system?.potency ?? NaN);
+        const potency = Number.isFinite(potencyRaw) ? Math.max(0, Math.trunc(potencyRaw)) : 0;
+        const miscastsRaw = Number(item?.system?.miscasts ?? NaN);
+        const miscasts = Number.isFinite(miscastsRaw) ? Math.max(0, Math.trunc(miscastsRaw)) : 0;
+        const miscastsMaxRaw = Number(item?.system?.miscastsMax ?? NaN);
+        const miscastsMax = Number.isFinite(miscastsMaxRaw) ? Math.max(0, Math.trunc(miscastsMaxRaw)) : 0;
+        const statsHint = [
+          `<strong>Accumulated:</strong> ${accumulated}`,
+          `<strong>Potency:</strong> ${potency}`,
+          `<strong>Miscast:</strong> ${miscastsMax > 0 ? `${miscasts}/${miscastsMax}` : miscasts}`
+        ].join("<br>");
+        actionsHint = `${actionsHint}<br><br>${statsHint}`;
       }
       slotElement.dataset.tooltipDescription = itemDescription ? `${actionsHint}<br><br>${itemDescription}` : actionsHint;
     } else if (resolvedGroupKey === "recover") {
@@ -3174,8 +3484,40 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
       slotElement.dataset.tooltipDescription = itemDescription
         ? `${infoHint}<br><br>${itemDescription}`
         : infoHint;
-    } else if (resolvedGroupKey === "abilities" || resolvedGroupKey === "magic") {
-      slotElement.dataset.tooltipDescription = itemDescription;
+    } else if (resolvedGroupKey === "abilities") {
+      const abilitiesHint = "<em>Left click: show details.</em>";
+      slotElement.dataset.tooltipDescription = itemDescription
+        ? `${abilitiesHint}<br><br>${itemDescription}`
+        : abilitiesHint;
+    } else if (resolvedGroupKey === "magic") {
+      const magicDamageLabel = resolvePanelAttackDamageLabel(item) || "0";
+      const hasMagicPotency = item?.system?.damage?.potency === true;
+      const targetKey = String(item?.system?.target?.value ?? "").trim();
+      const targetCustom = String(item?.system?.target?.custom ?? "").trim();
+      const targetLabel = targetKey
+        ? String(game?.oldworld?.config?.target?.[targetKey] ?? targetKey).trim()
+        : targetCustom;
+      const durationKey = String(item?.system?.duration?.value ?? "").trim();
+      const durationCustom = String(item?.system?.duration?.custom ?? "").trim();
+      const durationLabel = durationKey
+        ? String(game?.oldworld?.config?.duration?.[durationKey] ?? durationKey).trim()
+        : durationCustom;
+      const magicDamageHint = magicDamageLabel
+        ? `<strong>Damage:</strong> ${escapePanelHtml(magicDamageLabel)}`
+        : "";
+      const magicPotencyHint = hasMagicPotency
+        ? "<strong>Potency:</strong> Yes"
+        : "";
+      const magicTargetHint = targetLabel
+        ? `<strong>Target:</strong> ${escapePanelHtml(targetLabel)}`
+        : "";
+      const magicDurationHint = durationLabel
+        ? `<strong>Duration:</strong> ${escapePanelHtml(durationLabel)}`
+        : "";
+      const magicStatsHint = [magicDamageHint, magicPotencyHint, magicTargetHint, magicDurationHint].filter(Boolean).join("<br>");
+      slotElement.dataset.tooltipDescription = magicStatsHint && itemDescription
+        ? `${magicStatsHint}<br><br>${itemDescription}`
+        : (magicStatsHint || itemDescription);
     } else {
       slotElement.dataset.tooltipDescription = itemDescription;
     }
@@ -3185,6 +3527,7 @@ function updateGroupSlots(panelElement, groupKey, groupItems = []) {
     image.style.display = "block";
     if (iconPlaceholder instanceof HTMLElement) iconPlaceholder.style.display = "none";
     updatePanelSlotAmmoBadge(slotElement, item, resolvedGroupKey);
+    updatePanelSlotAttackAmmoVisualState(slotElement, item, resolvedGroupKey, actor);
     updatePanelSlotAttackRarity(slotElement, item, resolvedGroupKey);
     updatePanelSlotDamageBadge(slotElement, item, resolvedGroupKey);
   }
@@ -3260,7 +3603,7 @@ function updatePanelSlots(panelElement, token = null) {
     const item = keyToItem.get(key) ?? null;
     if (item) {
       flattenedItems.push(item);
-    } else if (defaultLayoutKeySet.has(key) || isSyntheticEmptySlotKey(key)) {
+    } else if (isSyntheticEmptySlotKey(key)) {
       const parsed = parsePanelButtonKey(key);
       flattenedItems.push({
         __empty: true,
@@ -3272,20 +3615,51 @@ function updatePanelSlots(panelElement, token = null) {
   }
 
   // Preserve behavior for dynamic/runtime buttons not part of saved/default layout yet.
-  const fallbackGroupOrder = ["manoeuvre", "recover", "actions", "attacks", "magic"];
-  for (const key of fallbackGroupOrder) {
-    const items = Array.isArray(groupedItems[key]) ? groupedItems[key] : [];
+  // Default runtime ordering:
+  // 1) remaining custom actions (except accumulate)
+  // 2) attacks
+  // 3) accumulate
+  // 4) magic
+  const appendUnconsumedItems = (groupKey, { include } = {}) => {
+    const items = Array.isArray(groupedItems[groupKey]) ? groupedItems[groupKey] : [];
     for (const item of items) {
+      if (typeof include === "function" && !include(item)) continue;
       const itemKey = String(item?.panelButtonKey ?? "").trim();
       if (itemKey && consumedKeys.has(itemKey)) continue;
       flattenedItems.push(item);
       if (itemKey) consumedKeys.add(itemKey);
     }
-  }
+  };
 
-  updateGroupSlots(panelElement, "all", flattenedItems);
-  updateGroupSlots(panelElement, "abilities", groups.abilities);
-  updateGroupSlots(panelElement, "temporaryEffects", groups.temporaryEffects);
+  appendUnconsumedItems("manoeuvre");
+  appendUnconsumedItems("recover");
+  appendUnconsumedItems("actions", {
+    include: (item) => String(item?.id ?? "").trim().toLowerCase() !== "accumulatepower"
+  });
+  appendUnconsumedItems("attacks");
+  const hasAccumulate = (Array.isArray(groupedItems.actions) ? groupedItems.actions : [])
+    .some((item) => String(item?.id ?? "").trim().toLowerCase() === "accumulatepower");
+  // Main panel is a 2-row grid with column flow, so first-row slots are even indexes.
+  // If accumulate would land on an odd index (second row), inject one empty attacks slot.
+  if (hasAccumulate && (flattenedItems.length % 2) === 1) {
+    const alignEmptyKey = toPanelButtonKey("attacks", "empty-slot-attacks-align-accumulate");
+    if (!consumedKeys.has(alignEmptyKey)) {
+      flattenedItems.push({
+        __empty: true,
+        panelButtonKey: alignEmptyKey,
+        panelGroup: "attacks"
+      });
+      consumedKeys.add(alignEmptyKey);
+    }
+  }
+  appendUnconsumedItems("actions", {
+    include: (item) => String(item?.id ?? "").trim().toLowerCase() === "accumulatepower"
+  });
+  appendUnconsumedItems("magic");
+
+  updateGroupSlots(panelElement, "all", flattenedItems, actor);
+  updateGroupSlots(panelElement, "abilities", groups.abilities, actor);
+  updateGroupSlots(panelElement, "temporaryEffects", groups.temporaryEffects, actor);
 }
 function updateStatusDisplay(panelElement, token = null) {
   const statusElements = Array.from(panelElement?.querySelectorAll?.(".tow-combat-overlay-control-panel__status-icon[data-status-id]") ?? []);
@@ -3318,6 +3692,26 @@ function syncItemGroupsMinWidth(panelElement) {
   else itemGroupsElement.style.removeProperty("min-width");
 }
 
+function fitSelectionNameFont(selectionNameMainElement, { minFontSizePx = 12 } = {}) {
+  if (!(selectionNameMainElement instanceof HTMLElement)) return;
+  selectionNameMainElement.style.fontSize = "";
+  selectionNameMainElement.style.lineHeight = "";
+
+  const availableWidth = Number(selectionNameMainElement.clientWidth || 0);
+  const contentWidth = Number(selectionNameMainElement.scrollWidth || 0);
+  if (availableWidth <= 0 || contentWidth <= 0 || contentWidth <= availableWidth) return;
+
+  const computed = window.getComputedStyle(selectionNameMainElement);
+  const baseFontSize = Number.parseFloat(computed.fontSize);
+  if (!Number.isFinite(baseFontSize) || baseFontSize <= 0) return;
+
+  const scale = availableWidth / contentWidth;
+  const nextSize = Math.max(Number(minFontSizePx) || 12, Math.floor(baseFontSize * scale));
+  if (nextSize >= baseFontSize) return;
+  selectionNameMainElement.style.fontSize = `${nextSize}px`;
+  selectionNameMainElement.style.lineHeight = "1";
+}
+
 function updateSelectionDisplay(panelElement) {
   const controlPanelState = getControlPanelState();
   const selectionPanelElement = controlPanelState?.selectionElement;
@@ -3328,6 +3722,8 @@ function updateSelectionDisplay(panelElement) {
   const selectionSpeedElement = selectionPanelElement?.querySelector?.("[data-selection-stat='speed']");
   const selectionResilienceElement = selectionPanelElement?.querySelector?.("[data-selection-stat='resilience']");
   const selectionWoundsElement = selectionPanelElement?.querySelector?.("[data-selection-stat='wounds']");
+  const selectionMiscastElement = selectionPanelElement?.querySelector?.("[data-selection-stat='miscastDice']");
+  const selectionMiscastRow = selectionPanelElement?.querySelector?.("[data-selection-stat-row='miscastDice']");
   const placeholderElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-placeholder");
   const multiCountElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-multi-count");
   if (!(imageElement instanceof HTMLImageElement)) return;
@@ -3337,6 +3733,8 @@ function updateSelectionDisplay(panelElement) {
   if (!(selectionSpeedElement instanceof HTMLElement)) return;
   if (!(selectionResilienceElement instanceof HTMLElement)) return;
   if (!(selectionWoundsElement instanceof HTMLElement)) return;
+  if (!(selectionMiscastElement instanceof HTMLElement)) return;
+  if (!(selectionMiscastRow instanceof HTMLElement)) return;
 
   const controlledTokens = Array.isArray(canvas?.tokens?.controlled)
     ? canvas.tokens.controlled.filter((token) => token && !token.destroyed)
@@ -3361,15 +3759,20 @@ function updateSelectionDisplay(panelElement) {
   const wounds = towCombatOverlayGetWoundCount(token?.document);
   const speed = getSpeedLabel(token);
   const actor = token?.actor ?? token?.document?.actor ?? null;
+  const hasMagic = actorHasMagicCasting(actor);
   const isDead = !!actor?.hasCondition?.("dead");
   selectionElement.dataset.selection = "single";
   selectionElement.classList.toggle("is-dead", isDead);
+  selectionElement.classList.toggle("is-magic", hasMagic);
   imageElement.src = iconSrc;
   imageElement.alt = tokenName;
   selectionNameMainElement.textContent = tokenName || "-";
+  fitSelectionNameFont(selectionNameMainElement);
   selectionSpeedElement.textContent = speed;
   selectionResilienceElement.textContent = formatStatNumber(resilience);
   selectionWoundsElement.textContent = formatWoundsWithMax(token, wounds);
+  selectionMiscastElement.textContent = hasMagic ? formatMiscastDiceValue(token) : "-";
+  selectionMiscastRow.style.display = hasMagic ? "" : "none";
   placeholderElement.textContent = iconSrc ? "-" : "?";
   multiCountElement.textContent = "x1";
   updatePanelSlots(panelElement, token);
@@ -3605,46 +4008,3 @@ export function towCombatOverlayRemoveControlPanel() {
   removeStaleControlPanels();
   if (game && Object.prototype.hasOwnProperty.call(game, PANEL_STATE_KEY)) delete game[PANEL_STATE_KEY];
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
