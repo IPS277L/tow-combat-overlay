@@ -39,6 +39,7 @@ Current note:
 - The runtime is native ESM and is bootstrapped from `scripts/main.js`.
 - The ESM runtime is now grouped by concern:
   - `scripts/esm/bootstrap/`
+  - `scripts/esm/api/`
   - `scripts/esm/combat/`
   - `scripts/esm/runtime/`
   - `scripts/esm/overlay/`
@@ -47,6 +48,17 @@ Current note:
   - `scripts/esm/overlay/controls/`
   - `scripts/esm/overlay/layout/`
   - `scripts/esm/overlay/lifecycle/`
+  - `scripts/esm/overlay/panel/actions/`
+  - `scripts/esm/overlay/panel/core/`
+  - `scripts/esm/overlay/panel/lifecycle/`
+  - `scripts/esm/overlay/panel/selection/`
+  - `scripts/esm/overlay/panel/shared/`
+  - `scripts/esm/overlay/panel/slots/`
+  - `scripts/esm/overlay/spells/`
+  - `scripts/esm/overlay/status/`
+  - `scripts/esm/combat/action-runtime/`
+  - `scripts/esm/combat/resources/`
+  - `scripts/esm/combat/unarmed/`
   - `scripts/esm/overlay/status/`
   - `scripts/esm/overlay/shared/`
   - `scripts/esm/overlay/automation/`
@@ -54,13 +66,14 @@ Current note:
 - Repo-only files such as `.gitignore` and `docs/` remain outside runtime logic.
 - The package manifest at `module.json` is the only supported runtime entrypoint.
 - The top-level overlay barrels are still the stable overlay import surface:
-  - `scripts/esm/overlay/controls-service.js`
-  - `scripts/esm/overlay/overlay-service.js`
-  - `scripts/esm/overlay/layout-state-service.js`
+  - `scripts/esm/overlay/controls.js`
+  - `scripts/esm/overlay/overlay.js`
+  - `scripts/esm/overlay/layout-state.js`
 - Runtime naming is now standardized around `towCombatOverlay` and shared constants:
   - module API keys use `combatOverlayActions` and `combatOverlay`
-  - common notifications, dialog labels, and tooltip copy are centralized in `scripts/esm/runtime/constants.js`
-  - internal overlay expando keys are centralized in `scripts/esm/runtime/overlay-runtime-constants.js`
+  - common notifications, dialog labels, and tooltip copy are centralized in `scripts/esm/runtime/module-constants.js`
+  - internal overlay expando keys are centralized in `scripts/esm/runtime/overlay-constants.js`
 - Foundry 13 dialog dismiss handling is patched so wrapped system dialogs return a promise from `close()`.
 - Overlay tooltip text now reflects actual WHTOW behavior more accurately, including explicit champion wording and threshold-based NPC handling derived from system state.
 - The main remaining technical debt is overlay behavior complexity rather than file layout or naming consistency.
+

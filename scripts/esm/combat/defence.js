@@ -1,8 +1,8 @@
 import {
   DEFAULT_DEFENCE_SKILL,
   SELF_ROLL_CONTEXT,
-} from "../runtime/action-runtime-constants.js";
-import { getTowCombatOverlayConstants } from "../runtime/constants.js";
+} from "../runtime/action-constants.js";
+import { getTowCombatOverlayConstants } from "../runtime/module-constants.js";
 import {
   createTowCombatOverlayRollContext,
   getTowCombatOverlayActorRollState,
@@ -229,3 +229,4 @@ export async function towCombatOverlayRunDefenceForControlled({ manual = false }
     await towCombatOverlayDefenceActor(token.actor, { manual });
   }
 }
+

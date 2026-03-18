@@ -207,6 +207,12 @@
   column-gap: 4px;
 }
 
+.tow-combat-overlay-control-panel__stat-row[data-stat-row="wounds"],
+[data-selection-stat-row="wounds"],
+[data-selection-stat-row="miscastDice"] {
+  cursor: pointer;
+}
+
 .tow-combat-overlay-control-panel__stat-row[data-stat-row="tokenType"] { order: 1; }
 .tow-combat-overlay-control-panel__stat-row[data-stat-row="speed"] { order: 2; }
 .tow-combat-overlay-control-panel__stat-row[data-stat-row="resilience"] { order: 3; }

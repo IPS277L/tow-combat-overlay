@@ -12,8 +12,7 @@ import {
   towCombatOverlayToElement,
   towCombatOverlayWaitForChatMessage
 } from "./core.js";
-import { shouldTowCombatOverlayAutoSubmitDialogs } from "../bootstrap/register-settings.js";
-import { getTowCombatOverlayConstants } from "../runtime/constants.js";
+import { getTowCombatOverlayConstants } from "../runtime/module-constants.js";
 import { createTowCombatOverlayRollContext } from "./roll-modifier.js";
 import { getTowCombatOverlaySystemAdapter } from "../system-adapter/system-adapter.js";
 
@@ -69,9 +68,6 @@ export function towCombatOverlayArmAutoSubmitDialog({
   beforeSubmit = null,
   timeoutMs = 0
 }) {
-  if (!shouldTowCombatOverlayAutoSubmitDialogs()) {
-    return () => {};
-  }
 
   let hookId = null;
   let timeoutId = null;
@@ -232,3 +228,5 @@ export async function towCombatOverlayRunAttackForControlled({ manual = false } 
     await towCombatOverlayAttackActor(token.actor, { manual });
   }
 }
+
+

@@ -1,4 +1,4 @@
-import { getTowCombatOverlayConstants } from "../runtime/constants.js";
+import { getTowCombatOverlayConstants } from "../runtime/module-constants.js";
 
 const {
   flags: MODULE_FLAGS,
@@ -107,3 +107,4 @@ export async function cycleTowCombatOverlayActorRollState(actor, step = 1) {
     rollState: ROLL_STATES[nextIndex]
   });
 }
+

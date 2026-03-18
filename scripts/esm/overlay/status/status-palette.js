@@ -15,13 +15,11 @@ import {
   STATUS_PALETTE_STAGGERED_RING,
   getStatusPaletteBackdropStyle,
   getStatusSpecialBgStyle
-} from "../../runtime/overlay-runtime-constants.js";
+} from "../../runtime/overlay-constants.js";
 import {
   clearStatusTooltip,
   hideStatusTooltip,
-  runActorOpLock,
-  towCombatOverlayLocalizeSystemKey,
-  towCombatOverlayResolveConditionLabel
+  runActorOpLock
 } from "../shared/shared.js";
 import {
   towCombatOverlayBindTooltipHandlers,
@@ -43,57 +41,14 @@ import {
   towCombatOverlayRestoreTokenOverlayInteractivity
 } from "../layout-state.js";
 import { towCombatOverlayAddActorCondition, towCombatOverlayRemoveActorCondition } from "../shared/actions-bridge.js";
-
-function getIconSrc(displayObject) {
-  return (
-    displayObject?.texture?.baseTexture?.resource?.source?.src ||
-    displayObject?.texture?.baseTexture?.resource?.url ||
-    displayObject?.texture?.baseTexture?.resource?.src ||
-    ""
-  );
-}
-
-function normalizeIconSrc(src) {
-  return String(src ?? "").trim().toLowerCase().split("?")[0];
-}
-
-function getActorEffects(actor) {
-  return Array.from(actor?.effects?.contents ?? []);
-}
-
-function getActorStatusSet(actor) {
-  const statuses = new Set(Array.from(actor?.statuses ?? []).map((s) => String(s)));
-  for (const effect of getActorEffects(actor)) {
-    for (const status of Array.from(effect?.statuses ?? [])) statuses.add(String(status));
-  }
-  return statuses;
-}
-
-function getActorEffectsByStatus(actor, conditionId) {
-  const id = String(conditionId ?? "");
-  if (!id) return [];
-  return getActorEffects(actor).filter((effect) => Array.from(effect?.statuses ?? []).map(String).includes(id));
-}
-
-function getAllConditionEntries() {
-  const conditions = game.oldworld?.config?.conditions ?? {};
-  return Object.entries(conditions)
-    .map(([id, data]) => ({
-      id: String(id),
-      img: String(data?.img ?? data?.icon ?? `/systems/whtow/assets/icons/conditions/${id}.svg`)
-    }))
-    .filter((entry) => !!entry.id && !!entry.img);
-}
-
-function getConditionTooltipData(conditionId) {
-  const condition = game.oldworld?.config?.conditions?.[String(conditionId ?? "")] ?? {};
-  const rawName = String(condition?.name ?? conditionId ?? "Condition");
-  const rawDescription = String(condition?.description ?? "");
-  const name = rawName.startsWith("TOW.") ? towCombatOverlayLocalizeSystemKey(rawName, towCombatOverlayResolveConditionLabel(conditionId)) : rawName;
-  const localizedDescription = rawDescription.startsWith("TOW.") ? towCombatOverlayLocalizeSystemKey(rawDescription, rawDescription) : rawDescription;
-  const shortDescription = localizedDescription ? (localizedDescription.split(/(?<=[.!?])\s+/)[0] ?? localizedDescription).trim() : "";
-  return { name: String(name ?? conditionId ?? "Condition"), description: String(shortDescription ?? "") };
-}
+import {
+  getActorEffectsByStatus,
+  getActorStatusSet,
+  getAllConditionEntries,
+  getConditionTooltipData,
+  getIconSrc,
+  normalizeIconSrc
+} from "./status-palette-data.js";
 
 async function setActorConditionState(actor, conditionId, active) {
   if (!actor || !conditionId) return;
@@ -450,3 +405,4 @@ export function clearAllStatusOverlays() {
 export function hideDefaultStatusPanelForOverlay(tokenObject) {
   hideDefaultStatusPanel(tokenObject);
 }
+

@@ -1,5 +1,5 @@
-import { getTowCombatOverlayActionsApi, getTowCombatOverlayPublicApi } from "../../bootstrap/register-public-apis.js";
-import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
+import { getTowCombatOverlayActionsApi, getTowCombatOverlayPublicApi } from "../../api/module-api-registry.js";
+import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
 
 const {
   apiKeys: COMBAT_OVERLAY_API_KEYS,
@@ -56,3 +56,4 @@ export async function towCombatOverlayApplyActorDamage(actor, damage, context = 
   }
   return actor?.system?.applyDamage?.(damage, context) ?? null;
 }
+

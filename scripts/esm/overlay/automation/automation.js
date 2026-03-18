@@ -4,19 +4,19 @@ import {
   AUTO_STAGGER_PATCH_MS,
   MODULE_KEY,
   OPPOSED_LINK_WAIT_MS
-} from "../../runtime/overlay-runtime-constants.js";
-import { getTowCombatOverlayActionsApi } from "../../bootstrap/register-public-apis.js";
-import {
-  shouldTowCombatOverlayAutoApplyDamage,
-  shouldTowCombatOverlayAutoChooseStaggerWound,
-  shouldTowCombatOverlayAutoDefence
-} from "../../bootstrap/register-settings.js";
+} from "../../runtime/overlay-constants.js";
+import { getTowCombatOverlayActionsApi } from "../../api/module-api-registry.js";
 import {
   towCombatOverlayApplyActorDamage,
   towCombatOverlayEnsureActionsApi
 } from "../shared/actions-bridge.js";
 import { towCombatOverlayLocalize, towCombatOverlayRenderTemplate } from "../../combat/core.js";
 import { towCombatOverlayResolveConditionLabel } from "../shared/shared.js";
+import {
+  deriveAppliedStatusLabels,
+  getFlowNamesModel,
+  isLikelyStaggerChoiceDialog
+} from "./automation-helpers.js";
 
 const TOW_AUTOMATION_LOCAL_STATE = {};
 
@@ -26,57 +26,8 @@ function getTowAutomationStateBucket() {
   return TOW_AUTOMATION_LOCAL_STATE;
 }
 
-function getDialogButtonTokens(config) {
-  const tokens = [];
-  const add = (value) => {
-    const token = String(value ?? "").trim().toLowerCase();
-    if (!token) return;
-    if (!tokens.includes(token)) tokens.push(token);
-  };
-
-  if (Array.isArray(config?.buttons)) {
-    for (const button of config.buttons) {
-      add(button?.action);
-      add(button?.id);
-      add(button?.label);
-      add(button?.name);
-      add(button?.text);
-    }
-    return tokens;
-  }
-
-  const buttons = config?.buttons ?? {};
-  for (const [key, button] of Object.entries(buttons)) {
-    add(key);
-    add(button?.action);
-    add(button?.id);
-    add(button?.label);
-    add(button?.name);
-    add(button?.text);
-  }
-  return tokens;
-}
-
-function isLikelyStaggerChoiceDialog(config) {
-  const title = String(config?.window?.title ?? "").toLowerCase();
-  const content = String(config?.content ?? "").toLowerCase();
-  const buttonTokens = getDialogButtonTokens(config);
-  const mentionsStagger = title.includes("stagger") || content.includes("stagger");
-  const mentionsChoicePrompt = content.includes("choose from the following options");
-  const hasWoundChoice = buttonTokens.some((token) => token.includes("wound"));
-  const hasProneChoice = buttonTokens.some((token) => token.includes("prone"));
-  const hasGiveChoice = buttonTokens.some((token) => token.includes("give"));
-  const hasExpectedChoices = hasWoundChoice && (hasProneChoice || hasGiveChoice);
-
-  if (hasExpectedChoices && (mentionsStagger || mentionsChoicePrompt)) return true;
-  if (mentionsStagger && mentionsChoicePrompt) return true;
-  return false;
-}
 
 export function armDefaultStaggerChoiceWound(durationMs = AUTO_STAGGER_PATCH_MS) {
-  if (!shouldTowCombatOverlayAutoChooseStaggerWound()) {
-    return () => {};
-  }
 
   // Use runtime overlay state when available; otherwise use local automation state.
   // Do not initialize game[MODULE_KEY] here because it breaks overlay lifecycle bootstrap.
@@ -123,9 +74,6 @@ export function armDefaultStaggerChoiceWound(durationMs = AUTO_STAGGER_PATCH_MS)
 }
 
 export function armAutoDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState } = {}) {
-  if (!shouldTowCombatOverlayAutoDefence()) {
-    return;
-  }
 
   if (!sourceToken?.actor || !targetToken?.actor?.isOwner) return;
 
@@ -263,38 +211,10 @@ async function captureSettledActorState(actor, baselineState, settleMs = 700) {
 async function deriveSourceStatusHints(sourceActor, sourceBeforeState) {
   if (!sourceActor || !sourceBeforeState) return [];
   const sourceAfterState = await captureSettledActorState(sourceActor, sourceBeforeState, 500);
-  return deriveAppliedStatusLabels(sourceBeforeState, sourceAfterState);
-}
-
-function deriveAppliedStatusLabels(before, after) {
-  const labels = [];
-  const add = (label) => {
-    if (!label) return;
-    if (!labels.includes(label)) labels.push(label);
-  };
-
-  if ((after?.wounds ?? 0) > (before?.wounds ?? 0)) {
-    add(towCombatOverlayLocalize("TOWCOMBATOVERLAY.Status.Wound", "Wound"));
-  }
-
-  const beforeStatuses = before?.statuses ?? new Set();
-  const afterStatuses = after?.statuses ?? new Set();
-  for (const statusId of afterStatuses) {
-    if (beforeStatuses.has(statusId)) continue;
-    const label = towCombatOverlayResolveConditionLabel(statusId);
-    add(label);
-  }
-  return labels;
-}
-
-function getFlowNamesModel(attackerName, defenderName) {
-  const combinedLen = `${attackerName} vs. ${defenderName}`.length;
-  const needsStacked = combinedLen > 34 || attackerName.length > 18 || defenderName.length > 18;
-  return {
-    attackerName,
-    defenderName,
-    needsStacked
-  };
+  return deriveAppliedStatusLabels(sourceBeforeState, sourceAfterState, {
+    localize: towCombatOverlayLocalize,
+    resolveConditionLabel: towCombatOverlayResolveConditionLabel
+  });
 }
 
 async function postFlowSeparatorCard(opposed, { sourceStatusHints = [], targetStatusHints = [] } = {}) {
@@ -402,9 +322,6 @@ async function postFlowSeparatorCard(opposed, { sourceStatusHints = [], targetSt
 }
 
 function armAutoApplyDamageForOpposed(opposedMessage, { sourceActor = null, sourceBeforeState = null } = {}) {
-  if (!shouldTowCombatOverlayAutoApplyDamage()) {
-    return;
-  }
 
   if (!opposedMessage?.id) return;
   const state = game[MODULE_KEY];
@@ -466,7 +383,10 @@ function armAutoApplyDamageForOpposed(opposedMessage, { sourceActor = null, sour
         test: opposed.attackerMessage?.system?.test
       });
       const afterState = await captureSettledActorState(defenderActor, beforeState, 700);
-      const targetStatusHints = deriveAppliedStatusLabels(beforeState, afterState);
+      const targetStatusHints = deriveAppliedStatusLabels(beforeState, afterState, {
+        localize: towCombatOverlayLocalize,
+        resolveConditionLabel: towCombatOverlayResolveConditionLabel
+      });
       const sourceStatusHints = await deriveSourceStatusHints(sourceActor, sourceBeforeState);
       if (!separatorPosted) {
         separatorPosted = true;
@@ -488,3 +408,5 @@ export function createTowCombatOverlayAutomationCoordinator() {
 }
 
 export const towCombatOverlayAutomation = createTowCombatOverlayAutomationCoordinator();
+
+

@@ -2,8 +2,8 @@ import {
   ACTOR_OVERLAY_RESYNC_DELAYS_MS,
   KEYS,
   MODULE_KEY
-} from "../../runtime/overlay-runtime-constants.js";
-import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
+} from "../../runtime/overlay-constants.js";
+import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
 import {
   registerTowCombatOverlayHooks,
   unregisterTowCombatOverlayHooks
@@ -217,3 +217,4 @@ export function towCombatOverlayDisable() {
 export function towCombatOverlayToggle() {
   return towCombatOverlayIsEnabled() ? towCombatOverlayDisable() : towCombatOverlayEnable();
 }
+

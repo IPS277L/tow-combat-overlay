@@ -3,8 +3,8 @@ import {
   DEAD_TO_WOUND_SYNC_DEBOUNCE_MS,
   MODULE_KEY,
   WOUND_ITEM_TYPE
-} from "../../runtime/overlay-runtime-constants.js";
-import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
+} from "../../runtime/overlay-constants.js";
+import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
 import { towCombatOverlayLocalize } from "../../combat/core.js";
 import {
   towCombatOverlayCanEditActor,
@@ -257,3 +257,4 @@ export async function towCombatOverlayRemoveWound(actor) {
     }
   });
 }
+

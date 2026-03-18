@@ -2,7 +2,7 @@ import {
   KEYS,
   LAYOUT_BORDER_COLOR,
   getLayoutBorderStyle
-} from "../../runtime/overlay-runtime-constants.js";
+} from "../../runtime/overlay-constants.js";
 
 export function towCombatOverlayClearDisplayObject(displayObject) {
   if (!displayObject) return;
@@ -221,3 +221,4 @@ export function towCombatOverlayClearDeadVisual(tokenObject) {
 
   delete tokenObject[KEYS.deadVisualState];
 }
+

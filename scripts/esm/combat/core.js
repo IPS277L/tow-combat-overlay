@@ -2,7 +2,7 @@ import {
   ATTACK_CALL_DEDUPE_MS,
   DAMAGE_RENDER_DEDUPE_MS,
   SHIFT_KEY
-} from "../runtime/action-runtime-constants.js";
+} from "../runtime/action-constants.js";
 
 const attackCallDeduper = new Map();
 const damageRenderDeduper = new Map();
@@ -308,3 +308,4 @@ export async function towCombatOverlayRenderDamageDisplay(message, { damage }) {
   if (!message) return;
   await towCombatOverlayPostSeparateDamageMessage(message, damage);
 }
+

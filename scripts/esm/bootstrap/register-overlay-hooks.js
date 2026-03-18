@@ -1,6 +1,6 @@
-import { getTowCombatOverlayRuntimeConstants } from "../runtime/overlay-runtime-constants.js";
-import { WOUND_ITEM_TYPE } from "../runtime/overlay-runtime-constants.js";
-import { getTowCombatOverlayConstants } from "../runtime/constants.js";
+import { getTowCombatOverlayRuntimeConstants } from "../runtime/overlay-constants.js";
+import { WOUND_ITEM_TYPE } from "../runtime/overlay-constants.js";
+import { getTowCombatOverlayConstants } from "../runtime/module-constants.js";
 import {
   towCombatOverlayHideCoreTokenHoverVisuals,
   towCombatOverlayQueueActorOverlayResync,
@@ -118,3 +118,4 @@ export function unregisterTowCombatOverlayHooks(hookIds) {
   Hooks.off("updateActiveEffect", hookIds.updateActiveEffect);
   Hooks.off("deleteActiveEffect", hookIds.deleteActiveEffect);
 }
+

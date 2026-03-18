@@ -9,11 +9,13 @@ import {
   STATUS_TOOLTIP_OFFSET_Y,
   STATUS_TOOLTIP_PAD_X,
   STATUS_TOOLTIP_PAD_Y
-} from "../../runtime/overlay-runtime-constants.js";
-import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
+} from "../../runtime/overlay-constants.js";
+import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
 
 const { tooltips: MODULE_TOOLTIPS } = getTowCombatOverlayConstants();
 const TOOLTIP_STATE_KEY = "__towCombatOverlayTooltipState";
+const STATUS_TOOLTIP_TITLE_CLASS = `${STATUS_TOOLTIP_DOM_CLASS}__title`;
+const STATUS_TOOLTIP_BODY_CLASS = `${STATUS_TOOLTIP_DOM_CLASS}__body`;
 
 function getTooltipState() {
   if (!game) return null;
@@ -43,7 +45,7 @@ function getActorTypeLabel(actor) {
   if (systemType) return systemType;
   const actorType = String(actor?.type ?? "").trim();
   if (actorType) return actorType;
-  return "actor";
+  return towCombatOverlayLocalizeSystemKey("TOWCOMBATOVERLAY.Label.Actor", "actor");
 }
 
 function formatTypeTooltipTitle(typeLabel) {
@@ -140,34 +142,18 @@ function ensureStatusTooltip() {
 
   const element = document.createElement("div");
   element.classList.add(STATUS_TOOLTIP_DOM_CLASS);
-  element.style.position = "fixed";
-  element.style.left = "0px";
-  element.style.top = "0px";
-  element.style.display = "none";
-  element.style.pointerEvents = "none";
-  element.style.zIndex = "12000";
-  element.style.maxWidth = `${STATUS_TOOLTIP_MAX_WIDTH}px`;
-  element.style.padding = `${STATUS_TOOLTIP_PAD_Y}px ${STATUS_TOOLTIP_PAD_X}px`;
-  element.style.borderRadius = "5px";
-  element.style.border = `1px solid rgba(193, 139, 44, ${STATUS_TOOLTIP_BORDER_ALPHA})`;
-  element.style.background = `rgba(15, 12, 9, ${STATUS_TOOLTIP_BG_ALPHA})`;
-  element.style.color = "#f2e7cc";
-  element.style.fontFamily = "var(--font-primary, Signika)";
-  element.style.fontSize = `${STATUS_TOOLTIP_FONT_SIZE}px`;
-  element.style.fontWeight = "400";
-  element.style.lineHeight = "1.3";
-  element.style.whiteSpace = "normal";
+  element.style.setProperty("--tow-status-tooltip-max-width", `${STATUS_TOOLTIP_MAX_WIDTH}px`);
+  element.style.setProperty("--tow-status-tooltip-pad-y", `${STATUS_TOOLTIP_PAD_Y}px`);
+  element.style.setProperty("--tow-status-tooltip-pad-x", `${STATUS_TOOLTIP_PAD_X}px`);
+  element.style.setProperty("--tow-status-tooltip-font-size", `${STATUS_TOOLTIP_FONT_SIZE}px`);
+  element.style.setProperty("--tow-status-tooltip-border-alpha", String(STATUS_TOOLTIP_BORDER_ALPHA));
+  element.style.setProperty("--tow-status-tooltip-bg-alpha", String(STATUS_TOOLTIP_BG_ALPHA));
 
   const title = document.createElement("div");
-  title.style.fontSize = `${STATUS_TOOLTIP_FONT_SIZE + 1}px`;
-  title.style.fontWeight = "600";
-  title.style.color = "#fff4d8";
-  title.style.marginBottom = "3px";
+  title.classList.add(STATUS_TOOLTIP_TITLE_CLASS);
 
   const body = document.createElement("div");
-  body.style.fontSize = `${STATUS_TOOLTIP_FONT_SIZE}px`;
-  body.style.fontWeight = "400";
-  body.style.color = "#f2e7cc";
+  body.classList.add(STATUS_TOOLTIP_BODY_CLASS);
 
   element.appendChild(title);
   element.appendChild(body);
@@ -189,29 +175,7 @@ function ensureStatusTooltip() {
 function applyTooltipTheme(tooltip, theme = "overlay") {
   if (!tooltip?.element || !tooltip?.title || !tooltip?.body) return;
   const usePanelTheme = String(theme ?? "").toLowerCase() === "panel";
-  if (usePanelTheme) {
-    tooltip.element.style.border = "1px solid #bdb9ab";
-    tooltip.element.style.background = "#f2f1e8";
-    tooltip.element.style.color = "#2a2620";
-    tooltip.element.style.fontFamily = "\"CaslonPro\", var(--font-primary, Signika), serif";
-    tooltip.element.style.fontSize = "16px";
-    tooltip.element.style.boxShadow = "0 4px 10px rgba(22, 18, 12, 0.28)";
-    tooltip.title.style.color = "#2a2620";
-    tooltip.title.style.fontSize = "16px";
-    tooltip.title.style.fontWeight = "700";
-    tooltip.body.style.color = "#2a2620";
-    tooltip.body.style.fontSize = "16px";
-    tooltip.body.style.fontWeight = "500";
-    return;
-  }
-
-  tooltip.element.style.border = `1px solid rgba(193, 139, 44, ${STATUS_TOOLTIP_BORDER_ALPHA})`;
-  tooltip.element.style.background = `rgba(15, 12, 9, ${STATUS_TOOLTIP_BG_ALPHA})`;
-  tooltip.element.style.color = "#f2e7cc";
-  tooltip.element.style.fontFamily = "var(--font-primary, Signika)";
-  tooltip.element.style.boxShadow = "none";
-  tooltip.title.style.color = "#fff4d8";
-  tooltip.body.style.color = "#f2e7cc";
+  tooltip.element.classList.toggle("is-panel-theme", usePanelTheme);
 }
 
 export function showOverlayTooltip(title, description, point, existingTooltip = null, options = {}) {
@@ -331,3 +295,4 @@ export function clearStatusTooltip() {
     if (!tooltipState?.statusTooltip) delete game[TOOLTIP_STATE_KEY];
   }
 }
+

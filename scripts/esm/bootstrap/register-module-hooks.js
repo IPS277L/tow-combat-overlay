@@ -1,23 +1,24 @@
 import { towCombatOverlayEnsurePromiseClose } from "../combat/attack.js";
-import { registerTowCombatOverlayApi } from "../combat/overlay-api.js";
-import { getTowCombatOverlayConstants } from "../runtime/constants.js";
+import { registerTowCombatOverlayApi } from "../api/combat-overlay-api.js";
+import { getTowCombatOverlayConstants } from "../runtime/module-constants.js";
 import { registerTowCombatOverlayActionsRuntimeApi } from "./register-actions-api.js";
 import { registerTowCombatOverlayDeadWoundSyncHooks } from "./register-dead-wound-sync-hooks.js";
-import { getTowCombatOverlayOverlayApi } from "./register-public-apis.js";
+import { getTowCombatOverlayOverlayApi } from "../api/module-api-registry.js";
 import {
-  isTowCombatOverlaySettingEnabled,
-  registerTowCombatOverlaySettings
+  isTowCombatOverlayDisplaySettingEnabled,
+  registerTowCombatOverlayDisplaySettings
 } from "./register-settings.js";
 import {
   towCombatOverlayEnsureControlPanel,
   towCombatOverlayRemoveControlPanel
-} from "../overlay/panel/service.js";
+} from "../overlay/panel/control-panel-service.js";
 
 function ensureTowCombatOverlayStylesheetLoaded() {
   const explicitHrefs = [
     "modules/tow-combat-overlay/styles/dialog-base.css",
     "modules/tow-combat-overlay/styles/dialog-selectors.css",
     "modules/tow-combat-overlay/styles/chat-cards.css",
+    "modules/tow-combat-overlay/styles/status-tooltip.css",
     "modules/tow-combat-overlay/styles/control-panel.css"
   ];
   const links = Array.from(document.querySelectorAll("link[rel='stylesheet']"));
@@ -39,13 +40,13 @@ function ensureTowCombatOverlayStylesheetLoaded() {
   return injected;
 }
 
-export function syncTowCombatOverlayEnabledSetting() {
+export function syncTowCombatOverlayDisplaySettings() {
   const { settings } = getTowCombatOverlayConstants();
   const overlayApi = getTowCombatOverlayOverlayApi();
   let didChange = false;
 
-  const wantsEnabled = isTowCombatOverlaySettingEnabled(settings.enableOverlay, true);
-  const wantsControlPanel = isTowCombatOverlaySettingEnabled(settings.enableControlPanel, true);
+  const wantsEnabled = isTowCombatOverlayDisplaySettingEnabled(settings.enableOverlay, true);
+  const wantsControlPanel = isTowCombatOverlayDisplaySettingEnabled(settings.enableControlPanel, true);
 
   if (!overlayApi) {
     if (!wantsControlPanel) towCombatOverlayRemoveControlPanel();
@@ -84,7 +85,9 @@ function registerTowCombatOverlayRuntimeApis() {
 export function registerTowCombatOverlayModuleHooks() {
   Hooks.once("init", () => {
     ensureTowCombatOverlayStylesheetLoaded();
-    registerTowCombatOverlaySettings();
+    registerTowCombatOverlayDisplaySettings({
+      onDisplaySettingsChanged: syncTowCombatOverlayDisplaySettings
+    });
     registerTowCombatOverlayRuntimeApis();
   });
 
@@ -102,8 +105,8 @@ export function registerTowCombatOverlayModuleHooks() {
 
   Hooks.once("ready", () => {
     ensureTowCombatOverlayStylesheetLoaded();
-    registerTowCombatOverlayRuntimeApis();
     registerTowCombatOverlayDeadWoundSyncHooks();
-    syncTowCombatOverlayEnabledSetting();
+    syncTowCombatOverlayDisplaySettings();
   });
 }
+

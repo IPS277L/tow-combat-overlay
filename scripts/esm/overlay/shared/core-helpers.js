@@ -1,5 +1,5 @@
-import { getTowCombatOverlayRuntimeConstants } from "../../runtime/overlay-runtime-constants.js";
-import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
+import { getTowCombatOverlayRuntimeConstants } from "../../runtime/overlay-constants.js";
+import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
 import { hideStatusTooltip, showOverlayTooltip } from "./shared.js";
 
 const {
@@ -215,3 +215,4 @@ export async function towCombatOverlayExecuteFirstMacroByNameCandidates(candidat
   await macro.execute();
   return true;
 }
+
