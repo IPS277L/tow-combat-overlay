@@ -206,7 +206,6 @@ export function towCombatOverlayDisable() {
     foundry.applications.api.Dialog.wait = state.staggerWaitPatch.originalWait;
   }
   delete game[MODULE_KEY];
-
   towCombatOverlayClearAllWoundControls();
   towCombatOverlayClearAllNameLabels();
   towCombatOverlayClearAllResilienceLabels();

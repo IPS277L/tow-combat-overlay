@@ -13,6 +13,13 @@ import {
 import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
 
 const { tooltips: MODULE_TOOLTIPS } = getTowCombatOverlayConstants();
+const TOOLTIP_STATE_KEY = "__towCombatOverlayTooltipState";
+
+function getTooltipState() {
+  if (!game) return null;
+  if (!game[TOOLTIP_STATE_KEY]) game[TOOLTIP_STATE_KEY] = {};
+  return game[TOOLTIP_STATE_KEY];
+}
 
 export function towCombatOverlayLocalizeSystemKey(key, fallback = "") {
   const localized = game?.i18n?.localize?.(String(key ?? ""));
@@ -61,11 +68,18 @@ function getMaxWoundLimit(actor) {
 
 export async function runActorOpLock(actor, opKey, operation) {
   const state = game[MODULE_KEY];
-  if (!state || !actor || !opKey || typeof operation !== "function") return;
+  if (!actor || !opKey || typeof operation !== "function") return;
+  if (!state) {
+    await operation();
+    return;
+  }
   if (!state.statusRemoveInFlight) state.statusRemoveInFlight = new Set();
   if (!state.statusRemoveQueue) state.statusRemoveQueue = new Map();
   const actorKey = actor.uuid ?? actor.id;
-  if (!actorKey) return;
+  if (!actorKey) {
+    await operation();
+    return;
+  }
 
   const lockKey = `${actorKey}:${String(opKey)}`;
   const queueKey = actorKey;
@@ -116,7 +130,7 @@ export function getTypeTooltipData(actor) {
 }
 
 function ensureStatusTooltip() {
-  const state = game[MODULE_KEY];
+  const state = getTooltipState();
   if (!state) return null;
   if (state.statusTooltip?.element instanceof HTMLElement && state.statusTooltip.element.isConnected) return state.statusTooltip;
 
@@ -131,7 +145,7 @@ function ensureStatusTooltip() {
   element.style.top = "0px";
   element.style.display = "none";
   element.style.pointerEvents = "none";
-  element.style.zIndex = "10000";
+  element.style.zIndex = "12000";
   element.style.maxWidth = `${STATUS_TOOLTIP_MAX_WIDTH}px`;
   element.style.padding = `${STATUS_TOOLTIP_PAD_Y}px ${STATUS_TOOLTIP_PAD_X}px`;
   element.style.borderRadius = "5px";
@@ -172,40 +186,130 @@ function ensureStatusTooltip() {
   return state.statusTooltip;
 }
 
-export function showOverlayTooltip(title, description, point, existingTooltip = null) {
+function applyTooltipTheme(tooltip, theme = "overlay") {
+  if (!tooltip?.element || !tooltip?.title || !tooltip?.body) return;
+  const usePanelTheme = String(theme ?? "").toLowerCase() === "panel";
+  if (usePanelTheme) {
+    tooltip.element.style.border = "1px solid #bdb9ab";
+    tooltip.element.style.background = "#f2f1e8";
+    tooltip.element.style.color = "#2a2620";
+    tooltip.element.style.fontFamily = "\"CaslonPro\", var(--font-primary, Signika), serif";
+    tooltip.element.style.fontSize = "16px";
+    tooltip.element.style.boxShadow = "0 4px 10px rgba(22, 18, 12, 0.28)";
+    tooltip.title.style.color = "#2a2620";
+    tooltip.title.style.fontSize = "16px";
+    tooltip.title.style.fontWeight = "700";
+    tooltip.body.style.color = "#2a2620";
+    tooltip.body.style.fontSize = "16px";
+    tooltip.body.style.fontWeight = "500";
+    return;
+  }
+
+  tooltip.element.style.border = `1px solid rgba(193, 139, 44, ${STATUS_TOOLTIP_BORDER_ALPHA})`;
+  tooltip.element.style.background = `rgba(15, 12, 9, ${STATUS_TOOLTIP_BG_ALPHA})`;
+  tooltip.element.style.color = "#f2e7cc";
+  tooltip.element.style.fontFamily = "var(--font-primary, Signika)";
+  tooltip.element.style.boxShadow = "none";
+  tooltip.title.style.color = "#fff4d8";
+  tooltip.body.style.color = "#f2e7cc";
+}
+
+export function showOverlayTooltip(title, description, point, existingTooltip = null, options = {}) {
   const tooltip = existingTooltip ?? ensureStatusTooltip();
   if (!tooltip || !point) return;
+  const theme = String(options?.theme ?? "overlay");
+  const isPanelTheme = theme.toLowerCase() === "panel";
+  applyTooltipTheme(tooltip, theme);
   tooltip.title.textContent = String(title ?? "");
-  tooltip.body.textContent = String(description ?? "");
+  if (options?.descriptionIsHtml === true) {
+    tooltip.body.innerHTML = String(description ?? "");
+  } else {
+    tooltip.body.textContent = String(description ?? "");
+  }
 
+  const allowOutsideCanvas = options?.allowOutsideCanvas === true;
+  const clientCoordinates = options?.clientCoordinates === true;
   const view = canvas?.app?.renderer?.events?.domElement ?? canvas?.app?.view;
   const rect = view?.getBoundingClientRect?.();
-  const clientX = Number(point.x ?? 0) + Number(rect?.left ?? 0) + STATUS_TOOLTIP_OFFSET_X;
-  const clientY = Number(point.y ?? 0) + Number(rect?.top ?? 0) + STATUS_TOOLTIP_OFFSET_Y;
 
-  const topElement = document.elementFromPoint(clientX, clientY);
-  const cursorOnCanvas = !!(view && topElement && (topElement === view || view.contains(topElement)));
-  if (!cursorOnCanvas) {
-    hideStatusTooltip();
-    return;
+  // Panel tooltips carry long descriptions; prefer wider layout for readability.
+  if (isPanelTheme) {
+    const widthBasis = Number(rect?.width ?? window.innerWidth);
+    const panelMaxWidth = Math.max(220, Math.min(420, Math.round(widthBasis - 24)));
+    tooltip.element.style.maxWidth = `${panelMaxWidth}px`;
+  } else {
+    tooltip.element.style.maxWidth = `${STATUS_TOOLTIP_MAX_WIDTH}px`;
+  }
+
+  const baseX = Number(point.x ?? 0) + (clientCoordinates ? 0 : Number(rect?.left ?? 0));
+  const baseY = Number(point.y ?? 0) + (clientCoordinates ? 0 : Number(rect?.top ?? 0));
+  const clientX = baseX + STATUS_TOOLTIP_OFFSET_X;
+  const clientY = baseY + STATUS_TOOLTIP_OFFSET_Y;
+
+  if (!allowOutsideCanvas) {
+    const topElement = document.elementFromPoint(clientX, clientY);
+    const cursorOnCanvas = !!(view && topElement && (topElement === view || view.contains(topElement)));
+    if (!cursorOnCanvas) {
+      hideStatusTooltip();
+      return;
+    }
   }
 
   tooltip.element.style.left = `${Math.round(clientX)}px`;
   tooltip.element.style.top = `${Math.round(clientY)}px`;
+  tooltip.element.style.visibility = "hidden";
   tooltip.element.style.display = "block";
+
+  const tooltipWidth = Math.max(1, Math.round(tooltip.element.offsetWidth || 1));
+  const tooltipHeight = Math.max(1, Math.round(tooltip.element.offsetHeight || 1));
+  const viewportMargin = 8;
+  const bounds = allowOutsideCanvas && !rect
+    ? {
+      left: viewportMargin,
+      top: viewportMargin,
+      right: Math.max(viewportMargin, window.innerWidth - viewportMargin),
+      bottom: Math.max(viewportMargin, window.innerHeight - viewportMargin)
+    }
+    : {
+      left: Math.round((rect?.left ?? 0) + viewportMargin),
+      top: Math.round((rect?.top ?? 0) + viewportMargin),
+      right: Math.round((rect?.right ?? window.innerWidth) - viewportMargin),
+      bottom: Math.round((rect?.bottom ?? window.innerHeight) - viewportMargin)
+    };
+
+  const clamp = (value, min, max) => {
+    if (max < min) return min;
+    return Math.min(max, Math.max(min, value));
+  };
+
+  let finalX = clientX;
+  let finalY = clientY;
+  if ((finalY + tooltipHeight) > bounds.bottom) {
+    finalY = baseY - STATUS_TOOLTIP_OFFSET_Y - tooltipHeight;
+  }
+  if ((finalX + tooltipWidth) > bounds.right) {
+    finalX = baseX - STATUS_TOOLTIP_OFFSET_X - tooltipWidth;
+  }
+
+  finalX = clamp(finalX, bounds.left, bounds.right - tooltipWidth);
+  finalY = clamp(finalY, bounds.top, bounds.bottom - tooltipHeight);
+
+  tooltip.element.style.left = `${Math.round(finalX)}px`;
+  tooltip.element.style.top = `${Math.round(finalY)}px`;
+  tooltip.element.style.visibility = "visible";
 }
 
 export function hideStatusTooltip() {
   for (const element of Array.from(document.querySelectorAll(`.${STATUS_TOOLTIP_DOM_CLASS}`))) {
     if (element instanceof HTMLElement) element.style.display = "none";
   }
-  const state = game[MODULE_KEY];
+  const state = getTooltipState();
   const element = state?.statusTooltip?.element;
   if (element instanceof HTMLElement) element.style.display = "none";
 }
 
 export function clearStatusTooltip() {
-  const state = game[MODULE_KEY];
+  const state = getTooltipState();
   if (!state?.statusTooltip) return;
   const view = state.statusTooltip.view;
   const hideOnLeave = state.statusTooltip.hideOnLeave;
@@ -222,4 +326,8 @@ export function clearStatusTooltip() {
     stale.remove();
   }
   delete state.statusTooltip;
+  if (game && Object.prototype.hasOwnProperty.call(game, TOOLTIP_STATE_KEY)) {
+    const tooltipState = game[TOOLTIP_STATE_KEY];
+    if (!tooltipState?.statusTooltip) delete game[TOOLTIP_STATE_KEY];
+  }
 }

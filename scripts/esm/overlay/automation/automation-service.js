@@ -18,23 +18,59 @@ import {
 import { towCombatOverlayLocalize, towCombatOverlayRenderTemplate } from "../../combat/core-service.js";
 import { towCombatOverlayResolveConditionLabel } from "../shared/shared-service.js";
 
-function getDialogActionList(config) {
-  return Array.isArray(config?.buttons)
-    ? config.buttons.map((button) => String(button?.action ?? ""))
-    : Object.values(config?.buttons ?? {}).map((button) => String(button?.action ?? ""));
+const TOW_AUTOMATION_LOCAL_STATE = {};
+
+function getTowAutomationStateBucket() {
+  const runtimeState = game?.[MODULE_KEY];
+  if (runtimeState && typeof runtimeState === "object") return runtimeState;
+  return TOW_AUTOMATION_LOCAL_STATE;
+}
+
+function getDialogButtonTokens(config) {
+  const tokens = [];
+  const add = (value) => {
+    const token = String(value ?? "").trim().toLowerCase();
+    if (!token) return;
+    if (!tokens.includes(token)) tokens.push(token);
+  };
+
+  if (Array.isArray(config?.buttons)) {
+    for (const button of config.buttons) {
+      add(button?.action);
+      add(button?.id);
+      add(button?.label);
+      add(button?.name);
+      add(button?.text);
+    }
+    return tokens;
+  }
+
+  const buttons = config?.buttons ?? {};
+  for (const [key, button] of Object.entries(buttons)) {
+    add(key);
+    add(button?.action);
+    add(button?.id);
+    add(button?.label);
+    add(button?.name);
+    add(button?.text);
+  }
+  return tokens;
 }
 
 function isLikelyStaggerChoiceDialog(config) {
   const title = String(config?.window?.title ?? "").toLowerCase();
   const content = String(config?.content ?? "").toLowerCase();
-  const actions = getDialogActionList(config);
-  const hasExpectedChoices = actions.includes("wound")
-    && (actions.includes("prone") || actions.includes("give"));
-  if (!hasExpectedChoices) return false;
+  const buttonTokens = getDialogButtonTokens(config);
+  const mentionsStagger = title.includes("stagger") || content.includes("stagger");
+  const mentionsChoicePrompt = content.includes("choose from the following options");
+  const hasWoundChoice = buttonTokens.some((token) => token.includes("wound"));
+  const hasProneChoice = buttonTokens.some((token) => token.includes("prone"));
+  const hasGiveChoice = buttonTokens.some((token) => token.includes("give"));
+  const hasExpectedChoices = hasWoundChoice && (hasProneChoice || hasGiveChoice);
 
-  return title.includes("stagger")
-    || content.includes("stagger")
-    || content.includes("choose from the following options");
+  if (hasExpectedChoices && (mentionsStagger || mentionsChoicePrompt)) return true;
+  if (mentionsStagger && mentionsChoicePrompt) return true;
+  return false;
 }
 
 export function armDefaultStaggerChoiceWound(durationMs = AUTO_STAGGER_PATCH_MS) {
@@ -42,9 +78,11 @@ export function armDefaultStaggerChoiceWound(durationMs = AUTO_STAGGER_PATCH_MS)
     return () => {};
   }
 
-  const state = game[MODULE_KEY];
+  // Use runtime overlay state when available; otherwise use local automation state.
+  // Do not initialize game[MODULE_KEY] here because it breaks overlay lifecycle bootstrap.
+  const state = getTowAutomationStateBucket();
   const DialogApi = foundry.applications?.api?.Dialog;
-  if (!state || typeof DialogApi?.wait !== "function") return () => {};
+  if (typeof DialogApi?.wait !== "function") return () => {};
 
   if (!state.staggerWaitPatch) {
     const originalWait = DialogApi.wait.bind(DialogApi);
@@ -137,6 +175,27 @@ async function applyDamageWithWoundsFallback(defenderActor, damageValue, context
   const system = defenderActor?.system;
   if (!system || typeof system.applyDamage !== "function") return;
 
+  const getActorWoundCount = (actor) => {
+    const liveItems = actor?.items?.contents ?? [];
+    if (Array.isArray(liveItems)) return liveItems.filter((item) => item?.type === "wound").length;
+    if (Array.isArray(actor?.itemTypes?.wound)) return actor.itemTypes.wound.length;
+    return 0;
+  };
+  const getActorWoundCap = (actor) => {
+    if (!actor) return null;
+    if (actor.type !== "npc") return null;
+    if (actor.system?.type === "minion") return 1;
+    if (!actor.system?.hasThresholds) return null;
+    const defeatedThreshold = Number(actor.system?.wounds?.defeated?.threshold ?? NaN);
+    if (!Number.isFinite(defeatedThreshold) || defeatedThreshold <= 0) return null;
+    return Math.trunc(defeatedThreshold);
+  };
+  const isActorAtWoundCap = (actor) => {
+    const cap = getActorWoundCap(actor);
+    if (!Number.isFinite(cap)) return false;
+    return getActorWoundCount(actor) >= cap;
+  };
+
   const originalAddWound = (typeof system.addWound === "function") ? system.addWound.bind(system) : null;
   if (!originalAddWound) {
     await towCombatOverlayApplyActorDamage(defenderActor, damageValue, context);
@@ -144,6 +203,7 @@ async function applyDamageWithWoundsFallback(defenderActor, damageValue, context
   }
 
   system.addWound = async function wrappedAddWound(options = {}) {
+    if (isActorAtWoundCap(defenderActor)) return null;
     const tableId = game.settings.get("whtow", "tableSettings")?.wounds;
     const hasTable = !!(tableId && game.tables.get(tableId));
 
@@ -422,6 +482,7 @@ export function createTowCombatOverlayAutomationCoordinator() {
   return {
     armDefaultStaggerChoiceWound,
     armAutoDefenceForOpposed,
+    armAutoApplyDamageForOpposed,
     snapshotActorState
   };
 }
