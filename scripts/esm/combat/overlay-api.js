@@ -9,7 +9,7 @@ import {
   towCombatOverlayRefreshAllOverlays,
   towCombatOverlayRefreshTokenOverlay,
   towCombatOverlayToggle
-} from "../overlay/overlay-service.js";
+} from "../overlay/overlay.js";
 
 const { apiKeys: COMBAT_OVERLAY_API_KEYS } = getTowCombatOverlayConstants();
 

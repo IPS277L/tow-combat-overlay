@@ -14,9 +14,9 @@ import {
 import {
   towCombatOverlayApplyActorDamage,
   towCombatOverlayEnsureActionsApi
-} from "../shared/actions-bridge-service.js";
-import { towCombatOverlayLocalize, towCombatOverlayRenderTemplate } from "../../combat/core-service.js";
-import { towCombatOverlayResolveConditionLabel } from "../shared/shared-service.js";
+} from "../shared/actions-bridge.js";
+import { towCombatOverlayLocalize, towCombatOverlayRenderTemplate } from "../../combat/core.js";
+import { towCombatOverlayResolveConditionLabel } from "../shared/shared.js";
 
 const TOW_AUTOMATION_LOCAL_STATE = {};
 

@@ -5,17 +5,17 @@ import {
   WOUND_ITEM_TYPE
 } from "../../runtime/overlay-runtime-constants.js";
 import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
-import { towCombatOverlayLocalize } from "../../combat/core-service.js";
+import { towCombatOverlayLocalize } from "../../combat/core.js";
 import {
   towCombatOverlayCanEditActor,
   towCombatOverlayWarnNoPermission
-} from "../shared/core-helpers-service.js";
+} from "../shared/core-helpers.js";
 import {
   towCombatOverlayAddActorCondition,
   towCombatOverlayAddActorWound,
   towCombatOverlayRemoveActorCondition
-} from "../shared/actions-bridge-service.js";
-import { runActorOpLock } from "../shared/shared-service.js";
+} from "../shared/actions-bridge.js";
+import { runActorOpLock } from "../shared/shared.js";
 
 const { logPrefix: MODULE_LOG_PREFIX } = getTowCombatOverlayConstants();
 const WOUND_ITEM_NAME = () => towCombatOverlayLocalize("TOWCOMBATOVERLAY.Item.WoundName", "Wound");

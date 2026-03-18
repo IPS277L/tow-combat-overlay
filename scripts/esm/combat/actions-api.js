@@ -6,7 +6,7 @@ import {
   towCombatOverlayIsShiftHeld,
   towCombatOverlayScheduleSoon,
   towCombatOverlayToElement
-} from "./core-service.js";
+} from "./core.js";
 import { getTowCombatOverlaySystemAdapter } from "../system-adapter/system-adapter.js";
 
 const { apiKeys: COMBAT_OVERLAY_API_KEYS } = getTowCombatOverlayConstants();

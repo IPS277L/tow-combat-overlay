@@ -1,6 +1,6 @@
 import { getTowCombatOverlayRuntimeConstants } from "../../runtime/overlay-runtime-constants.js";
 import { getTowCombatOverlayConstants } from "../../runtime/constants.js";
-import { hideStatusTooltip, showOverlayTooltip } from "./shared-service.js";
+import { hideStatusTooltip, showOverlayTooltip } from "./shared.js";
 
 const {
   tokenControlPad: TOKEN_CONTROL_PAD,

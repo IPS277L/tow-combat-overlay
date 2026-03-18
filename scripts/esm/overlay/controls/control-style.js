@@ -20,9 +20,9 @@ import {
   towCombatOverlayForEachSceneToken,
   towCombatOverlayGetOverlayEdgePadPx,
   towCombatOverlayGetTokenOverlayScale
-} from "../shared/core-helpers-service.js";
-import { towCombatOverlayClearDisplayObject, towCombatOverlayGetResilienceValue } from "../layout-state-service.js";
-import { getTypeTooltipData } from "../shared/shared-service.js";
+} from "../shared/core-helpers.js";
+import { towCombatOverlayClearDisplayObject, towCombatOverlayGetResilienceValue } from "../layout-state.js";
+import { getTypeTooltipData } from "../shared/shared.js";
 
 const { tooltips: MODULE_TOOLTIPS } = getTowCombatOverlayConstants();
 

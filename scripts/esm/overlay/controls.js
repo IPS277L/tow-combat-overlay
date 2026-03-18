@@ -11,10 +11,10 @@ export {
   towCombatOverlayUpdateResilienceLabel,
   towCombatOverlayClearAllNameLabels,
   towCombatOverlayClearAllResilienceLabels
-} from "./controls/control-style-service.js";
+} from "./controls/control-style.js";
 
 export {
   towCombatOverlayCreateWoundControlUI,
   towCombatOverlayUpdateWoundControlUI,
   towCombatOverlayClearAllWoundControls
-} from "./controls/wound-controls-service.js";
+} from "./controls/wound-controls.js";

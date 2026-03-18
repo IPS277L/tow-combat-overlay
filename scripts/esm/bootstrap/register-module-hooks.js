@@ -1,5 +1,5 @@
-import { towCombatOverlayEnsurePromiseClose } from "../combat/attack-service.js";
-import { registerTowCombatOverlayApi } from "../combat/overlay-api-service.js";
+import { towCombatOverlayEnsurePromiseClose } from "../combat/attack.js";
+import { registerTowCombatOverlayApi } from "../combat/overlay-api.js";
 import { getTowCombatOverlayConstants } from "../runtime/constants.js";
 import { registerTowCombatOverlayActionsRuntimeApi } from "./register-actions-api.js";
 import { registerTowCombatOverlayDeadWoundSyncHooks } from "./register-dead-wound-sync-hooks.js";
@@ -11,7 +11,7 @@ import {
 import {
   towCombatOverlayEnsureControlPanel,
   towCombatOverlayRemoveControlPanel
-} from "../overlay/panel/control-panel-service.js";
+} from "../overlay/panel/service.js";
 
 function ensureTowCombatOverlayStylesheetLoaded() {
   const explicitHrefs = [

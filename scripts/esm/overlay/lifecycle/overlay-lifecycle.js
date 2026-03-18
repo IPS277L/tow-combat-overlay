@@ -12,7 +12,7 @@ import {
   towCombatOverlayForEachSceneToken,
   towCombatOverlayGetActorFromToken,
   towCombatOverlayGetActorTokenObjects
-} from "../shared/core-helpers-service.js";
+} from "../shared/core-helpers.js";
 import {
   towCombatOverlayEnsureDeadVisual,
   towCombatOverlayEnsureTokenOverlayInteractivity,
@@ -20,23 +20,23 @@ import {
   towCombatOverlayQueueWoundSyncFromDeadState,
   towCombatOverlayUpdateCustomLayoutBorderVisibility,
   towCombatOverlayUpdateTokenOverlayHitArea
-} from "../layout-state-service.js";
+} from "../layout-state.js";
 import {
   towCombatOverlayClearAllNameLabels,
   towCombatOverlayClearAllResilienceLabels,
   towCombatOverlayUpdateNameLabel,
   towCombatOverlayUpdateResilienceLabel
-} from "../controls/control-style-service.js";
+} from "../controls/control-style.js";
 import {
   towCombatOverlayClearAllWoundControls,
   towCombatOverlayUpdateWoundControlUI
-} from "../controls/wound-controls-service.js";
+} from "../controls/wound-controls.js";
 import {
   clearAllStatusOverlays,
   hideDefaultStatusPanelForOverlay,
   setupStatusPalette,
   towCombatOverlayHideCoreTokenHoverVisuals
-} from "../status/status-palette-service.js";
+} from "../status/status-palette.js";
 
 const { notifications: MODULE_NOTIFICATIONS } = getTowCombatOverlayConstants();
 

@@ -22,7 +22,7 @@ import {
   runActorOpLock,
   towCombatOverlayLocalizeSystemKey,
   towCombatOverlayResolveConditionLabel
-} from "../shared/shared-service.js";
+} from "../shared/shared.js";
 import {
   towCombatOverlayBindTooltipHandlers,
   towCombatOverlayCanEditActor,
@@ -35,14 +35,14 @@ import {
   towCombatOverlayPreventPointerDefault,
   towCombatOverlayRoundTo,
   towCombatOverlayWarnNoPermission
-} from "../shared/core-helpers-service.js";
+} from "../shared/core-helpers.js";
 import {
   towCombatOverlayClearCustomLayoutBorder,
   towCombatOverlayClearDeadVisual,
   towCombatOverlayClearDisplayObject,
   towCombatOverlayRestoreTokenOverlayInteractivity
-} from "../layout-state-service.js";
-import { towCombatOverlayAddActorCondition, towCombatOverlayRemoveActorCondition } from "../shared/actions-bridge-service.js";
+} from "../layout-state.js";
+import { towCombatOverlayAddActorCondition, towCombatOverlayRemoveActorCondition } from "../shared/actions-bridge.js";
 
 function getIconSrc(displayObject) {
   return (

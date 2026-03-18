@@ -11,7 +11,7 @@ export {
   towCombatOverlayRestoreTokenOverlayInteractivity,
   towCombatOverlayUpdateCustomLayoutBorderVisibility,
   towCombatOverlayUpdateTokenOverlayHitArea
-} from "./layout/token-layout-service.js";
+} from "./layout/token-layout.js";
 
 export {
   towCombatOverlayAddWound,
@@ -26,4 +26,4 @@ export {
   towCombatOverlayRemoveWound,
   towCombatOverlaySyncNpcDeadFromWounds,
   towCombatOverlaySyncWoundsFromDeadState
-} from "./layout/wound-state-service.js";
+} from "./layout/wound-state.js";

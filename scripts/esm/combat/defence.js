@@ -7,15 +7,15 @@ import {
   createTowCombatOverlayRollContext,
   getTowCombatOverlayActorRollState,
   getTowCombatOverlayActorRollModifierFields
-} from "./roll-modifier-service.js";
-import { towCombatOverlayArmAutoSubmitDialog } from "./attack-service.js";
+} from "./roll-modifier.js";
+import { towCombatOverlayArmAutoSubmitDialog } from "./attack.js";
 import {
   towCombatOverlayApplyDialogClass,
   towCombatOverlayBindClick,
   towCombatOverlayOpenSelectorDialog,
   towCombatOverlayRenderTemplate,
   towCombatOverlayRenderSelectorRowButton
-} from "./core-service.js";
+} from "./core.js";
 import { getTowCombatOverlaySystemAdapter } from "../system-adapter/system-adapter.js";
 
 const {

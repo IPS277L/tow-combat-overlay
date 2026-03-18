@@ -1,11 +1,11 @@
 import {
   towCombatOverlayAttackActor,
   towCombatOverlayRunAttackForControlled
-} from "../combat/attack-service.js";
+} from "../combat/attack.js";
 import {
   towCombatOverlayDefenceActor,
   towCombatOverlayRunDefenceForControlled
-} from "../combat/defence-service.js";
+} from "../combat/defence.js";
 
 let actionServicesSingleton = null;
 

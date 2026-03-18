@@ -7,12 +7,12 @@ import {
   towCombatOverlayRefreshActorOverlays,
   towCombatOverlayRefreshAllOverlays,
   towCombatOverlayRefreshTokenOverlay
-} from "../overlay/overlay-service.js";
+} from "../overlay/overlay.js";
 import {
   towCombatOverlayBringTokenToFront,
   towCombatOverlayQueueDeadSyncFromWounds,
   towCombatOverlayUpdateCustomLayoutBorderVisibility
-} from "../overlay/layout-state-service.js";
+} from "../overlay/layout-state.js";
 
 const { moduleKey: MODULE_KEY } = getTowCombatOverlayRuntimeConstants();
 const {

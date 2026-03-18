@@ -11,10 +11,10 @@ import {
   towCombatOverlayShouldExecuteAttack,
   towCombatOverlayToElement,
   towCombatOverlayWaitForChatMessage
-} from "./core-service.js";
+} from "./core.js";
 import { shouldTowCombatOverlayAutoSubmitDialogs } from "../bootstrap/register-settings.js";
 import { getTowCombatOverlayConstants } from "../runtime/constants.js";
-import { createTowCombatOverlayRollContext } from "./roll-modifier-service.js";
+import { createTowCombatOverlayRollContext } from "./roll-modifier.js";
 import { getTowCombatOverlaySystemAdapter } from "../system-adapter/system-adapter.js";
 
 const {

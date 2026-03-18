@@ -1,4 +1,4 @@
-export { towCombatOverlayHideCoreTokenHoverVisuals } from "./status/status-palette-service.js";
+export { towCombatOverlayHideCoreTokenHoverVisuals } from "./status/status-palette.js";
 
 export {
   towCombatOverlayDisable,
@@ -9,4 +9,4 @@ export {
   towCombatOverlayRefreshAllOverlays,
   towCombatOverlayRefreshTokenOverlay,
   towCombatOverlayToggle
-} from "./lifecycle/overlay-lifecycle-service.js";
+} from "./lifecycle/overlay-lifecycle.js";

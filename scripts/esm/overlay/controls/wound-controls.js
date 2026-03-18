@@ -30,7 +30,7 @@ import {
   adjustTowCombatOverlayActorRollModifierDice,
   cycleTowCombatOverlayActorRollState,
   getTowCombatOverlayActorRollModifierState
-} from "../../combat/roll-modifier-service.js";
+} from "../../combat/roll-modifier.js";
 import {
   towCombatOverlayBindTooltipHandlers,
   towCombatOverlayCanEditActor,
@@ -44,24 +44,24 @@ import {
   towCombatOverlayIsShiftModifier,
   towCombatOverlayPreventPointerDefault,
   towCombatOverlayTokenAtPoint
-} from "../shared/core-helpers-service.js";
+} from "../shared/core-helpers.js";
 import {
   towCombatOverlayAddWound,
   towCombatOverlayGetWoundCount,
   towCombatOverlayRemoveWound
-} from "../layout/wound-state-service.js";
-import { towCombatOverlayClearDisplayObject } from "../layout/token-layout-service.js";
-import { towCombatOverlayEnsureActionsApi } from "../shared/actions-bridge-service.js";
+} from "../layout/wound-state.js";
+import { towCombatOverlayClearDisplayObject } from "../layout/token-layout.js";
+import { towCombatOverlayEnsureActionsApi } from "../shared/actions-bridge.js";
 import {
   createTowCombatOverlayAutomationCoordinator,
   towCombatOverlayAutomation
-} from "../automation/automation-service.js";
+} from "../automation/automation.js";
 import {
   towCombatOverlayCreateOverlayIconSprite,
   towCombatOverlayDrawHitBoxRect,
   towCombatOverlayGetIconValueStyle,
   towCombatOverlayTuneOverlayText
-} from "./control-style-service.js";
+} from "./control-style.js";
 
 const { tooltips: MODULE_TOOLTIPS } = getTowCombatOverlayConstants();
 
