@@ -72,6 +72,7 @@ const PANEL_SPEED_ICON = "icons/svg/wingfoot.svg";
 const PANEL_ROLL_ICON = "icons/svg/d20-grey.svg";
 const PANEL_DICE_ICON = "icons/svg/d10-grey.svg";
 const PANEL_DEBUG_ITEMS = false;
+const PANEL_DEBUG_SPELL_APPLY = true;
 const PANEL_ATTACK_PICK_CURSOR = "crosshair";
 const PANEL_MANOEUVRE_ICON_BY_KEY = {
   run: "icons/skills/movement/feet-winged-boots-brown.webp",
@@ -103,7 +104,6 @@ const PANEL_UNARMED_OPPOSED_DISCOVERY_GRACE_MS = 2000;
 const PANEL_STAGGER_PATCH_DURATION_MS = AUTO_STAGGER_PATCH_MS + AUTO_APPLY_WAIT_MS + AUTO_DEFENCE_WAIT_MS;
 const PANEL_MAIN_GRID_MIN_COLUMNS = 7;
 const PANEL_MAIN_GRID_MIN_ROWS = 2;
-const PANEL_ACCUMULATE_POWER_FLAG_KEY = "panelAccumulatePower";
 const PANEL_REORDERABLE_GROUP_KEYS = new Set(["manoeuvre", "recover", "actions", "attacks", "magic"]);
 const {
   moduleId: MODULE_ID,
@@ -1609,7 +1609,35 @@ async function handlePanelSlotClick(slotElement, event) {
     return;
   }
 
-  if ((itemGroup === "magic" || itemGroup === "abilities") && itemId) {
+  if (itemGroup === "magic" && itemId) {
+    const sourceToken = getSingleControlledToken();
+    const actor = getSingleControlledActor();
+    if (!actor) return;
+    if (!towCombatOverlayCanEditActor(actor)) {
+      towCombatOverlayWarnNoPermission(actor);
+      return;
+    }
+    const sourceItemName = String(slotElement.dataset.itemName ?? "").trim().toLowerCase();
+    const item = actor?.items?.get?.(itemId)
+      ?? actor?.items?.find?.((entry) => String(entry?.name ?? "").trim().toLowerCase() === sourceItemName)
+      ?? null;
+    if (!item) return;
+    if (towCombatOverlayIsAltModifier(event)) {
+      if (item?.sheet?.render) item.sheet.render(true);
+      return;
+    }
+    const panelElement = slotElement.closest(`#${PANEL_ID}`);
+    await runPanelCastSpecificSpellFromAccumulatedPower(actor, item, {
+      sourceToken,
+      panelElement,
+      slotElement,
+      originEvent: event
+    });
+    if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
+    return;
+  }
+
+  if (itemGroup === "abilities" && itemId) {
     const actor = getSingleControlledActor();
     const sourceItemName = String(slotElement.dataset.itemName ?? "").trim().toLowerCase();
     const item = actor?.items?.get?.(itemId)
@@ -1817,6 +1845,50 @@ function armAutoSubmitActionSkillDialog(actor, skill) {
   });
 }
 
+function armAutoResolveSpellTriggeredTestDialogs({ timeoutMs = 20000 } = {}) {
+  return towCombatOverlayArmAutoSubmitDialog({
+    hookName: "renderTestDialog",
+    matches: (app) => {
+      if (!app || app._towCombatOverlaySpellAutoResolved === true) return false;
+      app._towCombatOverlaySpellAutoResolved = true;
+      return true;
+    },
+    submitErrorMessage: "TestDialog.submit() is unavailable.",
+    beforeSubmit: async (app) => {
+      const actor = app?.actor ?? null;
+      const rollFields = getTowCombatOverlayActorRollModifierFields(actor);
+      app.userEntry ??= {};
+      app.fields ??= {};
+      for (const [key, value] of Object.entries(rollFields)) {
+        const numericValue = Number(value ?? 0);
+        app.userEntry[key] = numericValue;
+        app.fields[key] = numericValue;
+      }
+    },
+    timeoutMs: Math.max(250, Number(timeoutMs) || 0)
+  });
+}
+
+let panelItemUseRollCompatibilityPatched = false;
+function ensurePanelItemUseRollCompatibility() {
+  if (panelItemUseRollCompatibilityPatched) return;
+  const ItemUseClass = game?.oldworld?.config?.rollClasses?.ItemUse;
+  const originalRoll = ItemUseClass?.prototype?.roll;
+  if (!ItemUseClass || typeof originalRoll !== "function") return;
+  ItemUseClass.prototype.roll = async function patchedTowCombatOverlayItemUseRoll(...args) {
+    const result = await originalRoll.apply(this, args);
+    if (!this?._roll) {
+      try {
+        this._roll = await new Roll("0").roll();
+      } catch (_error) {
+        // Best-effort compatibility patch only.
+      }
+    }
+    return result;
+  };
+  panelItemUseRollCompatibilityPatched = true;
+}
+
 function armAutoPickFirstImproviseSkillDialog(actor) {
   towCombatOverlayArmAutoSubmitDialog({
     hookName: "renderItemDialog",
@@ -1887,35 +1959,36 @@ function getCoreActionDescription(actionData) {
 }
 
 function resolveActorLatestCastingPotency(actor) {
-  const potencyRaw = Number(actor?.getFlag?.(MODULE_ID, PANEL_ACCUMULATE_POWER_FLAG_KEY)?.potency ?? NaN);
-  if (!Number.isFinite(potencyRaw)) return 0;
-  return Math.max(0, Math.trunc(potencyRaw));
-}
+  const progressRaw = Number(actor?.system?.magic?.casting?.progress ?? NaN);
+  const progress = Number.isFinite(progressRaw) ? Math.max(0, Math.trunc(progressRaw)) : 0;
+  if (progress <= 0) return 0;
 
-async function setPanelAccumulatePowerPotency(actor, potency) {
-  if (!actor?.setFlag) return;
-  const value = Number.isFinite(Number(potency)) ? Math.max(0, Math.trunc(Number(potency))) : 0;
-  await actor.setFlag(MODULE_ID, PANEL_ACCUMULATE_POWER_FLAG_KEY, { potency: value });
-}
+  const actorId = String(actor?.id ?? "").trim();
+  const actorUuid = String(actor?.uuid ?? "").trim();
+  if (!actorId && !actorUuid) return 0;
 
-function armCaptureNextCastingPotency(actor, { timeoutMs = 30000 } = {}) {
-  if (!actor?.id) return;
-  let timeoutId = null;
-  const cleanup = (hookId) => {
-    Hooks.off("createChatMessage", hookId);
-    if (timeoutId) clearTimeout(timeoutId);
-    timeoutId = null;
-  };
-  const hookId = Hooks.on("createChatMessage", (message) => {
+  const messages = Array.isArray(game?.messages?.contents) ? game.messages.contents : [];
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i];
     const rollClass = String(message?.system?.context?.rollClass ?? "").trim().toLowerCase();
+    if (rollClass !== "castingtest") continue;
+
     const speakerActorId = String(message?.speaker?.actor ?? "").trim();
-    if (rollClass !== "castingtest" || speakerActorId !== String(actor.id)) return;
-    const rawSuccesses = Number(message?.system?.result?.successes ?? NaN);
-    const potency = Number.isFinite(rawSuccesses) ? Math.max(0, Math.trunc(rawSuccesses)) : 0;
-    cleanup(hookId);
-    void setPanelAccumulatePowerPotency(actor, potency);
-  });
-  timeoutId = setTimeout(() => cleanup(hookId), Math.max(250, Number(timeoutMs) || 0));
+    const testActorUuid = String(message?.system?.test?.context?.actor ?? message?.system?.context?.actor ?? "").trim();
+    const sameActor = (actorId && speakerActorId === actorId) || (actorUuid && testActorUuid === actorUuid);
+    if (!sameActor) continue;
+
+    const potencyRaw = Number(
+      message?.system?.result?.potency
+      ?? message?.system?.test?.result?.potency
+      ?? message?.system?.result?.successes
+      ?? message?.system?.test?.result?.successes
+      ?? NaN
+    );
+    if (!Number.isFinite(potencyRaw)) return 0;
+    return Math.max(0, Math.trunc(potencyRaw));
+  }
+  return 0;
 }
 
 function getPanelActionEntries(actor = null) {
@@ -2240,11 +2313,306 @@ async function runPanelAccumulatePowerAction(actor, { autoRoll = true } = {}) {
     });
   }
 
-  armCaptureNextCastingPotency(actor);
   await actor.setupCastingTest(
     { lore },
     autoRoll ? createTowCombatOverlayRollContext(actor, { lore }) : {}
   );
+}
+
+async function invokeChatMessageActionByName(message, action, targetElement = null) {
+  const actionName = String(action ?? "").trim();
+  if (!message || !actionName) return false;
+  const system = message.system;
+  const handlers = system?.constructor?.actions ?? system?.actions ?? {};
+  const handler = handlers?.[actionName];
+  if (typeof handler !== "function") return false;
+  const syntheticEvent = {
+    preventDefault: () => {},
+    stopPropagation: () => {},
+    stopImmediatePropagation: () => {},
+    currentTarget: targetElement,
+    target: targetElement
+  };
+  try {
+    await handler.call(system, syntheticEvent, targetElement ?? { dataset: { action: actionName } });
+    return true;
+  } catch (error) {
+    console.warn("[tow-combat-overlay][spell-apply] apply action handler failed", {
+      messageId: String(message?.id ?? ""),
+      action: actionName,
+      error
+    });
+    return false;
+  }
+}
+
+function spellRequiresTargetPick(spell) {
+  const targetValue = String(spell?.system?.target?.value ?? "").trim().toLowerCase();
+  const SELF_TARGET_KEYS = new Set(["self", "you"]);
+  const requiresPick = !targetValue || !SELF_TARGET_KEYS.has(targetValue);
+  if (PANEL_DEBUG_SPELL_APPLY) {
+    console.log("[tow-combat-overlay][spell-apply] spell target resolve", {
+      spellId: String(spell?.id ?? ""),
+      spellName: String(spell?.name ?? ""),
+      targetValue,
+      requiresPick
+    });
+  }
+  return requiresPick;
+}
+
+function spellTargetsSelf(spell) {
+  const targetValue = String(spell?.system?.target?.value ?? "").trim().toLowerCase();
+  return targetValue === "self" || targetValue === "you";
+}
+
+function parseDatasetFromTag(tagHtml) {
+  const dataset = {};
+  const attrMatches = Array.from(String(tagHtml ?? "").matchAll(/\bdata-([a-z0-9_-]+)\s*=\s*["']([^"']*)["']/gi));
+  for (const match of attrMatches) {
+    const rawKey = String(match?.[1] ?? "").trim();
+    if (!rawKey) continue;
+    const camelKey = rawKey.replace(/-([a-z0-9])/gi, (_m, char) => String(char ?? "").toUpperCase());
+    dataset[camelKey] = String(match?.[2] ?? "");
+  }
+  return dataset;
+}
+
+function getMessageAutoApplyActions(message) {
+  const content = String(message?.content ?? "");
+  const buttonMatches = Array.from(content.matchAll(/<(button|a)\b[^>]*>/gi));
+  const actionsFromContent = buttonMatches
+    .map((match) => {
+      const tagHtml = String(match?.[0] ?? "");
+      const dataset = parseDatasetFromTag(tagHtml);
+      const action = String(dataset?.action ?? "").trim();
+      if (!action || !action.toLowerCase().startsWith("apply")) return null;
+      return { action, dataset };
+    })
+    .filter(Boolean);
+
+  const handlers = message?.system?.constructor?.actions ?? message?.system?.actions ?? {};
+  const availableHandlerNames = new Set(
+    Object.keys(handlers).map((name) => String(name ?? "").trim()).filter(Boolean)
+  );
+  const unique = [];
+  const seen = new Set();
+  for (const entry of actionsFromContent) {
+    const action = String(entry?.action ?? "").trim();
+    if (!availableHandlerNames.has(action)) continue;
+    const key = JSON.stringify({ action, dataset: entry?.dataset ?? {} });
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push({ action, dataset: entry?.dataset ?? {} });
+  }
+  const priority = new Map([
+    ["applydamage", 1],
+    ["applytargeteffect", 2]
+  ]);
+  return unique.sort((a, b) => {
+    const left = priority.get(String(a?.action ?? "").toLowerCase()) ?? 100;
+    const right = priority.get(String(b?.action ?? "").toLowerCase()) ?? 100;
+    if (left !== right) return left - right;
+    return String(a?.action ?? "").localeCompare(String(b?.action ?? ""));
+  });
+}
+
+async function invokeAutoApplyActionsInMessage(messageId) {
+  const id = String(messageId ?? "").trim();
+  if (!id) return false;
+  const message = game?.messages?.get?.(id) ?? null;
+  if (!message) return false;
+  const actions = getMessageAutoApplyActions(message);
+  if (!actions.length) return false;
+  if (PANEL_DEBUG_SPELL_APPLY) {
+    console.log("[tow-combat-overlay][spell-apply] apply actions detected", {
+      messageId: id,
+      actions: actions.map(({ action, dataset }) => ({ action, dataset }))
+    });
+  }
+  let invoked = false;
+  for (const { action, dataset } of actions) {
+    const syntheticTarget = { dataset: { ...dataset, action } };
+    const done = await invokeChatMessageActionByName(message, action, syntheticTarget);
+    invoked = invoked || done;
+    if (PANEL_DEBUG_SPELL_APPLY) {
+      console.log("[tow-combat-overlay][spell-apply] apply action invoke result", {
+        messageId: id,
+        action,
+        done
+      });
+    }
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  return invoked;
+}
+
+async function waitAndInvokeAutoApplyActionsInMessage(messageId, {
+  attempts = 16,
+  intervalMs = 80
+} = {}) {
+  const total = Math.max(1, Math.trunc(Number(attempts) || 1));
+  const waitMs = Math.max(10, Math.trunc(Number(intervalMs) || 0));
+  for (let i = 0; i < total; i += 1) {
+    const invoked = await invokeAutoApplyActionsInMessage(messageId);
+    if (invoked) return true;
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
+  }
+  return false;
+}
+
+function messageHasExplicitTargets(message) {
+  const candidates = [
+    message?.system?.test?.context?.targets,
+    message?.system?.context?.targets,
+    message?.system?.test?.targets,
+    message?.system?.targets
+  ];
+  return candidates.some((value) => {
+    if (Array.isArray(value)) return value.length > 0;
+    if (value instanceof Set || value instanceof Map) return value.size > 0;
+    if (value && typeof value === "object") return Object.keys(value).length > 0;
+    return false;
+  });
+}
+
+function armAutoProcessSpellApplyButtons(actor, spell, {
+  sourceToken = null,
+  panelElement = null,
+  slotElement = null,
+  originEvent = null
+} = {}) {
+  if (!actor || !spell) return;
+  let timeoutId = null;
+  const actorId = String(actor.id ?? "").trim();
+  const spellUuid = String(spell.uuid ?? "").trim();
+  if (!actorId || !spellUuid) return;
+
+  const cleanup = (createHookId) => {
+    Hooks.off("createChatMessage", createHookId);
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = null;
+  };
+
+  const processMessage = async (message) => {
+    const messageId = String(message?.id ?? "").trim();
+    if (!messageId) return;
+    if (PANEL_DEBUG_SPELL_APPLY) {
+      console.log("[tow-combat-overlay][spell-apply] processing message", {
+        messageId,
+        spellId: String(spell?.id ?? ""),
+        spellName: String(spell?.name ?? "")
+      });
+    }
+    const performAutoApply = async () => {
+      const automation = getOverlayAutomationRef();
+      const restoreStaggerPrompt = automation.armDefaultStaggerChoiceWound(PANEL_STAGGER_PATCH_DURATION_MS);
+      const restoreSpellTestAuto = armAutoResolveSpellTriggeredTestDialogs({
+        timeoutMs: AUTO_APPLY_WAIT_MS + 8000
+      });
+      const finishSpellAutoPatches = () => setTimeout(() => {
+        restoreStaggerPrompt();
+        restoreSpellTestAuto();
+      }, AUTO_APPLY_WAIT_MS);
+      try {
+        const hasTargets = messageHasExplicitTargets(message) || (game?.user?.targets?.size ?? 0) > 0;
+        const requiresTargetPick = !hasTargets
+          && !!sourceToken
+          && (panelElement instanceof HTMLElement)
+          && (slotElement instanceof HTMLElement)
+          && spellRequiresTargetPick(spell);
+        if (PANEL_DEBUG_SPELL_APPLY) {
+          console.log("[tow-combat-overlay][spell-apply] target decision", {
+            messageId,
+            hasTargets,
+            hasSourceToken: !!sourceToken,
+            hasPanelElement: panelElement instanceof HTMLElement,
+            hasSlotElement: slotElement instanceof HTMLElement,
+            requiresTargetPick
+          });
+        }
+
+        if (!requiresTargetPick) {
+          if (spellTargetsSelf(spell) && sourceToken) {
+            await withTemporaryUserTargets(sourceToken, async () => {
+              await waitAndInvokeAutoApplyActionsInMessage(messageId);
+            });
+            return;
+          }
+          await waitAndInvokeAutoApplyActionsInMessage(messageId);
+          return;
+        }
+        startPanelAttackPickMode(panelElement, slotElement, sourceToken, { id: "spell-auto-apply" }, originEvent, {
+          onTargetAttack: async (targetToken) => {
+            if (PANEL_DEBUG_SPELL_APPLY) {
+              console.log("[tow-combat-overlay][spell-apply] picked target", {
+                messageId,
+                targetId: String(targetToken?.id ?? ""),
+                targetName: String(targetToken?.name ?? "")
+              });
+            }
+            await withTemporaryUserTargets(targetToken, async () => {
+              await waitAndInvokeAutoApplyActionsInMessage(messageId);
+            });
+          }
+        });
+      } finally {
+        finishSpellAutoPatches();
+      }
+    };
+    await performAutoApply();
+  };
+
+  const createHookId = Hooks.on("createChatMessage", (message) => {
+    const messageActorId = String(message?.speaker?.actor ?? "").trim();
+    const testActorUuid = String(message?.system?.test?.context?.actor ?? message?.system?.context?.actor ?? "").trim();
+    const actorUuid = String(actor?.uuid ?? "").trim();
+    const sameActor = (messageActorId === actorId)
+      || (!!actorUuid && testActorUuid === actorUuid);
+    if (!sameActor) return;
+    const rollClass = String(message?.system?.context?.rollClass ?? "").trim().toLowerCase();
+    if (rollClass !== "itemuse") return;
+    const itemUuid = String(message?.system?.context?.itemUuid ?? message?.system?.test?.context?.itemUuid ?? "").trim();
+    const itemId = String(message?.system?.test?.item?.id ?? "").trim();
+    const sameSpell = (itemUuid === spellUuid) || (itemId && itemId === String(spell?.id ?? "").trim());
+    if (!sameSpell) return;
+    if (PANEL_DEBUG_SPELL_APPLY) {
+      console.log("[tow-combat-overlay][spell-apply] matched item-use message", {
+        messageId: String(message?.id ?? ""),
+        messageActorId,
+        actorId,
+        actorUuid,
+        testActorUuid,
+        itemUuid,
+        spellUuid,
+        itemId,
+        spellId: String(spell?.id ?? "")
+      });
+    }
+    cleanup(createHookId);
+    void processMessage(message);
+  });
+
+  timeoutId = setTimeout(() => cleanup(createHookId), 30000);
+}
+
+async function runPanelCastSpecificSpellFromAccumulatedPower(actor, spell, {
+  sourceToken = null,
+  panelElement = null,
+  slotElement = null,
+  originEvent = null
+} = {}) {
+  if (!actor || !spell) return;
+  armAutoProcessSpellApplyButtons(actor, spell, {
+    sourceToken,
+    panelElement,
+    slotElement,
+    originEvent
+  });
+  ensurePanelItemUseRollCompatibility();
+  if (typeof actor?.system?.castSpell !== "function") return;
+  const potency = resolveActorLatestCastingPotency(actor);
+  await actor.system.castSpell(spell, potency, { context: { targetSpeakers: null } });
 }
 
 async function resetPanelAccumulatePowerValues(actor) {
@@ -2252,7 +2620,6 @@ async function resetPanelAccumulatePowerValues(actor) {
   await actor.update({
     "system.magic.casting.progress": 0
   });
-  await setPanelAccumulatePowerPotency(actor, 0);
 }
 
 function resolveActorMiscastState(actor) {
@@ -3490,6 +3857,7 @@ function updateGroupSlots(panelElement, groupKey, groupItems = [], actor = null)
         ? `${abilitiesHint}<br><br>${itemDescription}`
         : abilitiesHint;
     } else if (resolvedGroupKey === "magic") {
+      const magicHint = "<em>Click: cast this spell and auto-process Apply buttons. If target selection is needed, pick target on canvas (same flow as melee attack). Alt+click: show details.</em>";
       const magicDamageLabel = resolvePanelAttackDamageLabel(item) || "0";
       const hasMagicPotency = item?.system?.damage?.potency === true;
       const targetKey = String(item?.system?.target?.value ?? "").trim();
@@ -3515,9 +3883,10 @@ function updateGroupSlots(panelElement, groupKey, groupItems = [], actor = null)
         ? `<strong>Duration:</strong> ${escapePanelHtml(durationLabel)}`
         : "";
       const magicStatsHint = [magicDamageHint, magicPotencyHint, magicTargetHint, magicDurationHint].filter(Boolean).join("<br>");
-      slotElement.dataset.tooltipDescription = magicStatsHint && itemDescription
-        ? `${magicStatsHint}<br><br>${itemDescription}`
-        : (magicStatsHint || itemDescription);
+      const magicBlock = [magicHint, magicStatsHint].filter(Boolean).join("<br><br>");
+      slotElement.dataset.tooltipDescription = magicBlock && itemDescription
+        ? `${magicBlock}<br><br>${itemDescription}`
+        : (magicBlock || itemDescription);
     } else {
       slotElement.dataset.tooltipDescription = itemDescription;
     }

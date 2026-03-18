@@ -62,14 +62,29 @@ export function towCombatOverlayArmDamageAppend(actor, ability) {
   timeoutId = setTimeout(() => cleanup(hookId), 30000);
 }
 
-export function towCombatOverlayArmAutoSubmitDialog({ hookName, matches, submitErrorMessage, beforeSubmit = null }) {
+export function towCombatOverlayArmAutoSubmitDialog({
+  hookName,
+  matches,
+  submitErrorMessage,
+  beforeSubmit = null,
+  timeoutMs = 0
+}) {
   if (!shouldTowCombatOverlayAutoSubmitDialogs()) {
-    return;
+    return () => {};
   }
 
-  const hookId = Hooks.on(hookName, (app) => {
+  let hookId = null;
+  let timeoutId = null;
+  const cleanup = () => {
+    if (hookId !== null) Hooks.off(hookName, hookId);
+    hookId = null;
+    if (timeoutId !== null) clearTimeout(timeoutId);
+    timeoutId = null;
+  };
+
+  hookId = Hooks.on(hookName, (app) => {
     if (!matches(app)) return;
-    Hooks.off(hookName, hookId);
+    cleanup();
     towCombatOverlayEnsurePromiseClose(app);
 
     const element = towCombatOverlayToElement(app?.element);
@@ -97,6 +112,10 @@ export function towCombatOverlayArmAutoSubmitDialog({ hookName, matches, submitE
       await app.submit();
     });
   });
+
+  const timeout = Math.max(0, Number(timeoutMs) || 0);
+  if (timeout > 0) timeoutId = setTimeout(cleanup, timeout);
+  return cleanup;
 }
 
 function towCombatOverlayArmAutoSubmitAbilityDialog(actor, ability) {
