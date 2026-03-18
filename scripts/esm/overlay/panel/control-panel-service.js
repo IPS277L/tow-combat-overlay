@@ -71,8 +71,6 @@ const PANEL_RESILIENCE_ICON = "icons/svg/shield.svg";
 const PANEL_SPEED_ICON = "icons/svg/wingfoot.svg";
 const PANEL_ROLL_ICON = "icons/svg/d20-grey.svg";
 const PANEL_DICE_ICON = "icons/svg/d10-grey.svg";
-const PANEL_DEBUG_ITEMS = false;
-const PANEL_DEBUG_SPELL_APPLY = true;
 const PANEL_ATTACK_PICK_CURSOR = "crosshair";
 const PANEL_MANOEUVRE_ICON_BY_KEY = {
   run: "icons/skills/movement/feet-winged-boots-brown.webp",
@@ -737,16 +735,11 @@ function applyPanelPositionWithSelectionClamp(controlPanelState, panelElement, l
 }
 
 function applyInitialPanelPosition(panelElement) {
-  const saved = readSavedPanelPosition();
-  if (saved) {
-    applyPanelPosition(panelElement, saved.left, saved.top);
-    return;
-  }
-
-  const panelWidth = Math.max(1, Math.round(panelElement.offsetWidth || 1));
-  const panelHeight = Math.max(1, Math.round(panelElement.offsetHeight || 1));
+  const rect = panelElement.getBoundingClientRect();
+  const panelWidth = Math.max(1, Math.round(rect.width || panelElement.offsetWidth || 1));
+  const panelHeight = Math.max(1, Math.round(rect.height || panelElement.offsetHeight || 1));
   const defaultLeft = Math.round((window.innerWidth / 2) - (panelWidth / 2));
-  const defaultTop = Math.round(window.innerHeight - panelHeight - 42);
+  const defaultTop = Math.round(window.innerHeight - panelHeight - PANEL_VIEWPORT_MARGIN_PX);
   applyPanelPosition(panelElement, defaultLeft, defaultTop);
 }
 
@@ -1622,12 +1615,63 @@ async function handlePanelSlotClick(slotElement, event) {
       ?? actor?.items?.find?.((entry) => String(entry?.name ?? "").trim().toLowerCase() === sourceItemName)
       ?? null;
     if (!item) return;
-    if (towCombatOverlayIsAltModifier(event)) {
-      if (item?.sheet?.render) item.sheet.render(true);
+    const altHeld = towCombatOverlayIsAltModifier(event);
+    const shiftHeld = towCombatOverlayIsShiftModifier(event);
+    const panelElement = slotElement.closest(`#${PANEL_ID}`);
+
+    if (altHeld) {
+      const requiresPick = spellRequiresTargetPick(item);
+      if (requiresPick && sourceToken && panelElement instanceof HTMLElement) {
+        startPanelAttackPickMode(panelElement, slotElement, sourceToken, { id: "spell-manual-cast" }, event, {
+          preferDefaultDialog: true,
+          onTargetAttack: async (targetToken) => {
+            await withTemporaryUserTargets(targetToken, async () => {
+              await runPanelCastSpecificSpellFromAccumulatedPower(actor, item, {
+                autoRollCastingTest: false,
+                autoProcessApply: false,
+                allowTargetPick: false,
+                sourceToken,
+                panelElement,
+                slotElement,
+                originEvent: event
+              });
+            });
+          }
+        });
+        return;
+      }
+
+      if (spellTargetsSelf(item) && sourceToken) {
+        await withTemporaryUserTargets(sourceToken, async () => {
+          await runPanelCastSpecificSpellFromAccumulatedPower(actor, item, {
+            autoRollCastingTest: false,
+            autoProcessApply: false,
+            allowTargetPick: false,
+            sourceToken,
+            panelElement,
+            slotElement,
+            originEvent: event
+          });
+        });
+      } else {
+        await runPanelCastSpecificSpellFromAccumulatedPower(actor, item, {
+          autoRollCastingTest: false,
+          autoProcessApply: false,
+          allowTargetPick: false,
+          sourceToken,
+          panelElement,
+          slotElement,
+          originEvent: event
+        });
+      }
+      if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
       return;
     }
-    const panelElement = slotElement.closest(`#${PANEL_ID}`);
+
     await runPanelCastSpecificSpellFromAccumulatedPower(actor, item, {
+      autoRollCastingTest: false,
+      autoProcessApply: true,
+      allowTargetPick: !shiftHeld,
       sourceToken,
       panelElement,
       slotElement,
@@ -2315,7 +2359,7 @@ async function runPanelAccumulatePowerAction(actor, { autoRoll = true } = {}) {
 
   await actor.setupCastingTest(
     { lore },
-    autoRoll ? createTowCombatOverlayRollContext(actor, { lore }) : {}
+    createTowCombatOverlayRollContext(actor, { lore })
   );
 }
 
@@ -2336,12 +2380,7 @@ async function invokeChatMessageActionByName(message, action, targetElement = nu
   try {
     await handler.call(system, syntheticEvent, targetElement ?? { dataset: { action: actionName } });
     return true;
-  } catch (error) {
-    console.warn("[tow-combat-overlay][spell-apply] apply action handler failed", {
-      messageId: String(message?.id ?? ""),
-      action: actionName,
-      error
-    });
+  } catch (_error) {
     return false;
   }
 }
@@ -2350,14 +2389,6 @@ function spellRequiresTargetPick(spell) {
   const targetValue = String(spell?.system?.target?.value ?? "").trim().toLowerCase();
   const SELF_TARGET_KEYS = new Set(["self", "you"]);
   const requiresPick = !targetValue || !SELF_TARGET_KEYS.has(targetValue);
-  if (PANEL_DEBUG_SPELL_APPLY) {
-    console.log("[tow-combat-overlay][spell-apply] spell target resolve", {
-      spellId: String(spell?.id ?? ""),
-      spellName: String(spell?.name ?? ""),
-      targetValue,
-      requiresPick
-    });
-  }
   return requiresPick;
 }
 
@@ -2424,24 +2455,11 @@ async function invokeAutoApplyActionsInMessage(messageId) {
   if (!message) return false;
   const actions = getMessageAutoApplyActions(message);
   if (!actions.length) return false;
-  if (PANEL_DEBUG_SPELL_APPLY) {
-    console.log("[tow-combat-overlay][spell-apply] apply actions detected", {
-      messageId: id,
-      actions: actions.map(({ action, dataset }) => ({ action, dataset }))
-    });
-  }
   let invoked = false;
   for (const { action, dataset } of actions) {
     const syntheticTarget = { dataset: { ...dataset, action } };
     const done = await invokeChatMessageActionByName(message, action, syntheticTarget);
     invoked = invoked || done;
-    if (PANEL_DEBUG_SPELL_APPLY) {
-      console.log("[tow-combat-overlay][spell-apply] apply action invoke result", {
-        messageId: id,
-        action,
-        done
-      });
-    }
     await new Promise((resolve) => setTimeout(resolve, 20));
   }
   return invoked;
@@ -2477,6 +2495,8 @@ function messageHasExplicitTargets(message) {
 }
 
 function armAutoProcessSpellApplyButtons(actor, spell, {
+  allowTargetPick = true,
+  onAfterApply = null,
   sourceToken = null,
   panelElement = null,
   slotElement = null,
@@ -2497,13 +2517,6 @@ function armAutoProcessSpellApplyButtons(actor, spell, {
   const processMessage = async (message) => {
     const messageId = String(message?.id ?? "").trim();
     if (!messageId) return;
-    if (PANEL_DEBUG_SPELL_APPLY) {
-      console.log("[tow-combat-overlay][spell-apply] processing message", {
-        messageId,
-        spellId: String(spell?.id ?? ""),
-        spellName: String(spell?.name ?? "")
-      });
-    }
     const performAutoApply = async () => {
       const automation = getOverlayAutomationRef();
       const restoreStaggerPrompt = automation.armDefaultStaggerChoiceWound(PANEL_STAGGER_PATCH_DURATION_MS);
@@ -2518,42 +2531,29 @@ function armAutoProcessSpellApplyButtons(actor, spell, {
         const hasTargets = messageHasExplicitTargets(message) || (game?.user?.targets?.size ?? 0) > 0;
         const requiresTargetPick = !hasTargets
           && !!sourceToken
+          && allowTargetPick
           && (panelElement instanceof HTMLElement)
           && (slotElement instanceof HTMLElement)
           && spellRequiresTargetPick(spell);
-        if (PANEL_DEBUG_SPELL_APPLY) {
-          console.log("[tow-combat-overlay][spell-apply] target decision", {
-            messageId,
-            hasTargets,
-            hasSourceToken: !!sourceToken,
-            hasPanelElement: panelElement instanceof HTMLElement,
-            hasSlotElement: slotElement instanceof HTMLElement,
-            requiresTargetPick
-          });
-        }
 
         if (!requiresTargetPick) {
           if (spellTargetsSelf(spell) && sourceToken) {
             await withTemporaryUserTargets(sourceToken, async () => {
               await waitAndInvokeAutoApplyActionsInMessage(messageId);
             });
+            if (typeof onAfterApply === "function") await onAfterApply();
             return;
           }
           await waitAndInvokeAutoApplyActionsInMessage(messageId);
+          if (typeof onAfterApply === "function") await onAfterApply();
           return;
         }
         startPanelAttackPickMode(panelElement, slotElement, sourceToken, { id: "spell-auto-apply" }, originEvent, {
           onTargetAttack: async (targetToken) => {
-            if (PANEL_DEBUG_SPELL_APPLY) {
-              console.log("[tow-combat-overlay][spell-apply] picked target", {
-                messageId,
-                targetId: String(targetToken?.id ?? ""),
-                targetName: String(targetToken?.name ?? "")
-              });
-            }
             await withTemporaryUserTargets(targetToken, async () => {
               await waitAndInvokeAutoApplyActionsInMessage(messageId);
             });
+            if (typeof onAfterApply === "function") await onAfterApply();
           }
         });
       } finally {
@@ -2576,19 +2576,6 @@ function armAutoProcessSpellApplyButtons(actor, spell, {
     const itemId = String(message?.system?.test?.item?.id ?? "").trim();
     const sameSpell = (itemUuid === spellUuid) || (itemId && itemId === String(spell?.id ?? "").trim());
     if (!sameSpell) return;
-    if (PANEL_DEBUG_SPELL_APPLY) {
-      console.log("[tow-combat-overlay][spell-apply] matched item-use message", {
-        messageId: String(message?.id ?? ""),
-        messageActorId,
-        actorId,
-        actorUuid,
-        testActorUuid,
-        itemUuid,
-        spellUuid,
-        itemId,
-        spellId: String(spell?.id ?? "")
-      });
-    }
     cleanup(createHookId);
     void processMessage(message);
   });
@@ -2597,22 +2584,60 @@ function armAutoProcessSpellApplyButtons(actor, spell, {
 }
 
 async function runPanelCastSpecificSpellFromAccumulatedPower(actor, spell, {
+  autoRollCastingTest = false,
+  autoProcessApply = true,
+  allowTargetPick = true,
   sourceToken = null,
   panelElement = null,
   slotElement = null,
   originEvent = null
 } = {}) {
   if (!actor || !spell) return;
-  armAutoProcessSpellApplyButtons(actor, spell, {
-    sourceToken,
-    panelElement,
-    slotElement,
-    originEvent
-  });
+  if (autoProcessApply) {
+    armAutoProcessSpellApplyButtons(actor, spell, {
+      allowTargetPick,
+      onAfterApply: async () => {
+        await resetPanelAccumulatePowerValues(actor);
+      },
+      sourceToken,
+      panelElement,
+      slotElement,
+      originEvent
+    });
+  }
   ensurePanelItemUseRollCompatibility();
   if (typeof actor?.system?.castSpell !== "function") return;
-  const potency = resolveActorLatestCastingPotency(actor);
-  await actor.system.castSpell(spell, potency, { context: { targetSpeakers: null } });
+
+  if (!autoRollCastingTest) {
+    const potency = resolveActorLatestCastingPotency(actor);
+    await actor.system.castSpell(spell, potency, null);
+    if (!autoProcessApply) await resetPanelAccumulatePowerValues(actor);
+    return;
+  }
+
+  if (typeof actor?.setupCastingTest !== "function") return;
+  const matchesSpellCastingDialog = (app) => {
+    if (app?.actor?.id !== actor.id) return false;
+    const spellId = String(app?.spell?.id ?? app?.data?.spell?.id ?? "").trim();
+    if (spellId && spellId === String(spell?.id ?? "").trim()) return true;
+    const rollClass = String(app?.context?.rollClass ?? "").trim().toLowerCase();
+    return rollClass === "castingtest" || app?.casting === true;
+  };
+  armApplyRollModifiersToNextTestDialog(actor, { matches: matchesSpellCastingDialog });
+  towCombatOverlayArmAutoSubmitDialog({
+    hookName: "renderTestDialog",
+    matches: matchesSpellCastingDialog,
+    submitErrorMessage: "Casting test submit() is unavailable."
+  });
+  const lore = String(spell?.system?.lore ?? "").trim();
+  const test = await actor.setupCastingTest(
+    { spell },
+    createTowCombatOverlayRollContext(actor, { spell: String(spell?.id ?? ""), lore })
+  );
+  const potencyRaw = Number(test?.result?.potency ?? test?.result?.successes ?? NaN);
+  const potency = Number.isFinite(potencyRaw) ? Math.max(0, Math.trunc(potencyRaw)) : 0;
+  await actor.system.castSpell(spell, potency, null);
+  if (!autoProcessApply) await resetPanelAccumulatePowerValues(actor);
 }
 
 async function resetPanelAccumulatePowerValues(actor) {
@@ -3107,6 +3132,35 @@ function normalizeItemDescription(item) {
   return normalizeDescriptionSource(descriptionSource);
 }
 
+function resolveTemporaryEffectDescription(effect) {
+  if (!effect) return "";
+
+  const direct = normalizeDescriptionSource(
+    effect?.description
+    ?? effect?.system?.description
+    ?? effect?.flags?.core?.description
+    ?? ""
+  );
+  if (direct) return direct;
+
+  const sourceItemFromGetter = effect?.sourceItem ?? null;
+  const sourceItemUuid = String(effect?.system?.sourceData?.item ?? "").trim();
+  const sourceItemFromUuid = (!sourceItemFromGetter && sourceItemUuid && typeof fromUuidSync === "function")
+    ? fromUuidSync(sourceItemUuid)
+    : null;
+  const sourceItem = sourceItemFromGetter ?? sourceItemFromUuid;
+  if (sourceItem) {
+    const fromSourceItem = normalizeDescriptionSource(
+      sourceItem?.system?.description
+      ?? sourceItem?.description
+      ?? ""
+    );
+    if (fromSourceItem) return fromSourceItem;
+  }
+
+  return "";
+}
+
 function escapePanelHtml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -3268,7 +3322,7 @@ function getPanelItemGroupsForActor(actor) {
       name: String(effect?.name ?? "Effect"),
       img: String(effect?.img ?? effect?.icon ?? PANEL_FALLBACK_ITEM_ICON),
       system: {
-        description: String(effect?.description ?? "")
+        description: resolveTemporaryEffectDescription(effect)
       }
     }));
 
@@ -3294,30 +3348,6 @@ function getPanelItemGroupsForActor(actor) {
   const magic = spellItems.concat(blessingItems);
 
   return { actions, attacks, abilities, temporaryEffects, manoeuvre, recover, magic };
-}
-
-function debugTokenItems(controlPanelState, token) {
-  if (!PANEL_DEBUG_ITEMS) return;
-  const actor = token?.actor ?? token?.document?.actor ?? null;
-  if (!actor) return;
-  const tokenKey = String(token?.document?.uuid ?? token?.id ?? "");
-  if (!tokenKey) return;
-  if (controlPanelState?.lastDebugTokenKey === tokenKey) return;
-  controlPanelState.lastDebugTokenKey = tokenKey;
-
-  const rows = (Array.isArray(actor?.items?.contents) ? actor.items.contents : []).map((item) => ({
-    id: item?.id ?? "",
-    name: item?.name ?? "",
-    type: item?.type ?? "",
-    category: item?.system?.category ?? "",
-    itemType: item?.system?.type ?? "",
-    trappingType: item?.system?.trappingType ?? "",
-    isAttack: item?.system?.isAttack ?? false
-  }));
-
-  console.groupCollapsed(`[tow-combat-overlay] Item debug: ${actor.name} (${rows.length})`);
-  console.table(rows);
-  console.groupEnd();
 }
 
 function resolveDynamicGridLayout(itemCount) {
@@ -3857,7 +3887,7 @@ function updateGroupSlots(panelElement, groupKey, groupItems = [], actor = null)
         ? `${abilitiesHint}<br><br>${itemDescription}`
         : abilitiesHint;
     } else if (resolvedGroupKey === "magic") {
-      const magicHint = "<em>Click: cast this spell and auto-process Apply buttons. If target selection is needed, pick target on canvas (same flow as melee attack). Alt+click: show details.</em>";
+      const magicHint = "<em>Click: cast and auto-process Apply buttons (with target pick when needed). Shift+click: same cast flow, but using only currently selected targets (no target pick mode, no self fallback). Alt+click: pick target then cast manually (no auto-apply).</em>";
       const magicDamageLabel = resolvePanelAttackDamageLabel(item) || "0";
       const hasMagicPotency = item?.system?.damage?.potency === true;
       const targetKey = String(item?.system?.target?.value ?? "").trim();
@@ -4121,7 +4151,6 @@ function updateSelectionDisplay(panelElement) {
   if (selectionPanelElement instanceof HTMLElement) selectionPanelElement.style.display = "";
 
   const token = controlledTokens[0];
-  debugTokenItems(controlPanelState, token);
   const iconSrc = getPrimaryTokenIconSrc(token);
   const tokenName = getPrimaryTokenName(token);
   const resilience = towCombatOverlayGetResilienceValue(token?.document);
@@ -4149,6 +4178,10 @@ function updateSelectionDisplay(panelElement) {
   syncItemGroupsMinWidth(panelElement);
   updateActionControlsDisplay(panelElement, token);
   updateActionControlsDisplay(selectionPanelElement, token);
+  if (!controlPanelState.hasInitialAutoCenter) {
+    applyInitialPanelPosition(panelElement);
+    controlPanelState.hasInitialAutoCenter = true;
+  }
   const rect = panelElement.getBoundingClientRect();
   applyPanelPosition(panelElement, rect.left, rect.top);
   syncSelectionPanelPosition(controlPanelState);
