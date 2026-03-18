@@ -87,7 +87,7 @@ function normalizeDescriptionTextSource(descriptionSource) {
   return text;
 }
 
-function normalizeDescriptionSource(descriptionSource) {
+export function normalizeDescriptionSource(descriptionSource) {
   const normalizedText = normalizeDescriptionTextSource(descriptionSource);
   if (!normalizedText) return "";
   return escapePanelHtml(normalizedText).replace(/\n/g, "<br>");

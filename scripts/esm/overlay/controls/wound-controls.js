@@ -29,6 +29,7 @@ import {
   towCombatOverlayGetActorFromToken,
   towCombatOverlayGetMouseButton,
   towCombatOverlayGetOverlayEdgePadPx,
+  towCombatOverlayGetTokenOverlayScale,
   towCombatOverlayGetScreenPoint,
   towCombatOverlayGetWorldPoint,
   towCombatOverlayIsShiftModifier,

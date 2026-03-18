@@ -1,6 +1,16 @@
 export const MODULE_KEY = "towCombatOverlayRuntime";
 export const COMBAT_OVERLAY_API_VERSION = "1.0.0";
-export const PreciseTextClass = foundry.canvas.containers.PreciseText;
+function resolvePreciseTextClass() {
+  const preciseText = foundry?.canvas?.containers?.PreciseText
+    ?? globalThis?.PreciseText
+    ?? PIXI?.Text;
+  if (typeof preciseText !== "function") {
+    throw new Error("[tow-combat-overlay] Unable to resolve a text class for overlay rendering.");
+  }
+  return preciseText;
+}
+
+export const PreciseTextClass = resolvePreciseTextClass();
 
 export const KEYS = Object.freeze({
   woundUi: "_towCombatOverlayWoundUi",

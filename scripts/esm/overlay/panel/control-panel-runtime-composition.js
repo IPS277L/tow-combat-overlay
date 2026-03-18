@@ -76,6 +76,7 @@ import {
 import { bindPanelTooltipEvent } from "./shared/tooltip.js";
 import {
   escapePanelHtml,
+  normalizeDescriptionSource,
   normalizeItemDescription,
   resolvePanelAttackSpecialPropertyMarkup,
   resolvePanelAttackSpecialPropertyText,
