@@ -12,6 +12,10 @@ import {
   towCombatOverlayEnsureControlPanel,
   towCombatOverlayRemoveControlPanel
 } from "../overlay/panel/control-panel-service.js";
+import {
+  towCombatOverlayEnsureTopPanel,
+  towCombatOverlayRemoveTopPanel
+} from "../overlay/top-panel/top-panel-service.js";
 
 function ensureTowCombatOverlayStylesheetLoaded() {
   const explicitHrefs = [
@@ -19,7 +23,8 @@ function ensureTowCombatOverlayStylesheetLoaded() {
     "modules/tow-combat-overlay/styles/dialog-selectors.css",
     "modules/tow-combat-overlay/styles/chat-cards.css",
     "modules/tow-combat-overlay/styles/status-tooltip.css",
-    "modules/tow-combat-overlay/styles/control-panel.css"
+    "modules/tow-combat-overlay/styles/control-panel.css",
+    "modules/tow-combat-overlay/styles/top-panel.css"
   ];
   const links = Array.from(document.querySelectorAll("link[rel='stylesheet']"));
   const loadedHrefs = new Set(
@@ -47,9 +52,17 @@ export function syncTowCombatOverlayDisplaySettings() {
 
   const wantsEnabled = isTowCombatOverlayDisplaySettingEnabled(settings.enableOverlay, true);
   const wantsControlPanel = isTowCombatOverlayDisplaySettingEnabled(settings.enableControlPanel, true);
+  const wantsTopPanel = isTowCombatOverlayDisplaySettingEnabled(settings.enableTopPanel, true);
 
   if (!overlayApi) {
     if (!wantsControlPanel) towCombatOverlayRemoveControlPanel();
+    if (wantsTopPanel) {
+      void towCombatOverlayEnsureTopPanel().catch((error) => {
+        console.error("[tow-combat-overlay] Failed to initialize top panel.", error);
+      });
+    } else {
+      towCombatOverlayRemoveTopPanel();
+    }
     return false;
   }
   const isEnabled = typeof overlayApi.isEnabled === "function"
@@ -72,6 +85,14 @@ export function syncTowCombatOverlayDisplaySettings() {
     });
   } else {
     towCombatOverlayRemoveControlPanel();
+  }
+
+  if (wantsTopPanel) {
+    void towCombatOverlayEnsureTopPanel().catch((error) => {
+      console.error("[tow-combat-overlay] Failed to initialize top panel.", error);
+    });
+  } else {
+    towCombatOverlayRemoveTopPanel();
   }
 
   return didChange;
@@ -109,4 +130,3 @@ export function registerTowCombatOverlayModuleHooks() {
     syncTowCombatOverlayDisplaySettings();
   });
 }
-

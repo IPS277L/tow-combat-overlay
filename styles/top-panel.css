@@ -1,0 +1,234 @@
+.tow-combat-overlay-top-panel {
+  --tow-top-panel-padding: 0px;
+  --tow-top-panel-gap: 4px;
+  --tow-top-panel-portrait-size: 122px;
+  --tow-top-panel-chip-size: 27px;
+  --tow-top-panel-chip-gap: 4px;
+  --tow-top-panel-chip-rows: 2;
+  --tow-top-panel-chip-offset: 2px;
+  --tow-top-panel-chip-stack-height: calc(
+    (var(--tow-top-panel-chip-size) * var(--tow-top-panel-chip-rows))
+    + (var(--tow-top-panel-chip-gap) * (var(--tow-top-panel-chip-rows) - 1))
+    + var(--tow-top-panel-chip-offset)
+  );
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10012;
+  max-width: min(calc(100vw - 16px), 980px);
+  min-height: var(--tow-top-panel-portrait-size);
+  padding: var(--tow-top-panel-padding);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.tow-combat-overlay-top-panel[data-has-tokens="false"] {
+  display: none;
+}
+
+.tow-combat-overlay-top-panel__list {
+  display: flex;
+  align-items: center;
+  gap: var(--tow-top-panel-gap);
+  max-width: calc(100% - 26px);
+  padding-bottom: var(--tow-top-panel-chip-stack-height);
+  background: transparent;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.tow-combat-overlay-top-panel__controls {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+
+.tow-combat-overlay-top-panel__control-button {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  min-height: 22px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(188, 188, 188, 0.28);
+  border-radius: 4px;
+  background: rgba(84, 84, 84, 0.75);
+  color: #f2ece0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tow-combat-overlay-top-panel__control-button:hover,
+.tow-combat-overlay-top-panel__control-button:focus-visible {
+  background: rgba(104, 104, 104, 0.85);
+}
+
+.tow-combat-overlay-top-panel__control-button[data-state="unlocked"] {
+  background: #e9dfcc;
+  border-color: #c9bda6;
+  color: #3a3328;
+}
+
+.tow-combat-overlay-top-panel__control-toggle-icon {
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.tow-combat-overlay-top-panel__portrait {
+  position: relative;
+  flex: 0 0 auto;
+  width: 61px;
+  height: var(--tow-top-panel-portrait-size);
+  margin: 0;
+  padding: 0;
+  border: 2px solid var(--tow-top-panel-token-border-color, #7a6d5a);
+  border-radius: 4px;
+  background: rgba(36, 20, 20, 0.62);
+  box-shadow: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tow-combat-overlay-top-panel__portrait:focus-visible {
+  outline: 2px solid rgba(255, 239, 205, 0.85);
+  outline-offset: 1px;
+}
+
+.tow-combat-overlay-top-panel__portrait.is-friendly {
+  --tow-top-panel-token-border-color: #6f9680;
+}
+
+.tow-combat-overlay-top-panel__portrait.is-neutral {
+  --tow-top-panel-token-border-color: #8f8576;
+}
+
+.tow-combat-overlay-top-panel__portrait.is-hostile {
+  --tow-top-panel-token-border-color: #9e4a5f;
+}
+
+.tow-combat-overlay-top-panel__portrait.is-controlled {
+  box-shadow:
+    0 0 0 1px rgba(242, 236, 224, 0.34),
+    inset 0 0 0 1px rgba(43, 30, 18, 0.8);
+}
+
+.tow-combat-overlay-top-panel__portrait.is-dead .tow-combat-overlay-top-panel__portrait-image {
+  filter: grayscale(1) brightness(0.72);
+}
+
+.tow-combat-overlay-top-panel__portrait-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.tow-combat-overlay-top-panel__chips {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  pointer-events: none;
+}
+
+.tow-combat-overlay-top-panel__chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  row-gap: 1px;
+  max-width: 100%;
+  overflow: visible;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.tow-combat-overlay-top-panel__chip {
+  width: var(--tow-top-panel-chip-size-local, var(--tow-top-panel-chip-size));
+  height: var(--tow-top-panel-chip-size-local, var(--tow-top-panel-chip-size));
+  min-width: var(--tow-top-panel-chip-size-local, var(--tow-top-panel-chip-size));
+  min-height: var(--tow-top-panel-chip-size-local, var(--tow-top-panel-chip-size));
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(212, 197, 171, 0.6);
+  border-radius: 50%;
+  background: rgba(26, 22, 20, 0.9);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  cursor: help;
+}
+
+.tow-combat-overlay-top-panel__chip.is-condition,
+.tow-combat-overlay-top-panel__chip.is-condition-overflow {
+  border-color: rgba(211, 81, 112, 0.74);
+}
+
+.tow-combat-overlay-top-panel__chip.is-effect,
+.tow-combat-overlay-top-panel__chip.is-effect-overflow {
+  border-color: rgba(201, 157, 74, 0.72);
+}
+
+.tow-combat-overlay-top-panel__chip.is-ability,
+.tow-combat-overlay-top-panel__chip.is-ability-overflow {
+  border-color: rgba(123, 152, 194, 0.72);
+}
+
+.tow-combat-overlay-top-panel__chip:hover,
+.tow-combat-overlay-top-panel__chip:focus-visible {
+  background: rgba(46, 37, 31, 0.95);
+}
+
+.tow-combat-overlay-top-panel__chip-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.tow-combat-overlay-top-panel__chip-text {
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  color: #f2ece0;
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .tow-combat-overlay-top-panel {
+    --tow-top-panel-portrait-size: 96px;
+    --tow-top-panel-padding: 0px;
+    --tow-top-panel-gap: 3px;
+    max-width: calc(100vw - 10px);
+  }
+}

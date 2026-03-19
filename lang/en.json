@@ -3,6 +3,8 @@
   "TOWCOMBATOVERLAY.Setting.EnableOverlay.Hint": "Show or hide overlay visuals only (core automation and combat flow stay active).",
   "TOWCOMBATOVERLAY.Setting.EnableControlPanel.Name": "Enable Control Panel",
   "TOWCOMBATOVERLAY.Setting.EnableControlPanel.Hint": "Show or hide the draggable control panel UI only.",
+  "TOWCOMBATOVERLAY.Setting.EnableTopPanel.Name": "Enable Top Panel",
+  "TOWCOMBATOVERLAY.Setting.EnableTopPanel.Hint": "Show or hide the top portrait panel for scene tokens.",
   "TOWCOMBATOVERLAY.Notification.SelectAtLeastOneToken": "Select at least one token.",
   "TOWCOMBATOVERLAY.Notification.NoPermissionToEditActor": "No permission to edit {actorName}.",
   "TOWCOMBATOVERLAY.Notification.OverlayEnabled": "Overlay enabled: wounds, resilience, and status highlights.",

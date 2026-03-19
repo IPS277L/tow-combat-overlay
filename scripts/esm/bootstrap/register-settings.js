@@ -36,5 +36,13 @@ export function registerTowCombatOverlayDisplaySettings({ onDisplaySettingsChang
     hint: "TOWCOMBATOVERLAY.Setting.EnableControlPanel.Hint",
     onChange: () => handleDisplaySettingChange()
   });
+  game.settings.register(moduleId, settingKeys.enableTopPanel, {
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+    name: "TOWCOMBATOVERLAY.Setting.EnableTopPanel.Name",
+    hint: "TOWCOMBATOVERLAY.Setting.EnableTopPanel.Hint",
+    onChange: () => handleDisplaySettingChange()
+  });
 }
-

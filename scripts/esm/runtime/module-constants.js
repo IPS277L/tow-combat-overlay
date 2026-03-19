@@ -16,7 +16,8 @@ const MODULE_CONSTANTS_BASE = Object.freeze({
   }),
   settings: Object.freeze({
     enableOverlay: "enableOverlay",
-    enableControlPanel: "enableControlPanel"
+    enableControlPanel: "enableControlPanel",
+    enableTopPanel: "enableTopPanel"
   })
 });
 

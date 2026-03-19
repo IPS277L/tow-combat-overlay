@@ -26,6 +26,9 @@
     },
     {
       "src": "styles/control-panel.css"
+    },
+    {
+      "src": "styles/top-panel.css"
     }
   ],
   "languages": [
