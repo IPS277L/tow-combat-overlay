@@ -39,6 +39,7 @@ export function createPanelSlotClickService({
   }
 
   async function handleSlotClick(slotElement, event) {
+    if (String(slotElement.dataset.itemType ?? "").trim() === "empty") return;
     const rawItemGroup = String(slotElement.dataset.itemGroup ?? "").trim();
     const rawItemId = String(slotElement.dataset.itemId ?? "").trim();
     const orderKey = String(slotElement.dataset.itemOrderKey ?? "").trim();

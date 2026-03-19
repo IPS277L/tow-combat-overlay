@@ -48,30 +48,38 @@
 .tow-combat-overlay-control-panel__status-icon {
   width: var(--tow-control-panel-status-size);
   height: var(--tow-control-panel-status-size);
+  min-width: var(--tow-control-panel-status-size);
+  min-height: var(--tow-control-panel-status-size);
   border: 1px solid rgba(205, 205, 205, 0.7);
   border-radius: 50%;
   background: rgba(84, 84, 84, 0.9);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  padding: 1px;
+  overflow: hidden;
   opacity: 1;
   filter: none;
+  box-sizing: border-box;
+  line-height: 0;
+  flex: 0 0 auto;
 }
 
 .tow-combat-overlay-control-panel__status-icon img {
   width: calc(var(--tow-control-panel-status-size) - 5px);
   height: calc(var(--tow-control-panel-status-size) - 5px);
   object-fit: contain;
+  display: block;
   pointer-events: none;
-  opacity: 0.72;
+  opacity: 1;
   filter: saturate(0.45) grayscale(0.3);
 }
 
 .tow-combat-overlay-control-panel__status-icon.is-active {
-  background: rgba(222, 217, 205, 0.68);
+  background: rgb(222, 217, 205);
   opacity: 1;
   filter: none;
-  border-color: rgba(238, 233, 220, 0.95);
+  border-color: rgb(238, 233, 220);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.52),
     0 0 0 1px rgba(126, 116, 98, 0.24);
@@ -112,10 +120,12 @@
 }
 
 .tow-combat-overlay-control-panel__status-abilities .tow-combat-overlay-control-panel__slot {
+  padding: 1px;
   border: 1px solid rgba(205, 205, 205, 0.7);
   border-radius: 50%;
   background: rgba(84, 84, 84, 0.9);
   box-shadow: none;
+  opacity: 1;
   overflow: hidden;
 }
 
@@ -131,6 +141,7 @@
   height: 95%;
   border-radius: 50%;
   object-fit: cover;
+  opacity: 1;
   filter: saturate(0.92) contrast(0.98);
   margin: auto;
 }
@@ -142,10 +153,11 @@
   width: var(--tow-control-panel-status-size);
   height: var(--tow-control-panel-status-size);
   flex: 0 0 auto;
-  padding: 0;
+  padding: 1px;
   border: 1px solid rgba(205, 205, 205, 0.7);
   border-radius: 50%;
   background: rgba(84, 84, 84, 0.9);
+  opacity: 1;
   box-shadow: none;
   overflow: hidden;
   cursor: help;
@@ -164,6 +176,7 @@
   height: 95%;
   border-radius: 50%;
   object-fit: cover;
+  opacity: 1;
   filter: saturate(0.92) contrast(0.98);
   margin: auto;
   pointer-events: none;

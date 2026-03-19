@@ -143,6 +143,7 @@ export function createPanelSlotRenderService({
         slotElement.dataset.itemType = "empty";
         slotElement.dataset.itemGroup = emptyGroupKey;
         slotElement.dataset.itemId = "";
+        slotElement.dataset.itemName = "";
         slotElement.dataset.itemOrderKey = emptyOrderKey;
         slotElement.dataset.tooltipTitle = "";
         slotElement.dataset.tooltipDescription = "";
