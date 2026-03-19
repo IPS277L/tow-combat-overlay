@@ -1,0 +1,319 @@
+.tow-combat-overlay-top-panel {
+  --tow-top-panel-border-common: rgba(255, 255, 255, 1);
+  --tow-top-panel-border-uncommon: rgba(0, 255, 0, 1);
+  --tow-top-panel-border-rare: rgba(0, 136, 255, 1);
+  --tow-top-panel-border-hostile-red: rgba(255, 0, 0, 1);
+  --tow-top-panel-border-legendary: rgba(255, 230, 0, 1);
+  --tow-top-panel-bg-common: linear-gradient(180deg, rgba(44, 44, 44, 0.72) 0%, rgba(28, 28, 28, 0.72) 100%);
+  --tow-top-panel-bg-uncommon: linear-gradient(180deg, rgba(28, 68, 20, 0.76) 0%, rgba(18, 44, 14, 0.76) 100%);
+  --tow-top-panel-bg-rare: linear-gradient(180deg, rgba(20, 44, 72, 0.76) 0%, rgba(12, 30, 52, 0.76) 100%);
+  --tow-top-panel-bg-hostile: linear-gradient(180deg, rgba(70, 20, 20, 0.76) 0%, rgba(46, 12, 12, 0.76) 100%);
+  --tow-top-panel-bg-legendary: linear-gradient(180deg, rgba(98, 78, 18, 0.76) 0%, rgba(66, 50, 10, 0.76) 100%);
+  --tow-top-panel-padding: 0px;
+  --tow-top-panel-gap: 4px;
+  --tow-top-panel-portrait-size: 122px;
+  --tow-top-panel-chip-size: 16px;
+  --tow-top-panel-chip-gap: 4px;
+  --tow-top-panel-chip-rows: 2;
+  --tow-top-panel-chip-offset: 2px;
+  --tow-top-panel-chip-stack-height: calc(
+    (var(--tow-top-panel-chip-size) * var(--tow-top-panel-chip-rows))
+    + (var(--tow-top-panel-chip-gap) * (var(--tow-top-panel-chip-rows) - 1))
+    + var(--tow-top-panel-chip-offset)
+  );
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10012;
+  max-width: min(calc(100vw - 16px), 980px);
+  min-height: var(--tow-top-panel-portrait-size);
+  padding: var(--tow-top-panel-padding);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.tow-combat-overlay-top-panel[data-has-tokens="false"] {
+  display: none;
+}
+
+.tow-combat-overlay-top-panel__list {
+  display: flex;
+  align-items: center;
+  gap: var(--tow-top-panel-gap);
+  max-width: calc(100% - 26px);
+  padding-bottom: var(--tow-top-panel-chip-stack-height);
+  background: transparent;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.tow-combat-overlay-top-panel__controls {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+
+.tow-combat-overlay-top-panel__control-button {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  min-height: 22px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(188, 188, 188, 0.28);
+  border-radius: 4px;
+  background: rgba(84, 84, 84, 0.75);
+  color: #f2ece0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tow-combat-overlay-top-panel__control-button:hover,
+.tow-combat-overlay-top-panel__control-button:focus-visible {
+  background: rgba(104, 104, 104, 0.85);
+}
+
+.tow-combat-overlay-top-panel__control-button[data-state="unlocked"] {
+  background: #e9dfcc;
+  border-color: #c9bda6;
+  color: #3a3328;
+}
+
+.tow-combat-overlay-top-panel__control-toggle-icon {
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.tow-combat-overlay-top-panel__portrait {
+  position: relative;
+  flex: 0 0 auto;
+  width: 61px;
+  height: var(--tow-top-panel-portrait-size);
+  margin: 0;
+  padding: 0;
+  border: 2px solid var(--tow-top-panel-token-border-color, var(--tow-top-panel-border-common));
+  border-radius: 4px;
+  background: var(--tow-top-panel-token-bg, var(--tow-top-panel-bg-common));
+  box-shadow: none;
+  cursor: pointer;
+  user-select: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: none;
+  animation: none;
+}
+
+.tow-combat-overlay-top-panel__portrait:focus-visible {
+  outline: none;
+}
+
+.tow-combat-overlay-top-panel__portrait:focus {
+  outline: none;
+}
+
+.tow-combat-overlay-top-panel__portrait:active {
+  transform: none;
+}
+
+.tow-combat-overlay-top-panel__portrait.is-hover-linked {
+  --tow-top-panel-token-border-color: var(--tow-top-panel-border-legendary);
+  --tow-top-panel-token-bg: var(--tow-top-panel-bg-legendary);
+  border-color: var(--tow-top-panel-border-legendary);
+  background: var(--tow-top-panel-token-bg);
+  box-shadow: inset 0 0 0 1px rgba(255, 238, 140, 0.42);
+}
+
+body.tow-combat-overlay-is-picking-target .tow-combat-overlay-top-panel__portrait {
+  cursor: crosshair;
+}
+
+.tow-combat-overlay-top-panel__portrait.is-friendly {
+  --tow-top-panel-token-border-color: var(--tow-top-panel-border-uncommon);
+  --tow-top-panel-token-bg: var(--tow-top-panel-bg-uncommon);
+}
+
+.tow-combat-overlay-top-panel__portrait.is-neutral {
+  --tow-top-panel-token-border-color: var(--tow-top-panel-border-rare);
+  --tow-top-panel-token-bg: var(--tow-top-panel-bg-rare);
+}
+
+.tow-combat-overlay-top-panel__portrait.is-hostile {
+  --tow-top-panel-token-border-color: var(--tow-top-panel-border-hostile-red);
+  --tow-top-panel-token-bg: var(--tow-top-panel-bg-hostile);
+}
+
+/* Keep hover-linked cards on the shared yellow highlight, regardless of disposition class order. */
+.tow-combat-overlay-top-panel__portrait.is-hover-linked {
+  --tow-top-panel-token-border-color: var(--tow-top-panel-border-legendary);
+  --tow-top-panel-token-bg: var(--tow-top-panel-bg-legendary);
+  border-color: var(--tow-top-panel-border-legendary);
+  background: var(--tow-top-panel-token-bg);
+}
+
+.tow-combat-overlay-top-panel__portrait.is-controlled {
+  --tow-top-panel-token-border-color: var(--tow-top-panel-border-legendary);
+  --tow-top-panel-token-bg: var(--tow-top-panel-bg-legendary);
+  background: var(--tow-top-panel-token-bg);
+  box-shadow: inset 0 0 0 1px rgba(255, 238, 140, 0.42);
+}
+
+.tow-combat-overlay-top-panel__portrait.is-dead {
+  background: linear-gradient(180deg, rgba(52, 52, 52, 0.90) 0%, rgba(34, 34, 34, 0.90) 100%);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6);
+}
+
+.tow-combat-overlay-top-panel__portrait.is-dead .tow-combat-overlay-top-panel__portrait-image {
+  filter: grayscale(1) brightness(0.72);
+}
+
+.tow-combat-overlay-top-panel__portrait.is-dead.is-controlled,
+.tow-combat-overlay-top-panel__portrait.is-dead.is-hover-linked {
+  --tow-top-panel-token-border-color: var(--tow-top-panel-border-legendary);
+  --tow-top-panel-token-bg: var(--tow-top-panel-bg-legendary);
+  border-color: var(--tow-top-panel-border-legendary);
+  background: var(--tow-top-panel-token-bg);
+  box-shadow: inset 0 0 0 1px rgba(255, 238, 140, 0.42);
+}
+
+.tow-combat-overlay-top-panel__portrait-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.tow-combat-overlay-top-panel__chips {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 4px;
+  width: auto;
+  max-width: calc(100% - 4px);
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  pointer-events: none;
+}
+
+.tow-combat-overlay-top-panel__chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  row-gap: 1px;
+  max-width: 100%;
+  overflow: visible;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.tow-combat-overlay-top-panel__chip {
+  width: var(--tow-top-panel-chip-size);
+  height: var(--tow-top-panel-chip-size);
+  min-width: var(--tow-top-panel-chip-size);
+  min-height: var(--tow-top-panel-chip-size);
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(205, 205, 205, 0.7);
+  border-radius: 50%;
+  background: rgba(84, 84, 84, 0.9);
+  box-shadow: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  cursor: help;
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: none;
+  transform: none;
+  outline: none;
+}
+
+.tow-combat-overlay-top-panel__chip.is-condition,
+.tow-combat-overlay-top-panel__chip.is-condition-overflow {
+  border-color: rgb(238, 233, 220);
+  background: rgb(222, 217, 205);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.52),
+    0 0 0 1px rgba(126, 116, 98, 0.24);
+}
+
+.tow-combat-overlay-top-panel__chip.is-effect,
+.tow-combat-overlay-top-panel__chip.is-effect-overflow {
+  border-color: rgba(205, 205, 205, 0.7);
+}
+
+.tow-combat-overlay-top-panel__chip.is-ability,
+.tow-combat-overlay-top-panel__chip.is-ability-overflow {
+  border-color: rgba(205, 205, 205, 0.7);
+}
+
+.tow-combat-overlay-top-panel__chip:hover,
+.tow-combat-overlay-top-panel__chip:focus-visible {
+  background: rgba(84, 84, 84, 0.9);
+}
+
+.tow-combat-overlay-top-panel__chip:focus,
+.tow-combat-overlay-top-panel__chip:focus-visible,
+.tow-combat-overlay-top-panel__chip:active {
+  outline: none;
+  transform: none;
+}
+
+.tow-combat-overlay-top-panel__chip.is-condition:hover,
+.tow-combat-overlay-top-panel__chip.is-condition:focus-visible,
+.tow-combat-overlay-top-panel__chip.is-condition-overflow:hover,
+.tow-combat-overlay-top-panel__chip.is-condition-overflow:focus-visible {
+  background: rgb(222, 217, 205);
+}
+
+.tow-combat-overlay-top-panel__chip-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.tow-combat-overlay-top-panel__chip-text {
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  color: #f2ece0;
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .tow-combat-overlay-top-panel {
+    --tow-top-panel-portrait-size: 96px;
+    --tow-top-panel-padding: 0px;
+    --tow-top-panel-gap: 3px;
+    max-width: calc(100vw - 10px);
+  }
+}

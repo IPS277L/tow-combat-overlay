@@ -11,6 +11,8 @@ export function createPanelTargetPickService({
   runPanelAimAction,
   runPanelHelpAction
 } = {}) {
+  const TARGET_PICKING_BODY_CLASS = "tow-combat-overlay-is-picking-target";
+
   function getWorldPointFromClientEvent(event) {
     const clientX = Number(event?.clientX ?? NaN);
     const clientY = Number(event?.clientY ?? NaN);
@@ -44,6 +46,7 @@ export function createPanelTargetPickService({
     if (pending.panelElement instanceof HTMLElement) pending.panelElement.classList.remove("is-picking-attack");
     if (pending.slotElement instanceof HTMLElement) pending.slotElement.classList.remove("is-picking-attack");
     if (pending.canvasView instanceof HTMLElement) pending.canvasView.style.cursor = "";
+    document.body?.classList?.remove?.(TARGET_PICKING_BODY_CLASS);
     hideStatusTooltip();
 
     delete controlPanelState.pendingAttackPick;
@@ -60,6 +63,7 @@ export function createPanelTargetPickService({
 
     const canvasView = canvas?.app?.view;
     if (canvasView instanceof HTMLElement) canvasView.style.cursor = pickCursor;
+    document.body?.classList?.add?.(TARGET_PICKING_BODY_CLASS);
     panelElement.classList.add("is-picking-attack");
     slotElement.classList.add("is-picking-attack");
     let attackTriggered = false;
@@ -76,6 +80,20 @@ export function createPanelTargetPickService({
       });
     };
 
+    const resolveAttackPickTarget = async (targetToken, event = null) => {
+      if (attackTriggered) return false;
+      if (!targetToken || targetToken.id === sourceToken.id) return false;
+      const useDefaultDialog = preferDefaultDialog || isAltModifier(event);
+      attackTriggered = true;
+      clearPickMode();
+      if (onTargetAttack) {
+        await onTargetAttack(targetToken, { autoRoll: !useDefaultDialog });
+        return true;
+      }
+      await runPanelAttackOnTarget(sourceToken, targetToken, attackItem, { autoRoll: !useDefaultDialog });
+      return true;
+    };
+
     const onWindowPointerDownCapture = async (event) => {
       if (attackTriggered) return;
       if (Number(event?.button ?? 0) !== 0) return;
@@ -87,14 +105,7 @@ export function createPanelTargetPickService({
       event.preventDefault();
       event.stopPropagation();
       if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
-      const useDefaultDialog = preferDefaultDialog || isAltModifier(event);
-      attackTriggered = true;
-      clearPickMode();
-      if (onTargetAttack) {
-        await onTargetAttack(targetToken, { autoRoll: !useDefaultDialog });
-        return;
-      }
-      await runPanelAttackOnTarget(sourceToken, targetToken, attackItem, { autoRoll: !useDefaultDialog });
+      await resolveAttackPickTarget(targetToken, event);
     };
 
     const onEscape = (event) => {
@@ -118,6 +129,7 @@ export function createPanelTargetPickService({
     pending.panelElement = panelElement;
     pending.slotElement = slotElement;
     pending.canvasView = canvasView;
+    pending.resolveTargetTokenPick = resolveAttackPickTarget;
   }
 
   function startAimPickMode(panelElement, slotElement, sourceToken, originEvent = null, options = {}) {
@@ -128,6 +140,7 @@ export function createPanelTargetPickService({
 
     const canvasView = canvas?.app?.view;
     if (canvasView instanceof HTMLElement) canvasView.style.cursor = pickCursor;
+    document.body?.classList?.add?.(TARGET_PICKING_BODY_CLASS);
     panelElement.classList.add("is-picking-attack");
     slotElement.classList.add("is-picking-attack");
     let aimTriggered = false;
@@ -144,6 +157,19 @@ export function createPanelTargetPickService({
       });
     };
 
+    const resolveAimPickTarget = async (targetToken) => {
+      if (aimTriggered) return false;
+      if (!targetToken || targetToken.id === sourceToken.id) return false;
+      aimTriggered = true;
+      clearPickMode();
+      const actor = sourceToken?.actor ?? sourceToken?.document?.actor ?? null;
+      await runPanelAimAction(actor, sourceToken, {
+        autoRoll: !preferDefaultDialog,
+        targetToken
+      });
+      return true;
+    };
+
     const onWindowPointerDownCapture = async (event) => {
       if (aimTriggered) return;
       if (Number(event?.button ?? 0) !== 0) return;
@@ -155,13 +181,7 @@ export function createPanelTargetPickService({
       event.preventDefault();
       event.stopPropagation();
       if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
-      aimTriggered = true;
-      clearPickMode();
-      const actor = sourceToken?.actor ?? sourceToken?.document?.actor ?? null;
-      await runPanelAimAction(actor, sourceToken, {
-        autoRoll: !preferDefaultDialog,
-        targetToken
-      });
+      await resolveAimPickTarget(targetToken);
     };
 
     const onEscape = (event) => {
@@ -185,6 +205,7 @@ export function createPanelTargetPickService({
     pending.panelElement = panelElement;
     pending.slotElement = slotElement;
     pending.canvasView = canvasView;
+    pending.resolveTargetTokenPick = resolveAimPickTarget;
   }
 
   function startHelpPickMode(panelElement, slotElement, sourceToken, originEvent = null, options = {}) {
@@ -195,6 +216,7 @@ export function createPanelTargetPickService({
 
     const canvasView = canvas?.app?.view;
     if (canvasView instanceof HTMLElement) canvasView.style.cursor = pickCursor;
+    document.body?.classList?.add?.(TARGET_PICKING_BODY_CLASS);
     panelElement.classList.add("is-picking-attack");
     slotElement.classList.add("is-picking-attack");
     let helpTriggered = false;
@@ -211,6 +233,19 @@ export function createPanelTargetPickService({
       });
     };
 
+    const resolveHelpPickTarget = async (targetToken) => {
+      if (helpTriggered) return false;
+      if (!targetToken || targetToken.id === sourceToken.id) return false;
+      helpTriggered = true;
+      clearPickMode();
+      const actor = sourceToken?.actor ?? sourceToken?.document?.actor ?? null;
+      await runPanelHelpAction(actor, sourceToken, {
+        autoRoll: !preferDefaultDialog,
+        targetToken
+      });
+      return true;
+    };
+
     const onWindowPointerDownCapture = async (event) => {
       if (helpTriggered) return;
       if (Number(event?.button ?? 0) !== 0) return;
@@ -222,13 +257,7 @@ export function createPanelTargetPickService({
       event.preventDefault();
       event.stopPropagation();
       if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
-      helpTriggered = true;
-      clearPickMode();
-      const actor = sourceToken?.actor ?? sourceToken?.document?.actor ?? null;
-      await runPanelHelpAction(actor, sourceToken, {
-        autoRoll: !preferDefaultDialog,
-        targetToken
-      });
+      await resolveHelpPickTarget(targetToken);
     };
 
     const onEscape = (event) => {
@@ -252,6 +281,7 @@ export function createPanelTargetPickService({
     pending.panelElement = panelElement;
     pending.slotElement = slotElement;
     pending.canvasView = canvasView;
+    pending.resolveTargetTokenPick = resolveHelpPickTarget;
   }
 
   return {
@@ -261,4 +291,3 @@ export function createPanelTargetPickService({
     startHelpPickMode
   };
 }
-

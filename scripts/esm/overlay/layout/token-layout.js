@@ -1,6 +1,6 @@
 import {
   KEYS,
-  LAYOUT_BORDER_COLOR,
+  getLayoutBorderColor,
   getLayoutBorderStyle
 } from "../../runtime/overlay-constants.js";
 
@@ -117,9 +117,10 @@ export function towCombatOverlayDrawCustomLayoutBorder(tokenObject) {
   border.clear();
   if (!bounds) return;
   const borderStyle = getLayoutBorderStyle(tokenObject);
+  const borderColor = getLayoutBorderColor(tokenObject);
   border.lineStyle({
     width: borderStyle.width,
-    color: LAYOUT_BORDER_COLOR,
+    color: borderColor,
     alpha: borderStyle.alpha,
     alignment: 0.5,
     cap: "round",
