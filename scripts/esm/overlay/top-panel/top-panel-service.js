@@ -20,6 +20,7 @@ import {
   writeSavedTopPanelPosition,
   writeSavedTopPanelTokenOrder
 } from "./top-panel-state.js";
+import { PANEL_STATE_KEY } from "../panel/shared/panel-constants.js";
 
 const TOP_PANEL_ID = "tow-combat-overlay-top-panel";
 const TOP_PANEL_STATE_KEY = "__towCombatOverlayTopPanelState";
@@ -39,10 +40,6 @@ const TOP_PANEL_HOOKS = Object.freeze([
 ]);
 const TOP_PANEL_CHIP_TOOLTIP_FALLBACK = "No description.";
 const TOP_PANEL_CHIP_MAX_PER_ROW = 14;
-const TOP_PANEL_CHIP_MAX_ROWS_IN_PORTRAIT = 2;
-const TOP_PANEL_CHIP_MIN_SIZE_PX = 10;
-const TOP_PANEL_CHIP_FALLBACK_SIZE_PX = 27;
-const TOP_PANEL_CHIP_FALLBACK_GAP_PX = 1;
 
 function getTopPanelState() {
   if (!game) return null;
@@ -117,46 +114,6 @@ function syncTopPanelListBottomPadding(panelElement) {
   }
 
   listElement.style.paddingBottom = `${Math.ceil(maxExtraBottom)}px`;
-}
-
-function readCssPixelValue(element, variableName, fallbackValue) {
-  if (!(element instanceof HTMLElement)) return fallbackValue;
-  const raw = String(getComputedStyle(element).getPropertyValue(variableName) ?? "").trim();
-  const parsed = Number.parseFloat(raw);
-  return Number.isFinite(parsed) ? parsed : fallbackValue;
-}
-
-function syncTopPanelPortraitChipSizing(panelElement) {
-  if (!(panelElement instanceof HTMLElement)) return;
-  const listElement = panelElement.querySelector(".tow-combat-overlay-top-panel__list");
-  if (!(listElement instanceof HTMLElement)) return;
-
-  const defaultChipSize = readCssPixelValue(panelElement, "--tow-top-panel-chip-size", TOP_PANEL_CHIP_FALLBACK_SIZE_PX);
-  const chipGap = readCssPixelValue(panelElement, "--tow-top-panel-chip-gap", TOP_PANEL_CHIP_FALLBACK_GAP_PX);
-  const maxRows = Math.max(1, TOP_PANEL_CHIP_MAX_ROWS_IN_PORTRAIT);
-
-  const portraits = Array.from(listElement.querySelectorAll(".tow-combat-overlay-top-panel__portrait"));
-  for (const portrait of portraits) {
-    if (!(portrait instanceof HTMLElement)) continue;
-    const chipsLayer = portrait.querySelector(".tow-combat-overlay-top-panel__chips");
-    if (!(chipsLayer instanceof HTMLElement)) continue;
-    const chips = Array.from(chipsLayer.querySelectorAll(".tow-combat-overlay-top-panel__chip"));
-    const chipCount = chips.length;
-    if (!chipCount) {
-      chipsLayer.style.removeProperty("--tow-top-panel-chip-size-local");
-      continue;
-    }
-
-    const availableWidth = Math.max(1, portrait.clientWidth);
-    const neededColumns = Math.max(1, Math.ceil(chipCount / maxRows));
-    const sizeToFitRows = Math.floor((availableWidth - ((neededColumns - 1) * chipGap)) / neededColumns);
-    const resolvedSize = Math.max(
-      TOP_PANEL_CHIP_MIN_SIZE_PX,
-      Math.min(defaultChipSize, sizeToFitRows)
-    );
-
-    chipsLayer.style.setProperty("--tow-top-panel-chip-size-local", `${resolvedSize}px`);
-  }
 }
 
 function getTopPanelBounds(panelElement, viewportMarginPx = TOP_PANEL_VIEWPORT_MARGIN_PX) {
@@ -241,7 +198,7 @@ function getOrderedSceneTokens() {
   return [...ordered, ...remaining];
 }
 
-function moveTokenBeforeTarget(tokenIds, sourceId, targetId) {
+function moveTokenRelativeToTarget(tokenIds, sourceId, targetId, { placeAfter = true } = {}) {
   const source = String(sourceId ?? "").trim();
   const target = String(targetId ?? "").trim();
   if (!source || !target || source === target) return tokenIds;
@@ -255,8 +212,17 @@ function moveTokenBeforeTarget(tokenIds, sourceId, targetId) {
 
   const [dragged] = ids.splice(sourceIndex, 1);
   const nextTargetIndex = ids.indexOf(target);
-  ids.splice(Math.max(0, nextTargetIndex), 0, dragged);
+  if (nextTargetIndex < 0) return ids;
+  const insertIndex = placeAfter ? (nextTargetIndex + 1) : nextTargetIndex;
+  ids.splice(Math.max(0, insertIndex), 0, dragged);
   return ids;
+}
+
+function shouldDropAfterTarget(event, targetPortrait) {
+  if (!(targetPortrait instanceof HTMLElement)) return true;
+  const rect = targetPortrait.getBoundingClientRect();
+  const midpointX = rect.left + (rect.width / 2);
+  return Number(event?.clientX ?? midpointX) >= midpointX;
 }
 
 function getTokenPortraitSrc(token) {
@@ -270,57 +236,6 @@ function resolveTokenDispositionClass(token) {
   if (disposition > 0) return "is-friendly";
   if (disposition < 0) return "is-hostile";
   return "is-neutral";
-}
-
-function normalizeCanvasColorToCss(value) {
-  const toDimmedRgba = (red, green, blue, alpha = 0.9, factor = 0.72) => {
-    const r = Math.max(0, Math.min(255, Math.round(Number(red) * factor)));
-    const g = Math.max(0, Math.min(255, Math.round(Number(green) * factor)));
-    const b = Math.max(0, Math.min(255, Math.round(Number(blue) * factor)));
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  };
-
-  if (typeof value === "number" && Number.isFinite(value)) {
-    const clamped = Math.max(0, Math.min(0xFFFFFF, Math.trunc(value)));
-    const red = (clamped >> 16) & 0xFF;
-    const green = (clamped >> 8) & 0xFF;
-    const blue = clamped & 0xFF;
-    return toDimmedRgba(red, green, blue);
-  }
-
-  if (typeof value !== "string") return "";
-  const raw = value.trim();
-  if (!raw) return "";
-  if (raw.startsWith("#")) {
-    const hex = raw.slice(1);
-    if (/^[0-9a-fA-F]{6}$/.test(hex)) {
-      const parsed = Number.parseInt(hex, 16);
-      const red = (parsed >> 16) & 0xFF;
-      const green = (parsed >> 8) & 0xFF;
-      const blue = parsed & 0xFF;
-      return toDimmedRgba(red, green, blue);
-    }
-    return raw;
-  }
-  if (raw.startsWith("rgb") || raw.startsWith("hsl") || raw.startsWith("var(")) return raw;
-  if (/^[0-9a-fA-F]{6}$/.test(raw)) {
-    const parsed = Number.parseInt(raw, 16);
-    const red = (parsed >> 16) & 0xFF;
-    const green = (parsed >> 8) & 0xFF;
-    const blue = parsed & 0xFF;
-    return toDimmedRgba(red, green, blue);
-  }
-  return "";
-}
-
-function resolveNaturalTokenBorderColor(token) {
-  const dispositionColors = CONFIG?.Canvas?.dispositionColors ?? {};
-  const disposition = Number(token?.document?.disposition ?? 0);
-  const isControlled = token?.controlled === true;
-  const rawColor = isControlled
-    ? dispositionColors.CONTROLLED
-    : (disposition > 0 ? dispositionColors.FRIENDLY : (disposition < 0 ? dispositionColors.HOSTILE : dispositionColors.NEUTRAL));
-  return normalizeCanvasColorToCss(rawColor);
 }
 
 function getConditionEntryLookup() {
@@ -455,6 +370,28 @@ function selectTokenFromTopPanel(tokenId, event) {
   });
 }
 
+async function resolvePendingControlPanelTargetPick(tokenId, event = null) {
+  const token = canvas?.tokens?.get?.(String(tokenId ?? "").trim()) ?? null;
+  if (!token || token.destroyed) return false;
+
+  const controlPanelState = game?.[PANEL_STATE_KEY];
+  const pendingPick = controlPanelState?.pendingAttackPick;
+  const resolveTargetTokenPick = pendingPick?.resolveTargetTokenPick;
+  if (typeof resolveTargetTokenPick !== "function") return false;
+
+  try {
+    return (await resolveTargetTokenPick(token, event)) === true;
+  } catch (error) {
+    console.error("[tow-combat-overlay] Failed to resolve target pick from top panel.", error);
+    return false;
+  }
+}
+
+function hasPendingControlPanelTargetPick() {
+  const controlPanelState = game?.[PANEL_STATE_KEY];
+  return typeof controlPanelState?.pendingAttackPick?.resolveTargetTokenPick === "function";
+}
+
 function buildPortraitElement(token) {
   const portrait = document.createElement("button");
   portrait.type = "button";
@@ -466,10 +403,6 @@ function buildPortraitElement(token) {
   portrait.draggable = true;
   portrait.setAttribute("aria-label", String(token.name ?? token.actor?.name ?? "Token"));
   portrait.setAttribute("title", String(token.name ?? token.actor?.name ?? "Token"));
-  const naturalBorderColor = resolveNaturalTokenBorderColor(token);
-  if (naturalBorderColor) {
-    portrait.style.setProperty("--tow-top-panel-token-border-color", naturalBorderColor);
-  }
 
   const image = document.createElement("img");
   image.classList.add("tow-combat-overlay-top-panel__portrait-image");
@@ -564,7 +497,6 @@ function bindTopPanelElementEvents(topPanelElement) {
 
   const onResize = () => {
     syncTopPanelWidth(topPanelElement);
-    syncTopPanelPortraitChipSizing(topPanelElement);
     syncTopPanelListBottomPadding(topPanelElement);
     const rect = topPanelElement.getBoundingClientRect();
     applyTopPanelPosition(topPanelElement, rect.left, rect.top);
@@ -598,7 +530,7 @@ function bindTopPanelElementEvents(topPanelElement) {
     });
   }
 
-  topPanelElement.addEventListener("click", (event) => {
+  topPanelElement.addEventListener("click", async (event) => {
     const liveState = getTopPanelState();
     if (!liveState) return;
     if (liveState.suppressNextClick === true) {
@@ -610,6 +542,8 @@ function bindTopPanelElementEvents(topPanelElement) {
       : null;
     if (!(portrait instanceof HTMLElement)) return;
     event.preventDefault();
+    const usedAsTargetPick = await resolvePendingControlPanelTargetPick(portrait.dataset.tokenId, event);
+    if (usedAsTargetPick) return;
     selectTokenFromTopPanel(portrait.dataset.tokenId, event);
   });
 
@@ -645,6 +579,11 @@ function bindTopPanelElementEvents(topPanelElement) {
   topPanelElement.addEventListener("pointercancel", () => hideStatusTooltip());
 
   topPanelElement.addEventListener("dragstart", (event) => {
+    if (hasPendingControlPanelTargetPick()) {
+      event.preventDefault();
+      return;
+    }
+
     const portrait = event.target instanceof Element
       ? event.target.closest(".tow-combat-overlay-top-panel__portrait")
       : null;
@@ -711,11 +650,12 @@ function bindTopPanelElementEvents(topPanelElement) {
     if (!sourceId || !targetId || sourceId === targetId) return;
 
     event.preventDefault();
+    const placeAfter = shouldDropAfterTarget(event, targetPortrait);
 
     const sceneId = getCurrentSceneId();
     if (!sceneId) return;
     const currentTokenIds = getOrderedSceneTokens().map((token) => String(token.id ?? "").trim()).filter(Boolean);
-    const nextOrder = moveTokenBeforeTarget(currentTokenIds, sourceId, targetId);
+    const nextOrder = moveTokenRelativeToTarget(currentTokenIds, sourceId, targetId, { placeAfter });
     writeSavedTopPanelTokenOrder(sceneId, nextOrder);
 
     liveState.suppressNextClick = true;
@@ -765,7 +705,6 @@ async function renderTopPanelContent() {
     fragment.appendChild(buildPortraitElement(token));
   }
   listElement.appendChild(fragment);
-  syncTopPanelPortraitChipSizing(panelElement);
   syncTopPanelListBottomPadding(panelElement);
 }
 
