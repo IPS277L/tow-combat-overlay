@@ -9,6 +9,10 @@ import {
   getAllConditionEntries
 } from "../panel/shared/status.js";
 import {
+  getPrimaryTokenName,
+  getPrimaryTokenTypeLabel
+} from "../panel/selection/selection-display.js";
+import {
   resolveTemporaryEffectDescription
 } from "../panel/shared/description.js";
 import {
@@ -39,7 +43,7 @@ const TOP_PANEL_HOOKS = Object.freeze([
   "deleteActor"
 ]);
 const TOP_PANEL_CHIP_TOOLTIP_FALLBACK = "No description.";
-const TOP_PANEL_CHIP_MAX_PER_ROW = 14;
+const TOP_PANEL_CHIP_MAX_PER_ROW = 17;
 
 function getTopPanelState() {
   if (!game) return null;
@@ -50,6 +54,12 @@ function getTopPanelState() {
 function localizeMaybe(key, fallback = "") {
   const localized = game?.i18n?.localize?.(String(key ?? ""));
   if (typeof localized === "string" && localized !== key) return localized;
+  return String(fallback ?? key ?? "");
+}
+
+function formatMaybe(key, data = {}, fallback = "") {
+  const formatted = game?.i18n?.format?.(String(key ?? ""), data);
+  if (typeof formatted === "string" && formatted !== key) return formatted;
   return String(fallback ?? key ?? "");
 }
 
@@ -324,7 +334,6 @@ function createTopPanelChipElement(chip) {
   button.dataset.tooltipTitle = String(chip?.title ?? "").trim();
   button.dataset.tooltipDescription = String(chip?.description ?? TOP_PANEL_CHIP_TOOLTIP_FALLBACK).trim();
   button.setAttribute("aria-label", button.dataset.tooltipTitle || "Info");
-  button.setAttribute("title", button.dataset.tooltipTitle || "Info");
 
   const chipImage = String(chip?.img ?? "").trim();
   if (chipImage) {
@@ -370,6 +379,54 @@ function selectTokenFromTopPanel(tokenId, event) {
   });
 }
 
+function applyTopPanelHoveredCardHighlight(panelElement, tokenId = "") {
+  if (!(panelElement instanceof HTMLElement)) return;
+  const hoveredId = String(tokenId ?? "").trim();
+  const portraits = Array.from(panelElement.querySelectorAll(".tow-combat-overlay-top-panel__portrait"));
+  for (const portrait of portraits) {
+    if (!(portrait instanceof HTMLElement)) continue;
+    const portraitTokenId = String(portrait.dataset.tokenId ?? "").trim();
+    portrait.classList.toggle("is-hover-linked", !!hoveredId && portraitTokenId === hoveredId);
+  }
+}
+
+function resolveCanvasTokenById(tokenId) {
+  const id = String(tokenId ?? "").trim();
+  if (!id) return null;
+  const token = canvas?.tokens?.get?.(id) ?? null;
+  if (!token || token.destroyed) return null;
+  return token;
+}
+
+function setLinkedTokenHoverState(tokenId, hovered) {
+  const token = resolveCanvasTokenById(tokenId);
+  if (!token) return;
+  const nextHovered = hovered === true;
+  try { token.hover = nextHovered; } catch (_error) {}
+  try { token._hover = nextHovered; } catch (_error) {}
+  Hooks.callAll("hoverToken", token, nextHovered);
+}
+
+function clearLinkedTopPanelHover(state) {
+  const hoveredTokenId = String(state?.hoveredTokenId ?? "").trim();
+  if (!hoveredTokenId) return;
+  setLinkedTokenHoverState(hoveredTokenId, false);
+  state.hoveredTokenId = "";
+}
+
+function setLinkedTopPanelHover(state, tokenId) {
+  const nextTokenId = String(tokenId ?? "").trim();
+  const currentTokenId = String(state?.hoveredTokenId ?? "").trim();
+  if (!nextTokenId) {
+    clearLinkedTopPanelHover(state);
+    return;
+  }
+  if (nextTokenId === currentTokenId) return;
+  if (currentTokenId) setLinkedTokenHoverState(currentTokenId, false);
+  setLinkedTokenHoverState(nextTokenId, true);
+  state.hoveredTokenId = nextTokenId;
+}
+
 async function resolvePendingControlPanelTargetPick(tokenId, event = null) {
   const token = canvas?.tokens?.get?.(String(tokenId ?? "").trim()) ?? null;
   if (!token || token.destroyed) return false;
@@ -400,9 +457,17 @@ function buildPortraitElement(token) {
   if (token.actor?.hasCondition?.("dead")) portrait.classList.add("is-dead");
 
   portrait.dataset.tokenId = String(token.id ?? "").trim();
+  const tokenName = getPrimaryTokenName(token)
+    || localizeMaybe("TOWCOMBATOVERLAY.Tooltip.Panel.SelectionTokenFallbackName", "Token");
+  const typeLabel = getPrimaryTokenTypeLabel(token) || "-";
+  portrait.dataset.tooltipTitle = tokenName;
+  portrait.dataset.tooltipDescription = formatMaybe(
+    "TOWCOMBATOVERLAY.Tooltip.Panel.SelectionTypeDescription",
+    { type: typeLabel },
+    `Type: ${typeLabel}`
+  );
   portrait.draggable = true;
-  portrait.setAttribute("aria-label", String(token.name ?? token.actor?.name ?? "Token"));
-  portrait.setAttribute("title", String(token.name ?? token.actor?.name ?? "Token"));
+  portrait.setAttribute("aria-label", tokenName);
 
   const image = document.createElement("img");
   image.classList.add("tow-combat-overlay-top-panel__portrait-image");
@@ -547,6 +612,60 @@ function bindTopPanelElementEvents(topPanelElement) {
     selectTokenFromTopPanel(portrait.dataset.tokenId, event);
   });
 
+  const onPortraitHoverStateShow = (event) => {
+    const targetElement = event.target instanceof Element ? event.target : null;
+    if (!targetElement) return;
+    const portraitElement = targetElement.closest(".tow-combat-overlay-top-panel__portrait");
+    if (!(portraitElement instanceof HTMLElement)) return;
+    setLinkedTopPanelHover(state, portraitElement.dataset.tokenId);
+  };
+
+  const onPortraitHoverStateHide = (event) => {
+    const portraitElement = event.target instanceof Element
+      ? event.target.closest(".tow-combat-overlay-top-panel__portrait")
+      : null;
+    if (!(portraitElement instanceof HTMLElement)) return;
+    const next = event.relatedTarget;
+    if (next instanceof Element && next.closest(".tow-combat-overlay-top-panel__portrait") === portraitElement) return;
+    clearLinkedTopPanelHover(state);
+  };
+
+  const onPortraitTooltipShow = (event) => {
+    const targetElement = event.target instanceof Element ? event.target : null;
+    if (!targetElement) return;
+    if (targetElement.closest(".tow-combat-overlay-top-panel__chip")) return;
+    const portraitElement = targetElement.closest(".tow-combat-overlay-top-panel__portrait");
+    if (!(portraitElement instanceof HTMLElement)) return;
+    const title = String(portraitElement.dataset.tooltipTitle ?? "").trim();
+    if (!title) return;
+    const description = String(portraitElement.dataset.tooltipDescription ?? "").trim();
+    showOverlayTooltip(title, description, { x: event.clientX, y: event.clientY }, null, {
+      allowOutsideCanvas: true,
+      clientCoordinates: true,
+      theme: "panel",
+      descriptionIsHtml: true
+    });
+  };
+
+  const onPortraitTooltipHide = (event) => {
+    const portraitElement = event.target instanceof Element
+      ? event.target.closest(".tow-combat-overlay-top-panel__portrait")
+      : null;
+    if (!(portraitElement instanceof HTMLElement)) return;
+    const next = event.relatedTarget;
+    if (next instanceof Element && next.closest(".tow-combat-overlay-top-panel__portrait") === portraitElement) return;
+    hideStatusTooltip();
+  };
+
+  topPanelElement.addEventListener("pointerover", onPortraitTooltipShow);
+  topPanelElement.addEventListener("pointermove", onPortraitTooltipShow);
+  topPanelElement.addEventListener("pointerout", onPortraitTooltipHide);
+  topPanelElement.addEventListener("pointerover", onPortraitHoverStateShow);
+  topPanelElement.addEventListener("pointermove", onPortraitHoverStateShow);
+  topPanelElement.addEventListener("pointerout", onPortraitHoverStateHide);
+  topPanelElement.addEventListener("pointerleave", () => clearLinkedTopPanelHover(state));
+  topPanelElement.addEventListener("pointercancel", () => clearLinkedTopPanelHover(state));
+
   const onChipTooltipShow = (event) => {
     const chipElement = event.target instanceof Element
       ? event.target.closest(".tow-combat-overlay-top-panel__chip")
@@ -685,6 +804,7 @@ async function renderTopPanelContent() {
   const state = getTopPanelState();
   const panelElement = state?.element;
   if (!(panelElement instanceof HTMLElement) || !panelElement.isConnected) return;
+  if (state) clearLinkedTopPanelHover(state);
   syncTopPanelWidth(panelElement);
 
   const listElement = panelElement.querySelector(".tow-combat-overlay-top-panel__list");
@@ -696,6 +816,7 @@ async function renderTopPanelContent() {
   if (!tokens.length) {
     panelElement.dataset.hasTokens = "false";
     listElement.style.paddingBottom = "0px";
+    applyTopPanelHoveredCardHighlight(panelElement, "");
     return;
   }
 
@@ -706,6 +827,7 @@ async function renderTopPanelContent() {
   }
   listElement.appendChild(fragment);
   syncTopPanelListBottomPadding(panelElement);
+  applyTopPanelHoveredCardHighlight(panelElement, state?.hoveredCanvasTokenId ?? "");
 }
 
 function queueTopPanelRender() {
@@ -731,6 +853,18 @@ function bindTopPanelHooks() {
     if (state.hookIds.has(hookName)) continue;
     const hookId = Hooks.on(hookName, () => queueTopPanelRender());
     state.hookIds.set(hookName, hookId);
+  }
+
+  if (!state.hookIds.has("hoverToken")) {
+    const hookId = Hooks.on("hoverToken", (token, hovered) => {
+      const liveState = getTopPanelState();
+      if (!liveState) return;
+      liveState.hoveredCanvasTokenId = hovered === true ? String(token?.id ?? "").trim() : "";
+      const panelElement = liveState.element;
+      if (!(panelElement instanceof HTMLElement) || !panelElement.isConnected) return;
+      applyTopPanelHoveredCardHighlight(panelElement, liveState.hoveredCanvasTokenId);
+    });
+    state.hookIds.set("hoverToken", hookId);
   }
 }
 
@@ -768,6 +902,7 @@ export async function towCombatOverlayEnsureTopPanel() {
 
 export function towCombatOverlayRemoveTopPanel() {
   const state = game?.[TOP_PANEL_STATE_KEY];
+  if (state) clearLinkedTopPanelHover(state);
   unbindTopPanelHooks();
 
   if (typeof state?.onPanelPointerDown === "function" && state?.element instanceof HTMLElement) {
