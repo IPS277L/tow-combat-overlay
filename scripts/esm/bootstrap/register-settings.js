@@ -1,7 +1,6 @@
-import { getTowCombatOverlayConstants } from "../runtime/constants.js";
-import { syncTowCombatOverlayEnabledSetting } from "./register-module-hooks.js";
+import { getTowCombatOverlayConstants } from "../runtime/module-constants.js";
 
-export function getTowCombatOverlaySetting(settingKey, fallbackValue = null) {
+export function getTowCombatOverlayDisplaySetting(settingKey, fallbackValue = null) {
   const { moduleId } = getTowCombatOverlayConstants();
   try {
     return game.settings.get(moduleId, settingKey);
@@ -10,32 +9,15 @@ export function getTowCombatOverlaySetting(settingKey, fallbackValue = null) {
   }
 }
 
-export function isTowCombatOverlaySettingEnabled(settingKey, fallbackValue = false) {
-  return !!getTowCombatOverlaySetting(settingKey, fallbackValue);
+export function isTowCombatOverlayDisplaySettingEnabled(settingKey, fallbackValue = false) {
+  return !!getTowCombatOverlayDisplaySetting(settingKey, fallbackValue);
 }
 
-export function shouldTowCombatOverlayAutoSubmitDialogs() {
-  const { settings } = getTowCombatOverlayConstants();
-  return isTowCombatOverlaySettingEnabled(settings.enableDialogAutoSubmit, true);
-}
-
-export function shouldTowCombatOverlayAutoDefence() {
-  const { settings } = getTowCombatOverlayConstants();
-  return isTowCombatOverlaySettingEnabled(settings.enableAutoDefence, true);
-}
-
-export function shouldTowCombatOverlayAutoApplyDamage() {
-  const { settings } = getTowCombatOverlayConstants();
-  return isTowCombatOverlaySettingEnabled(settings.enableAutoApplyDamage, true);
-}
-
-export function shouldTowCombatOverlayAutoChooseStaggerWound() {
-  const { settings } = getTowCombatOverlayConstants();
-  return isTowCombatOverlaySettingEnabled(settings.enableStaggerChoiceAutomation, true);
-}
-
-export function registerTowCombatOverlaySettings() {
+export function registerTowCombatOverlayDisplaySettings({ onDisplaySettingsChanged = null } = {}) {
   const { moduleId, settings: settingKeys } = getTowCombatOverlayConstants();
+  const handleDisplaySettingChange = (typeof onDisplaySettingsChanged === "function")
+    ? onDisplaySettingsChanged
+    : () => {};
   game.settings.register(moduleId, settingKeys.enableOverlay, {
     scope: "world",
     config: true,
@@ -43,15 +25,16 @@ export function registerTowCombatOverlaySettings() {
     default: true,
     name: "TOWCOMBATOVERLAY.Setting.EnableOverlay.Name",
     hint: "TOWCOMBATOVERLAY.Setting.EnableOverlay.Hint",
-    onChange: () => syncTowCombatOverlayEnabledSetting()
+    onChange: () => handleDisplaySettingChange()
   });
   game.settings.register(moduleId, settingKeys.enableControlPanel, {
     scope: "world",
     config: true,
     type: Boolean,
     default: true,
-    name: "Enable Control Panel",
-    hint: "Show the draggable control panel.",
-    onChange: () => syncTowCombatOverlayEnabledSetting()
+    name: "TOWCOMBATOVERLAY.Setting.EnableControlPanel.Name",
+    hint: "TOWCOMBATOVERLAY.Setting.EnableControlPanel.Hint",
+    onChange: () => handleDisplaySettingChange()
   });
 }
+

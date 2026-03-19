@@ -1,0 +1,61 @@
+.tow-combat-overlay-status-tooltip {
+  --tow-status-tooltip-max-width: 260px;
+  --tow-status-tooltip-pad-y: 6px;
+  --tow-status-tooltip-pad-x: 8px;
+  --tow-status-tooltip-font-size: 13px;
+  --tow-status-tooltip-border-alpha: 0.82;
+  --tow-status-tooltip-bg-alpha: 0.95;
+  position: fixed;
+  left: 0;
+  top: 0;
+  display: none;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 12000;
+  max-width: var(--tow-status-tooltip-max-width);
+  padding: var(--tow-status-tooltip-pad-y) var(--tow-status-tooltip-pad-x);
+  border-radius: 5px;
+  border: 1px solid rgba(193, 139, 44, var(--tow-status-tooltip-border-alpha));
+  background: rgba(15, 12, 9, var(--tow-status-tooltip-bg-alpha));
+  color: #f2e7cc;
+  font-family: var(--font-primary, Signika);
+  font-size: var(--tow-status-tooltip-font-size);
+  font-weight: 400;
+  line-height: 1.3;
+  white-space: normal;
+  box-shadow: none;
+}
+
+.tow-combat-overlay-status-tooltip__title {
+  margin-bottom: 3px;
+  color: #fff4d8;
+  font-size: calc(var(--tow-status-tooltip-font-size) + 1px);
+  font-weight: 600;
+}
+
+.tow-combat-overlay-status-tooltip__body {
+  color: #f2e7cc;
+  font-size: var(--tow-status-tooltip-font-size);
+  font-weight: 400;
+}
+
+.tow-combat-overlay-status-tooltip.is-panel-theme {
+  border: 1px solid #bdb9ab;
+  background: #f2f1e8;
+  color: #2a2620;
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 16px;
+  box-shadow: 0 4px 10px rgba(22, 18, 12, 0.28);
+}
+
+.tow-combat-overlay-status-tooltip.is-panel-theme .tow-combat-overlay-status-tooltip__title {
+  color: #2a2620;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.tow-combat-overlay-status-tooltip.is-panel-theme .tow-combat-overlay-status-tooltip__body {
+  color: #2a2620;
+  font-size: 16px;
+  font-weight: 500;
+}

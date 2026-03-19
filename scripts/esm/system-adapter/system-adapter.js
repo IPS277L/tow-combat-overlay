@@ -1,4 +1,4 @@
-import { getTowCombatOverlayConstants } from "../runtime/constants.js";
+import { getTowCombatOverlayConstants } from "../runtime/module-constants.js";
 
 const { notifications: MODULE_NOTIFICATIONS } = getTowCombatOverlayConstants();
 
@@ -82,3 +82,4 @@ export function getTowCombatOverlaySystemAdapter() {
   }
   return systemAdapterSingleton;
 }
+

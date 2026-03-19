@@ -1,0 +1,330 @@
+.tow-combat-overlay-control-panel__statuses {
+  position: absolute;
+  left: 50%;
+  right: auto;
+  bottom: calc(100% + 0px);
+  transform: translateX(-50%);
+  width: max-content;
+  min-width: 0;
+  margin: 0;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  overflow: visible;
+}
+
+.tow-combat-overlay-control-panel__statuses-top,
+.tow-combat-overlay-control-panel__statuses-bottom {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--tow-control-panel-status-gap);
+}
+
+.tow-combat-overlay-control-panel__statuses-top {
+  width: 100%;
+  justify-content: center;
+}
+
+.tow-combat-overlay-control-panel__statuses-bottom {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.tow-combat-overlay-control-panel__statuses-top .tow-combat-overlay-control-panel__type-icon,
+.tow-combat-overlay-control-panel__statuses-top [data-action-control="diceModifier"],
+.tow-combat-overlay-control-panel__statuses-top [data-action-control="rollState"] {
+  display: none;
+}
+
+.tow-combat-overlay-control-panel__status-icon {
+  width: var(--tow-control-panel-status-size);
+  height: var(--tow-control-panel-status-size);
+  min-width: var(--tow-control-panel-status-size);
+  min-height: var(--tow-control-panel-status-size);
+  border: 1px solid rgba(205, 205, 205, 0.7);
+  border-radius: 50%;
+  background: rgba(84, 84, 84, 0.9);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px;
+  overflow: hidden;
+  opacity: 1;
+  filter: none;
+  box-sizing: border-box;
+  line-height: 0;
+  flex: 0 0 auto;
+}
+
+.tow-combat-overlay-control-panel__status-icon img {
+  width: calc(var(--tow-control-panel-status-size) - 5px);
+  height: calc(var(--tow-control-panel-status-size) - 5px);
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+  opacity: 1;
+  filter: saturate(0.45) grayscale(0.3);
+}
+
+.tow-combat-overlay-control-panel__status-icon.is-active {
+  background: rgb(222, 217, 205);
+  opacity: 1;
+  filter: none;
+  border-color: rgb(238, 233, 220);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.52),
+    0 0 0 1px rgba(126, 116, 98, 0.24);
+}
+
+.tow-combat-overlay-control-panel__status-icon.is-active img {
+  opacity: 1;
+  filter: none;
+}
+
+.tow-combat-overlay-control-panel__type-icon {
+  cursor: help;
+  opacity: 1;
+  filter: none;
+}
+
+.tow-combat-overlay-control-panel__modifier-icon {
+  margin: 0;
+  padding: 0;
+  opacity: 1;
+  filter: none;
+  cursor: pointer;
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tow-combat-overlay-control-panel__status-abilities {
+  --tow-control-panel-slot-size: var(--tow-control-panel-status-size);
+  --tow-control-panel-gap: var(--tow-control-panel-status-gap);
+  display: flex;
+  align-items: center;
+  padding-right: 0;
+}
+
+.tow-combat-overlay-control-panel__status-abilities .tow-combat-overlay-control-panel__group-grid {
+  grid-template-rows: repeat(1, var(--tow-control-panel-slot-size)) !important;
+  grid-auto-flow: column;
+}
+
+.tow-combat-overlay-control-panel__status-abilities .tow-combat-overlay-control-panel__slot {
+  padding: 1px;
+  border: 1px solid rgba(205, 205, 205, 0.7);
+  border-radius: 50%;
+  background: rgba(84, 84, 84, 0.9);
+  box-shadow: none;
+  opacity: 1;
+  overflow: hidden;
+}
+
+.tow-combat-overlay-control-panel__status-abilities .tow-combat-overlay-control-panel__slot:hover,
+.tow-combat-overlay-control-panel__status-abilities .tow-combat-overlay-control-panel__slot:focus-visible {
+  border: 1px solid rgba(205, 205, 205, 0.7);
+  background: rgba(84, 84, 84, 0.9);
+  box-shadow: none;
+}
+
+.tow-combat-overlay-control-panel__status-abilities .tow-combat-overlay-control-panel__slot-image {
+  width: 95%;
+  height: 95%;
+  border-radius: 50%;
+  object-fit: cover;
+  opacity: 1;
+  filter: saturate(0.92) contrast(0.98);
+  margin: auto;
+}
+
+.tow-combat-overlay-control-panel__wound-action-indicator {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--tow-control-panel-status-size);
+  height: var(--tow-control-panel-status-size);
+  flex: 0 0 auto;
+  padding: 1px;
+  border: 1px solid rgba(205, 205, 205, 0.7);
+  border-radius: 50%;
+  background: rgba(84, 84, 84, 0.9);
+  opacity: 1;
+  box-shadow: none;
+  overflow: hidden;
+  cursor: help;
+}
+
+.tow-combat-overlay-control-panel__wound-action-indicator.is-active {
+  border-color: rgba(214, 74, 74, 0.96);
+  background: rgba(92, 22, 22, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 174, 174, 0.46),
+    0 0 0 1px rgba(173, 28, 28, 0.55);
+}
+
+.tow-combat-overlay-control-panel__wound-action-indicator-image {
+  width: 95%;
+  height: 95%;
+  border-radius: 50%;
+  object-fit: cover;
+  opacity: 1;
+  filter: saturate(0.92) contrast(0.98);
+  margin: auto;
+  pointer-events: none;
+  display: block;
+}
+
+.tow-combat-overlay-control-panel__wound-action-indicator.is-active .tow-combat-overlay-control-panel__wound-action-indicator-image {
+  filter: saturate(1.35) hue-rotate(-14deg) brightness(0.95);
+}
+
+.tow-combat-overlay-control-panel__modifier-icon:focus,
+.tow-combat-overlay-control-panel__modifier-icon:focus-visible,
+.tow-combat-overlay-control-panel__modifier-icon:active {
+  outline: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.48),
+    0 0 0 1px rgba(141, 127, 101, 0.24);
+}
+
+.tow-combat-overlay-control-panel__modifier-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0 2px;
+  color: var(--tow-panel-text);
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.tow-combat-overlay-control-panel__stat-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 4px;
+}
+
+.tow-combat-overlay-control-panel__stat-row[data-stat-row="wounds"],
+[data-selection-stat-row="wounds"],
+[data-selection-stat-row="miscastDice"] {
+  cursor: pointer;
+}
+
+.tow-combat-overlay-control-panel__stat-row[data-stat-row="tokenType"] { order: 1; }
+.tow-combat-overlay-control-panel__stat-row[data-stat-row="speed"] { order: 2; }
+.tow-combat-overlay-control-panel__stat-row[data-stat-row="resilience"] { order: 3; }
+.tow-combat-overlay-control-panel__stat-row[data-stat-row="wounds"] { order: 4; }
+.tow-combat-overlay-control-panel__stat-row[data-stat-row="miscastDice"] { order: 5; }
+
+.tow-combat-overlay-control-panel__stat-label {
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--tow-panel-subtext);
+  line-height: 1.1;
+}
+
+.tow-combat-overlay-control-panel__stat-value {
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--tow-panel-text);
+  line-height: 1.1;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tow-combat-overlay-control-panel.is-dragging {
+  cursor: grabbing;
+}
+
+.tow-combat-overlay-control-panel__reorder-controls {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  align-self: flex-start;
+}
+
+.tow-combat-overlay-control-panel__reorder-reset {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  min-height: 22px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(188, 188, 188, 0.28);
+  border-radius: 4px;
+  background: rgba(84, 84, 84, 0.75);
+  color: #f2ece0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  cursor: pointer;
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tow-combat-overlay-control-panel__reorder-reset:hover,
+.tow-combat-overlay-control-panel__reorder-reset:focus-visible {
+  background: rgba(104, 104, 104, 0.85);
+}
+.tow-combat-overlay-control-panel__reorder-toggle {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  min-height: 22px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(188, 188, 188, 0.28);
+  border-radius: 4px;
+  background: rgba(84, 84, 84, 0.75);
+  color: #f2ece0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  cursor: pointer;
+  font: inherit;
+}
+
+.tow-combat-overlay-control-panel__reorder-toggle:hover,
+.tow-combat-overlay-control-panel__reorder-toggle:focus-visible {
+  background: rgba(104, 104, 104, 0.85);
+}
+
+.tow-combat-overlay-control-panel__reorder-toggle[data-state="unlocked"] {
+  background: #e9dfcc;
+  border-color: #c9bda6;
+  color: #3a3328;
+}
+
+.tow-combat-overlay-control-panel__reorder-toggle-icon {
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.tow-combat-overlay-control-panel.is-reorder-unlocked .tow-combat-overlay-control-panel__item-groups .tow-combat-overlay-control-panel__slot {
+  cursor: move;
+}

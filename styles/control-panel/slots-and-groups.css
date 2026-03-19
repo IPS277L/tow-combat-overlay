@@ -1,0 +1,328 @@
+.tow-combat-overlay-control-panel__item-groups {
+  display: flex;
+  align-items: stretch;
+  align-self: flex-start;
+  gap: var(--tow-control-panel-gap);
+  margin-left: 0;
+  padding: 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.tow-combat-overlay-control-panel__item-group {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tow-combat-overlay-control-panel__item-group + .tow-combat-overlay-control-panel__item-group {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.tow-combat-overlay-control-panel__statuses-top .tow-combat-overlay-control-panel__item-group + .tow-combat-overlay-control-panel__item-group {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.tow-combat-overlay-control-panel__statuses-top .tow-combat-overlay-control-panel__item-group {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+
+.tow-combat-overlay-control-panel__group-grid {
+  display: grid;
+  grid-template-columns: repeat(1, var(--tow-control-panel-slot-size));
+  grid-template-rows: repeat(1, var(--tow-control-panel-slot-size));
+  gap: var(--tow-control-panel-gap);
+}
+
+.tow-combat-overlay-control-panel__slot {
+  position: relative;
+  box-sizing: border-box;
+  width: var(--tow-control-panel-slot-size);
+  height: var(--tow-control-panel-slot-size);
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(188, 188, 188, 0.22);
+  border-radius: 4px;
+  background: var(--tow-panel-slot-bg);
+  color: var(--tow-panel-slot-icon);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+}
+
+.tow-combat-overlay-control-panel__item-groups .tow-combat-overlay-control-panel__slot {
+  background: linear-gradient(180deg, rgb(140, 128, 106) 0%, rgb(121, 109, 90) 100%);
+  border-color: rgba(234, 223, 198, 0.24);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-type="attack"] {
+  border-color: rgba(234, 223, 198, 0.24);
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-type="ability"] {
+  border-color: rgba(234, 223, 198, 0.24);
+}
+
+.tow-combat-overlay-control-panel__slot-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.tow-combat-overlay-control-panel__slot-ammo {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  bottom: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  border: 1px solid rgba(234, 223, 198, 0.65);
+  background: linear-gradient(180deg, rgba(24, 23, 20, 0.94) 0%, rgba(14, 13, 11, 0.94) 100%);
+  color: #f2ece0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
+.tow-combat-overlay-control-panel__slot-property {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  min-width: 12px;
+  height: 12px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(234, 223, 198, 0.7);
+  background: linear-gradient(180deg, rgba(145, 122, 77, 0.95) 0%, rgba(110, 88, 51, 0.95) 100%);
+  color: #f2ece0;
+  display: none !important;
+  align-items: center;
+  justify-content: center;
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-group="attacks"][data-attack-rarity="common"] {
+  border-color: rgba(145, 145, 145, 0.86);
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-group="attacks"][data-attack-rarity="uncommon"] {
+  border-color: rgba(86, 201, 72, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 1px rgba(86, 201, 72, 0.34);
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-group="attacks"][data-attack-rarity="rare"] {
+  border-color: rgba(68, 132, 206, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 0 0 1px rgba(68, 132, 206, 0.32);
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-group="attacks"][data-attack-rarity="epic"] {
+  border-color: rgba(150, 95, 206, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 0 0 1px rgba(150, 95, 206, 0.34);
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-group="attacks"][data-attack-rarity="legendary"] {
+  border-color: rgba(224, 142, 54, 0.92);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 0 0 1px rgba(224, 142, 54, 0.36);
+}
+
+.tow-combat-overlay-control-panel__slot-damage {
+  position: absolute;
+  top: auto;
+  right: 2px;
+  bottom: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  border: 1px solid rgba(234, 223, 198, 0.65);
+  background: linear-gradient(180deg, rgba(61, 32, 26, 0.95) 0%, rgba(42, 20, 16, 0.95) 100%);
+  color: #f2ece0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
+.tow-combat-overlay-control-panel__slot:hover,
+.tow-combat-overlay-control-panel__slot:focus-visible {
+  background: var(--tow-panel-slot-bg-hover);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.56),
+    0 0 0 1px rgba(141, 127, 101, 0.16);
+}
+
+.tow-combat-overlay-control-panel__item-groups .tow-combat-overlay-control-panel__slot:hover,
+.tow-combat-overlay-control-panel__item-groups .tow-combat-overlay-control-panel__slot:focus-visible {
+  background: linear-gradient(180deg, rgb(157, 144, 120) 0%, rgb(137, 124, 102) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 0 0 1px rgba(234, 223, 198, 0.2);
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-group="actions"] .tow-combat-overlay-control-panel__slot-image,
+.tow-combat-overlay-control-panel__slot[data-item-group="manoeuvre"] .tow-combat-overlay-control-panel__slot-image,
+.tow-combat-overlay-control-panel__slot[data-item-group="recover"] .tow-combat-overlay-control-panel__slot-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  opacity: 1;
+  filter: none;
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-group="actions"]:hover .tow-combat-overlay-control-panel__slot-image,
+.tow-combat-overlay-control-panel__slot[data-item-group="manoeuvre"]:hover .tow-combat-overlay-control-panel__slot-image,
+.tow-combat-overlay-control-panel__slot[data-item-group="recover"]:hover .tow-combat-overlay-control-panel__slot-image,
+.tow-combat-overlay-control-panel__slot[data-item-group="actions"]:focus-visible .tow-combat-overlay-control-panel__slot-image,
+.tow-combat-overlay-control-panel__slot[data-item-group="manoeuvre"]:focus-visible .tow-combat-overlay-control-panel__slot-image,
+.tow-combat-overlay-control-panel__slot[data-item-group="recover"]:focus-visible .tow-combat-overlay-control-panel__slot-image {
+  opacity: 1;
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-group="attacks"][data-attack-reload-empty="true"] .tow-combat-overlay-control-panel__slot-image {
+  filter: grayscale(1) brightness(0.56);
+  opacity: 0.9;
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-group="magic"][data-magic-insufficient-cv="true"] .tow-combat-overlay-control-panel__slot-image {
+  filter: grayscale(1) brightness(0.56);
+  opacity: 0.9;
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-group="actions"][data-item-id="accumulatePower"][data-accumulate-miscast-ready="true"] {
+  border-color: rgba(210, 60, 60, 0.96);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 0 1px rgba(198, 42, 42, 0.24);
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-group="actions"][data-item-id="accumulatePower"][data-accumulate-miscast-ready="true"] .tow-combat-overlay-control-panel__slot-image {
+  filter: sepia(0.95) hue-rotate(-38deg) saturate(3.6) brightness(0.8);
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-type="empty"] {
+  background: #3a3a3a;
+  border-color: rgba(234, 223, 198, 0.24);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-type="empty"]:hover,
+.tow-combat-overlay-control-panel__slot[data-item-type="empty"]:focus-visible {
+  background: #3a3a3a;
+  border-color: rgba(234, 223, 198, 0.24);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 0 0 1px rgba(234, 223, 198, 0.2);
+}
+
+.tow-combat-overlay-control-panel__slot[data-item-type="empty"] .tow-combat-overlay-control-panel__slot-icon {
+  display: block;
+  width: calc(100%);
+  height: calc(100%);
+  min-width: calc(100%);
+  min-height: calc(100%);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: #3a3a3a;
+  box-shadow: none;
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+}
+.tow-combat-overlay-control-panel__slot-icon {
+  pointer-events: none;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 4px;
+  border: 1px solid rgba(141, 127, 101, 0.45);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(245, 242, 234, 0.96) 0%, rgba(233, 228, 216, 0.96) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 1px 2px rgba(0, 0, 0, 0.18);
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1;
+  color: #5a5347;
+  opacity: 1;
+}
+
+.tow-combat-overlay-control-panel__action-slot-label {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  bottom: 3px;
+  min-height: 14px;
+  box-sizing: border-box;
+  padding: 1px 4px;
+  border-radius: 3px;
+  border: 1px solid rgba(141, 127, 101, 0.58);
+  background: rgba(54, 50, 44, 0.78);
+  color: #f2ece0;
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;
+  text-transform: none;
+  text-shadow: none;
+  z-index: 2;
+  pointer-events: none;
+}
+

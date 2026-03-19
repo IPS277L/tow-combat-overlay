@@ -1,8 +1,8 @@
-import { WOUND_ITEM_TYPE } from "../runtime/overlay-runtime-constants.js";
+import { WOUND_ITEM_TYPE } from "../runtime/overlay-constants.js";
 import {
   towCombatOverlayQueueDeadSyncFromWounds,
   towCombatOverlayQueueWoundSyncFromDeadState
-} from "../overlay/layout-state-service.js";
+} from "../overlay/layout-state.js";
 
 const DEAD_STATUS_ID = "dead";
 const HOOK_STATE_KEY = "__towDeadWoundSyncHookIds";
@@ -46,4 +46,5 @@ export function registerTowCombatOverlayDeadWoundSyncHooks() {
 
   game[HOOK_STATE_KEY] = hookIds;
 }
+
 

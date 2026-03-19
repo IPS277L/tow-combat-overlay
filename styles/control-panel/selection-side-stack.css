@@ -1,0 +1,299 @@
+.tow-combat-overlay-control-panel__selection-mods .tow-combat-overlay-control-panel__action-slot-label {
+  position: static;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  width: 100%;
+}
+
+.tow-combat-overlay-control-panel__selection-mod-button {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  cursor: pointer;
+  outline: none;
+  box-shadow: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tow-combat-overlay-control-panel__selection-mod-button:focus,
+.tow-combat-overlay-control-panel__selection-mod-button:focus-visible,
+.tow-combat-overlay-control-panel__selection-mod-button:active {
+  outline: none;
+  box-shadow: none;
+  border: 0;
+}
+
+.tow-combat-overlay-control-panel__selection-stats {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  transform: none;
+  z-index: 4;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0;
+  padding: 0;
+  pointer-events: auto;
+}
+
+.tow-combat-overlay-control-panel__selection-side-stack {
+  --tow-control-panel-status-size: 28px;
+  --tow-control-panel-status-gap: 4px;
+  --tow-selection-stat-font-size: 15px;
+  --tow-selection-stat-gap: 3px;
+  
+  --tow-selection-stat-icon-filter: brightness(0) saturate(100%) invert(90%) sepia(15%) saturate(210%) hue-rotate(357deg) brightness(103%) contrast(92%);
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  transform: none;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: var(--tow-selection-stat-gap);
+  width: var(--tow-selection-rail-width);
+  padding: 10px 0 10px 0;
+  border-radius: 6px 0 0 6px;
+  background: linear-gradient(
+    270deg,
+    var(--tow-panel-seam-color) 0%,
+    rgba(29, 28, 26, 0.78) 48%,
+    rgba(29, 28, 26, 0.42) 78%,
+    rgba(29, 28, 26, 0) 100%
+  );
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  color: var(--tow-panel-text);
+  pointer-events: auto;
+}
+
+.tow-combat-overlay-control-panel__selection.is-magic .tow-combat-overlay-control-panel__selection-side-stack {
+  --tow-selection-stat-font-size: 14px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.tow-combat-overlay-control-panel__selection-side-stack::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    270deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.04) 42%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+}
+
+.tow-combat-overlay-selection-panel .tow-combat-overlay-control-panel__selection-mini-controls {
+  display: contents;
+}
+
+.tow-combat-overlay-control-panel__selection-text-control {
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+  height: auto;
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--tow-panel-text);
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: var(--tow-selection-stat-font-size);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  cursor: pointer;
+  box-shadow: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tow-combat-overlay-control-panel__selection-text-control:hover,
+.tow-combat-overlay-control-panel__selection-text-control:focus-visible {
+  background: transparent;
+}
+
+.tow-combat-overlay-control-panel__selection-text-control:focus,
+.tow-combat-overlay-control-panel__selection-text-control:focus-visible,
+.tow-combat-overlay-control-panel__selection-text-control:active {
+  outline: none;
+  box-shadow: none;
+}
+
+.tow-combat-overlay-control-panel__selection-side-stack .tow-combat-overlay-control-panel__status-icon {
+  width: var(--tow-control-panel-status-size);
+  height: var(--tow-control-panel-status-size);
+  min-width: var(--tow-control-panel-status-size);
+  min-height: var(--tow-control-panel-status-size);
+}
+
+.tow-combat-overlay-control-panel__selection-side-stack .tow-combat-overlay-control-panel__status-icon img {
+  width: calc(var(--tow-control-panel-status-size) - 5px);
+  height: calc(var(--tow-control-panel-status-size) - 5px);
+}
+
+.tow-combat-overlay-control-panel__selection-side-stack .tow-combat-overlay-control-panel__modifier-text {
+  display: inline-block;
+  width: auto;
+  max-width: none;
+  font-family: inherit;
+  font-size: var(--tow-selection-stat-font-size);
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1;
+  padding: 0;
+  color: var(--tow-panel-text);
+  text-shadow: none;
+}
+
+.tow-combat-overlay-control-panel__selection-stat-row {
+  margin: 0;
+  min-width: 100%;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--tow-panel-text);
+  font-size: var(--tow-selection-stat-font-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  min-height: 0;
+  height: auto;
+  font-family: inherit;
+  line-height: 1;
+  cursor: default;
+}
+
+.tow-combat-overlay-control-panel__selection-stat-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  object-fit: contain;
+  pointer-events: none;
+  opacity: 1;
+  filter: var(--tow-selection-stat-icon-filter);
+  transform: none;
+}
+
+.tow-combat-overlay-control-panel__selection-stat-icon--speed,
+.tow-combat-overlay-control-panel__selection-stat-icon--dice {
+  width: 1em;
+  height: 1em;
+}
+
+.tow-combat-overlay-control-panel__selection-stat-value {
+  display: inline-block;
+  height: auto;
+  font-family: inherit;
+  font-size: var(--tow-selection-stat-font-size);
+  font-weight: 700;
+  color: var(--tow-panel-text);
+  text-align: right;
+  white-space: nowrap;
+  line-height: 1;
+  text-shadow: none;
+  transform: none;
+}
+
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="wounds"] {
+  position: static;
+  order: 1;
+  cursor: pointer;
+  gap: 5px;
+}
+
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="wounds"] .tow-combat-overlay-control-panel__selection-stat-icon {
+  order: 1;
+}
+
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="resilience"] {
+  position: static;
+  order: 2;
+}
+
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="resilience"] .tow-combat-overlay-control-panel__selection-stat-icon {
+  order: 1;
+}
+
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="speed"] {
+  position: static;
+  order: 3;
+}
+
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="speed"] .tow-combat-overlay-control-panel__selection-stat-icon {
+  order: 1;
+}
+
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="miscastDice"] {
+  position: static;
+  order: 7;
+  cursor: pointer;
+}
+
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="miscastDice"] .tow-combat-overlay-control-panel__selection-stat-icon {
+  order: 1;
+}
+
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="wounds"] .tow-combat-overlay-control-panel__selection-stat-value,
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="resilience"] .tow-combat-overlay-control-panel__selection-stat-value,
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="speed"] .tow-combat-overlay-control-panel__selection-stat-value,
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="miscastDice"] .tow-combat-overlay-control-panel__selection-stat-value {
+  font-size: var(--tow-selection-stat-font-size);
+}
+
+.tow-combat-overlay-selection-panel .tow-combat-overlay-control-panel__selection-mini-controls {
+  order: 4;
+}
+
+.tow-combat-overlay-selection-panel .tow-combat-overlay-control-panel__selection-mini-controls [data-action-control="rollState"] {
+  order: 6;
+}
+
+.tow-combat-overlay-selection-panel .tow-combat-overlay-control-panel__selection-mini-controls [data-action-control="diceModifier"] {
+  order: 5;
+}
+
+
+.tow-combat-overlay-control-panel__selection-stat-row:focus,
+.tow-combat-overlay-control-panel__selection-stat-row:focus-visible,
+.tow-combat-overlay-control-panel__selection-stat-row:active {
+  outline: none;
+  box-shadow: none;
+}
+
+.tow-combat-overlay-status-tooltip .tow-combat-overlay-control-panel__ref-chip {
+  display: inline-block;
+  padding: 1px 3px;
+  margin: 0 1px;
+  border-radius: 5px;
+  border: 1px dotted var(--tow-darkred, #8b2626);
+  background: none;
+  color: var(--tow-red, #b72a2a);
+  font-weight: 700;
+  line-height: 1.1;
+  vertical-align: baseline;
+}
+
