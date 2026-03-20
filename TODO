@@ -1,17 +1,15 @@
 Crucial:
-- Tooltip for L\U and R buttons on top panel
-- Fix broken dice mod for all control panel buttons and validate roll mod
-- When select token on top panel as a target it flashes\blink for a few seconds
 - Split top panel monolith code and refactor to be more modular and maintainable
 
 New features:
-- Center both top and control panels if not moved (probably should be controlled by a setting).
-  Check for window resize and sidebar appears
 - Token overlay dead state grey out in the same style as on both panels
 - Cleanup\adjust token overlay
 - Introduce settings (grouped)
+- Center both top and control panels if not moved (probably should be controlled by a setting).
+  Check for window resize and sidebar appears
 
 TBD:
+- Add wounds and miscast tables if available
 - Auto scale token overlay name to fit within the token border
 - Add temporary effects to token overlay
 - Move token overlay statuses inside the token border and adjust size to fit within the token border

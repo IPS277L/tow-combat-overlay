@@ -4,7 +4,7 @@ export function createPanelSpellSupportService({
 } = {}) {
   let panelItemUseRollCompatibilityPatched = false;
 
-  function armAutoResolveSpellTriggeredTestDialogs({ timeoutMs = 20000 } = {}) {
+  function armAutoResolveSpellTriggeredTestDialogs(sourceActor = null, { timeoutMs = 20000 } = {}) {
     return towCombatOverlayArmAutoSubmitDialog({
       hookName: "renderTestDialog",
       matches: (app) => {
@@ -14,7 +14,10 @@ export function createPanelSpellSupportService({
       },
       submitErrorMessage: "TestDialog.submit() is unavailable.",
       beforeSubmit: async (app) => {
-        const actor = app?.actor ?? null;
+        // Spell apply handlers can open follow-up tests where app.actor is not the
+        // original spell caster, but the caster's panel roll state should still drive
+        // the auto-triggered spell test flow.
+        const actor = sourceActor ?? app?.actor ?? null;
         const rollFields = getTowCombatOverlayActorRollModifierFields(actor);
         app.userEntry ??= {};
         app.fields ??= {};

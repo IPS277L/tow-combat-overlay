@@ -45,6 +45,38 @@ const TOP_PANEL_HOOKS = Object.freeze([
 const TOP_PANEL_CHIP_TOOLTIP_FALLBACK = "No description.";
 const TOP_PANEL_CHIP_MAX_PER_ROW = 17;
 
+function getTopPanelDragToggleTooltipData(unlocked) {
+  if (unlocked) {
+    return {
+      title: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.TopPanel.DragToggle.Unlocked.Title", "Top Panel: Unlocked"),
+      description: localizeMaybe(
+        "TOWCOMBATOVERLAY.Tooltip.TopPanel.DragToggle.Unlocked.Description",
+        "<em>Click to lock the top panel in place.</em><br><br>Drag and drop is enabled."
+      ),
+      ariaLabel: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.TopPanel.DragToggle.AriaLock", "Lock panel movement")
+    };
+  }
+  return {
+    title: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.TopPanel.DragToggle.Locked.Title", "Top Panel: Locked"),
+    description: localizeMaybe(
+      "TOWCOMBATOVERLAY.Tooltip.TopPanel.DragToggle.Locked.Description",
+      "<em>Click to unlock the top panel for dragging.</em><br><br>Drag and drop is disabled."
+    ),
+    ariaLabel: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.TopPanel.DragToggle.AriaUnlock", "Unlock panel movement")
+  };
+}
+
+function getTopPanelResetTooltipData() {
+  return {
+    title: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.TopPanel.Reset.Title", "Reset Top Panel Position"),
+    description: localizeMaybe(
+      "TOWCOMBATOVERLAY.Tooltip.TopPanel.Reset.Description",
+      "<em>Click to move the top panel back to its default position.</em>"
+    ),
+    ariaLabel: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.TopPanel.Reset.Aria", "Reset top panel position")
+  };
+}
+
 function getTopPanelState() {
   if (!game) return null;
   if (!game[TOP_PANEL_STATE_KEY]) game[TOP_PANEL_STATE_KEY] = {};
@@ -407,29 +439,41 @@ function setLinkedTokenHoverState(tokenId, hovered) {
   Hooks.callAll("hoverToken", token, nextHovered);
 }
 
-function clearLinkedTopPanelHover(state) {
+function clearLinkedTopPanelHover(state, { syncCanvas = true, panelElement = null } = {}) {
   const hoveredTokenId = String(state?.hoveredTokenId ?? "").trim();
-  if (!hoveredTokenId) return;
-  setLinkedTokenHoverState(hoveredTokenId, false);
+  if (!hoveredTokenId) {
+    if (panelElement instanceof HTMLElement) applyTopPanelHoveredCardHighlight(panelElement, "");
+    return;
+  }
+  if (syncCanvas) setLinkedTokenHoverState(hoveredTokenId, false);
+  if (panelElement instanceof HTMLElement) applyTopPanelHoveredCardHighlight(panelElement, "");
   state.hoveredTokenId = "";
 }
 
-function setLinkedTopPanelHover(state, tokenId) {
+function setLinkedTopPanelHover(state, tokenId, { syncCanvas = true, panelElement = null } = {}) {
   const nextTokenId = String(tokenId ?? "").trim();
   const currentTokenId = String(state?.hoveredTokenId ?? "").trim();
   if (!nextTokenId) {
-    clearLinkedTopPanelHover(state);
+    clearLinkedTopPanelHover(state, { syncCanvas, panelElement });
     return;
   }
   if (nextTokenId === currentTokenId) return;
-  if (currentTokenId) setLinkedTokenHoverState(currentTokenId, false);
-  setLinkedTokenHoverState(nextTokenId, true);
+  if (currentTokenId && syncCanvas) setLinkedTokenHoverState(currentTokenId, false);
+  if (syncCanvas) setLinkedTokenHoverState(nextTokenId, true);
+  if (panelElement instanceof HTMLElement) applyTopPanelHoveredCardHighlight(panelElement, nextTokenId);
   state.hoveredTokenId = nextTokenId;
 }
 
 async function resolvePendingControlPanelTargetPick(tokenId, event = null) {
   const token = canvas?.tokens?.get?.(String(tokenId ?? "").trim()) ?? null;
   if (!token || token.destroyed) return false;
+
+  const topPanelState = getTopPanelState();
+  const topPanelElement = document.getElementById(TOP_PANEL_ID);
+  if (topPanelState) clearLinkedTopPanelHover(topPanelState, {
+    syncCanvas: false,
+    panelElement: topPanelElement instanceof HTMLElement ? topPanelElement : null
+  });
 
   const controlPanelState = game?.[PANEL_STATE_KEY];
   const pendingPick = controlPanelState?.pendingAttackPick;
@@ -508,13 +552,24 @@ function bindTopPanelElementEvents(topPanelElement) {
 
   const syncDragControls = () => {
     const unlocked = state.panelDragUnlocked !== false;
+    const dragTooltipData = getTopPanelDragToggleTooltipData(unlocked);
     topPanelElement.classList.toggle("is-drag-locked", !unlocked);
     if (lockButton instanceof HTMLButtonElement) {
       lockButton.dataset.state = unlocked ? "unlocked" : "locked";
       lockButton.setAttribute("aria-pressed", unlocked ? "true" : "false");
-      lockButton.setAttribute("aria-label", unlocked ? "Lock panel movement" : "Unlock panel movement");
+      lockButton.setAttribute("aria-label", dragTooltipData.ariaLabel);
+      lockButton.dataset.tooltipTitle = dragTooltipData.title;
+      lockButton.dataset.tooltipDescription = dragTooltipData.description;
+      lockButton.removeAttribute("title");
       const icon = lockButton.querySelector(".tow-combat-overlay-top-panel__control-toggle-icon");
       if (icon instanceof HTMLElement) icon.textContent = unlocked ? "U" : "L";
+    }
+    if (resetButton instanceof HTMLButtonElement) {
+      const resetTooltipData = getTopPanelResetTooltipData();
+      resetButton.setAttribute("aria-label", resetTooltipData.ariaLabel);
+      resetButton.dataset.tooltipTitle = resetTooltipData.title;
+      resetButton.dataset.tooltipDescription = resetTooltipData.description;
+      resetButton.removeAttribute("title");
     }
   };
 
@@ -613,21 +668,43 @@ function bindTopPanelElementEvents(topPanelElement) {
   });
 
   const onPortraitHoverStateShow = (event) => {
+    if (hasPendingControlPanelTargetPick()) {
+      const targetElement = event.target instanceof Element ? event.target : null;
+      if (!targetElement) return;
+      const portraitElement = targetElement.closest(".tow-combat-overlay-top-panel__portrait");
+      if (!(portraitElement instanceof HTMLElement)) return;
+      setLinkedTopPanelHover(state, portraitElement.dataset.tokenId, {
+        syncCanvas: false,
+        panelElement: topPanelElement
+      });
+      return;
+    }
     const targetElement = event.target instanceof Element ? event.target : null;
     if (!targetElement) return;
     const portraitElement = targetElement.closest(".tow-combat-overlay-top-panel__portrait");
     if (!(portraitElement instanceof HTMLElement)) return;
-    setLinkedTopPanelHover(state, portraitElement.dataset.tokenId);
+    setLinkedTopPanelHover(state, portraitElement.dataset.tokenId, {
+      panelElement: topPanelElement
+    });
   };
 
   const onPortraitHoverStateHide = (event) => {
+    if (hasPendingControlPanelTargetPick()) {
+      clearLinkedTopPanelHover(state, {
+        syncCanvas: false,
+        panelElement: topPanelElement
+      });
+      return;
+    }
     const portraitElement = event.target instanceof Element
       ? event.target.closest(".tow-combat-overlay-top-panel__portrait")
       : null;
     if (!(portraitElement instanceof HTMLElement)) return;
     const next = event.relatedTarget;
     if (next instanceof Element && next.closest(".tow-combat-overlay-top-panel__portrait") === portraitElement) return;
-    clearLinkedTopPanelHover(state);
+    clearLinkedTopPanelHover(state, {
+      panelElement: topPanelElement
+    });
   };
 
   const onPortraitTooltipShow = (event) => {
@@ -663,8 +740,8 @@ function bindTopPanelElementEvents(topPanelElement) {
   topPanelElement.addEventListener("pointerover", onPortraitHoverStateShow);
   topPanelElement.addEventListener("pointermove", onPortraitHoverStateShow);
   topPanelElement.addEventListener("pointerout", onPortraitHoverStateHide);
-  topPanelElement.addEventListener("pointerleave", () => clearLinkedTopPanelHover(state));
-  topPanelElement.addEventListener("pointercancel", () => clearLinkedTopPanelHover(state));
+  topPanelElement.addEventListener("pointerleave", () => clearLinkedTopPanelHover(state, { panelElement: topPanelElement }));
+  topPanelElement.addEventListener("pointercancel", () => clearLinkedTopPanelHover(state, { panelElement: topPanelElement }));
 
   const onChipTooltipShow = (event) => {
     const chipElement = event.target instanceof Element
@@ -696,6 +773,36 @@ function bindTopPanelElementEvents(topPanelElement) {
   topPanelElement.addEventListener("pointermove", onChipTooltipShow);
   topPanelElement.addEventListener("pointerout", onChipTooltipHide);
   topPanelElement.addEventListener("pointercancel", () => hideStatusTooltip());
+
+  const onControlTooltipShow = (event) => {
+    const buttonElement = event.target instanceof Element
+      ? event.target.closest(".tow-combat-overlay-top-panel__control-button")
+      : null;
+    if (!(buttonElement instanceof HTMLElement)) return;
+    const title = String(buttonElement.dataset.tooltipTitle ?? "").trim();
+    if (!title) return;
+    const description = String(buttonElement.dataset.tooltipDescription ?? "").trim();
+    showOverlayTooltip(title, description, { x: event.clientX, y: event.clientY }, null, {
+      allowOutsideCanvas: true,
+      clientCoordinates: true,
+      theme: "panel",
+      descriptionIsHtml: true
+    });
+  };
+
+  const onControlTooltipHide = (event) => {
+    const buttonElement = event.target instanceof Element
+      ? event.target.closest(".tow-combat-overlay-top-panel__control-button")
+      : null;
+    if (!(buttonElement instanceof HTMLElement)) return;
+    const next = event.relatedTarget;
+    if (next instanceof Element && next.closest(".tow-combat-overlay-top-panel__control-button") === buttonElement) return;
+    hideStatusTooltip();
+  };
+
+  topPanelElement.addEventListener("pointerover", onControlTooltipShow);
+  topPanelElement.addEventListener("pointermove", onControlTooltipShow);
+  topPanelElement.addEventListener("pointerout", onControlTooltipHide);
 
   topPanelElement.addEventListener("dragstart", (event) => {
     if (hasPendingControlPanelTargetPick()) {

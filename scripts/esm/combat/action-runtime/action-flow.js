@@ -10,6 +10,10 @@ export function createPanelActionFlowService({
     const key = String(actionKey ?? "").trim();
     if (!actor || !key) return;
 
+    // Some Old World action flows bypass actor.setupSkillTest and open the test
+    // dialog directly, so arm a one-shot dialog patch as a fallback.
+    armApplyRollModifiersToNextTestDialog(actor);
+
     const runWithActionRollContext = async (callback) => withPatchedActionSkillTestContext(actor, callback);
     const normalizedKey = key.toLowerCase();
 
@@ -164,6 +168,8 @@ export function createPanelActionFlowService({
   }
 
   async function runDefaultRecoverAction(actor) {
+    armApplyRollModifiersToNextTestDialog(actor);
+
     if (typeof actor?.system?.doAction === "function") {
       await withPatchedActionSkillTestContext(actor, () => actor.system.doAction("recover"));
       return;
@@ -304,12 +310,14 @@ export function createPanelActionFlowService({
     }
 
     if (subActionData?.script && typeof subActionData.script === "function") {
+      armApplyRollModifiersToNextTestDialog(actor);
       await subActionData.script.call(subActionData, actor);
       return;
     }
 
     const actionUse = game?.oldworld?.config?.rollClasses?.ActionUse;
     if (typeof actionUse?.fromAction === "function") {
+      armApplyRollModifiersToNextTestDialog(actor);
       await actionUse.fromAction(action, actor, { subAction: actionKey });
     }
   }

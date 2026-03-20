@@ -13,6 +13,48 @@ export function createPanelTargetPickService({
 } = {}) {
   const TARGET_PICKING_BODY_CLASS = "tow-combat-overlay-is-picking-target";
 
+  function collectInteractiveTokenDisplayObjects() {
+    const results = [];
+    const tokens = Array.isArray(canvas?.tokens?.placeables) ? canvas.tokens.placeables : [];
+    const visit = (displayObject) => {
+      if (!displayObject) return;
+      const isInteractive = displayObject.interactive === true
+        || displayObject.buttonMode === true
+        || (typeof displayObject.eventMode === "string" && displayObject.eventMode !== "none" && displayObject.eventMode !== "passive");
+      if (isInteractive) results.push(displayObject);
+      for (const child of Array.isArray(displayObject.children) ? displayObject.children : []) visit(child);
+    };
+    for (const token of tokens) visit(token);
+    return results;
+  }
+
+  function applyPickCursorToTokenDisplayObjects(cursor = pickCursor, overrides = []) {
+    const known = new Set(
+      overrides
+        .map((entry) => entry?.displayObject)
+        .filter(Boolean)
+    );
+    for (const displayObject of collectInteractiveTokenDisplayObjects()) {
+      if (!known.has(displayObject)) {
+        overrides.push({
+          displayObject,
+          cursor: displayObject.cursor
+        });
+        known.add(displayObject);
+      }
+      try { displayObject.cursor = cursor; } catch (_error) {}
+    }
+    return overrides;
+  }
+
+  function restoreTokenDisplayObjectCursors(overrides = []) {
+    for (const entry of Array.isArray(overrides) ? overrides : []) {
+      const displayObject = entry?.displayObject;
+      if (!displayObject || displayObject.destroyed) continue;
+      try { displayObject.cursor = entry.cursor; } catch (_error) {}
+    }
+  }
+
   function getWorldPointFromClientEvent(event) {
     const clientX = Number(event?.clientX ?? NaN);
     const clientY = Number(event?.clientY ?? NaN);
@@ -43,9 +85,11 @@ export function createPanelTargetPickService({
     if (pending.windowPointerDownCapture) window.removeEventListener("pointerdown", pending.windowPointerDownCapture, true);
     if (pending.windowPointerMove) window.removeEventListener("pointermove", pending.windowPointerMove, true);
     if (pending.onEscape) window.removeEventListener("keydown", pending.onEscape, true);
+    if (pending.hoverTokenHookId != null) Hooks.off("hoverToken", pending.hoverTokenHookId);
     if (pending.panelElement instanceof HTMLElement) pending.panelElement.classList.remove("is-picking-attack");
     if (pending.slotElement instanceof HTMLElement) pending.slotElement.classList.remove("is-picking-attack");
     if (pending.canvasView instanceof HTMLElement) pending.canvasView.style.cursor = "";
+    restoreTokenDisplayObjectCursors(pending.displayObjectCursorOverrides);
     document.body?.classList?.remove?.(TARGET_PICKING_BODY_CLASS);
     hideStatusTooltip();
 
@@ -63,6 +107,17 @@ export function createPanelTargetPickService({
 
     const canvasView = canvas?.app?.view;
     if (canvasView instanceof HTMLElement) canvasView.style.cursor = pickCursor;
+    const displayObjectCursorOverrides = applyPickCursorToTokenDisplayObjects(pickCursor, []);
+    const hoverTokenHookId = Hooks.on("hoverToken", () => {
+      const liveState = getControlPanelState();
+      if (!liveState?.pendingAttackPick) return;
+      const liveCanvasView = liveState.pendingAttackPick.canvasView;
+      if (liveCanvasView instanceof HTMLElement) liveCanvasView.style.cursor = pickCursor;
+      liveState.pendingAttackPick.displayObjectCursorOverrides = applyPickCursorToTokenDisplayObjects(
+        pickCursor,
+        liveState.pendingAttackPick.displayObjectCursorOverrides
+      );
+    });
     document.body?.classList?.add?.(TARGET_PICKING_BODY_CLASS);
     panelElement.classList.add("is-picking-attack");
     slotElement.classList.add("is-picking-attack");
@@ -114,6 +169,13 @@ export function createPanelTargetPickService({
     };
     const onWindowPointerMove = (event) => {
       if (attackTriggered) return;
+      const liveState = getControlPanelState();
+      if (liveState?.pendingAttackPick) {
+        liveState.pendingAttackPick.displayObjectCursorOverrides = applyPickCursorToTokenDisplayObjects(
+          pickCursor,
+          liveState.pendingAttackPick.displayObjectCursorOverrides
+        );
+      }
       showPickTooltip(event);
     };
 
@@ -129,6 +191,8 @@ export function createPanelTargetPickService({
     pending.panelElement = panelElement;
     pending.slotElement = slotElement;
     pending.canvasView = canvasView;
+    pending.hoverTokenHookId = hoverTokenHookId;
+    pending.displayObjectCursorOverrides = displayObjectCursorOverrides;
     pending.resolveTargetTokenPick = resolveAttackPickTarget;
   }
 
@@ -140,6 +204,17 @@ export function createPanelTargetPickService({
 
     const canvasView = canvas?.app?.view;
     if (canvasView instanceof HTMLElement) canvasView.style.cursor = pickCursor;
+    const displayObjectCursorOverrides = applyPickCursorToTokenDisplayObjects(pickCursor, []);
+    const hoverTokenHookId = Hooks.on("hoverToken", () => {
+      const liveState = getControlPanelState();
+      if (!liveState?.pendingAttackPick) return;
+      const liveCanvasView = liveState.pendingAttackPick.canvasView;
+      if (liveCanvasView instanceof HTMLElement) liveCanvasView.style.cursor = pickCursor;
+      liveState.pendingAttackPick.displayObjectCursorOverrides = applyPickCursorToTokenDisplayObjects(
+        pickCursor,
+        liveState.pendingAttackPick.displayObjectCursorOverrides
+      );
+    });
     document.body?.classList?.add?.(TARGET_PICKING_BODY_CLASS);
     panelElement.classList.add("is-picking-attack");
     slotElement.classList.add("is-picking-attack");
@@ -190,6 +265,13 @@ export function createPanelTargetPickService({
     };
     const onWindowPointerMove = (event) => {
       if (aimTriggered) return;
+      const liveState = getControlPanelState();
+      if (liveState?.pendingAttackPick) {
+        liveState.pendingAttackPick.displayObjectCursorOverrides = applyPickCursorToTokenDisplayObjects(
+          pickCursor,
+          liveState.pendingAttackPick.displayObjectCursorOverrides
+        );
+      }
       showPickTooltip(event);
     };
 
@@ -205,6 +287,8 @@ export function createPanelTargetPickService({
     pending.panelElement = panelElement;
     pending.slotElement = slotElement;
     pending.canvasView = canvasView;
+    pending.hoverTokenHookId = hoverTokenHookId;
+    pending.displayObjectCursorOverrides = displayObjectCursorOverrides;
     pending.resolveTargetTokenPick = resolveAimPickTarget;
   }
 
@@ -216,6 +300,17 @@ export function createPanelTargetPickService({
 
     const canvasView = canvas?.app?.view;
     if (canvasView instanceof HTMLElement) canvasView.style.cursor = pickCursor;
+    const displayObjectCursorOverrides = applyPickCursorToTokenDisplayObjects(pickCursor, []);
+    const hoverTokenHookId = Hooks.on("hoverToken", () => {
+      const liveState = getControlPanelState();
+      if (!liveState?.pendingAttackPick) return;
+      const liveCanvasView = liveState.pendingAttackPick.canvasView;
+      if (liveCanvasView instanceof HTMLElement) liveCanvasView.style.cursor = pickCursor;
+      liveState.pendingAttackPick.displayObjectCursorOverrides = applyPickCursorToTokenDisplayObjects(
+        pickCursor,
+        liveState.pendingAttackPick.displayObjectCursorOverrides
+      );
+    });
     document.body?.classList?.add?.(TARGET_PICKING_BODY_CLASS);
     panelElement.classList.add("is-picking-attack");
     slotElement.classList.add("is-picking-attack");
@@ -266,6 +361,13 @@ export function createPanelTargetPickService({
     };
     const onWindowPointerMove = (event) => {
       if (helpTriggered) return;
+      const liveState = getControlPanelState();
+      if (liveState?.pendingAttackPick) {
+        liveState.pendingAttackPick.displayObjectCursorOverrides = applyPickCursorToTokenDisplayObjects(
+          pickCursor,
+          liveState.pendingAttackPick.displayObjectCursorOverrides
+        );
+      }
       showPickTooltip(event);
     };
 
@@ -281,6 +383,8 @@ export function createPanelTargetPickService({
     pending.panelElement = panelElement;
     pending.slotElement = slotElement;
     pending.canvasView = canvasView;
+    pending.hoverTokenHookId = hoverTokenHookId;
+    pending.displayObjectCursorOverrides = displayObjectCursorOverrides;
     pending.resolveTargetTokenPick = resolveHelpPickTarget;
   }
 

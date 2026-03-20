@@ -363,7 +363,7 @@ const panelSpellAutoApplyService = createPanelSpellAutoApplyService({
   getOverlayAutomationRef: () => getOverlayAutomationRef(),
   panelStaggerPatchDurationMs: PANEL_STAGGER_PATCH_DURATION_MS,
   autoApplyWaitMs: AUTO_APPLY_WAIT_MS,
-  armAutoResolveSpellTriggeredTestDialogs: ({ timeoutMs } = {}) => armAutoResolveSpellTriggeredTestDialogs({ timeoutMs }),
+  armAutoResolveSpellTriggeredTestDialogs: (actor = null, { timeoutMs } = {}) => armAutoResolveSpellTriggeredTestDialogs(actor, { timeoutMs }),
   spellRequiresTargetPick: (spell) => spellRequiresTargetPick(spell),
   spellTargetsSelf: (spell) => spellTargetsSelf(spell),
   withTemporaryUserTargets: (targetToken, callback) => withTemporaryUserTargets(targetToken, callback),
@@ -606,8 +606,8 @@ function armAutoSubmitActionSkillDialog(actor, skill) {
   panelActionFlowService.armAutoSubmitActionSkillDialog(actor, skill);
 }
 
-function armAutoResolveSpellTriggeredTestDialogs({ timeoutMs = 20000 } = {}) {
-  return panelSpellSupportService.armAutoResolveSpellTriggeredTestDialogs({ timeoutMs });
+function armAutoResolveSpellTriggeredTestDialogs(actor = null, { timeoutMs = 20000 } = {}) {
+  return panelSpellSupportService.armAutoResolveSpellTriggeredTestDialogs(actor, { timeoutMs });
 }
 
 function ensurePanelItemUseRollCompatibility() {

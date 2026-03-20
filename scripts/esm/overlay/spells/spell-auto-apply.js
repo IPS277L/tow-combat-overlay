@@ -13,6 +13,178 @@ export function createPanelSpellAutoApplyService({
   towCombatOverlayArmAutoSubmitDialog,
   createTowCombatOverlayRollContext
 } = {}) {
+  function resolveActorFromReference(reference) {
+    const value = String(reference ?? "").trim();
+    if (!value) return null;
+
+    const actorById = game?.actors?.get?.(value) ?? null;
+    if (actorById) return actorById;
+
+    const tokenById = canvas?.tokens?.get?.(value)
+      ?? canvas?.tokens?.placeables?.find?.((token) => String(token?.id ?? "").trim() === value)
+      ?? null;
+    const tokenActor = tokenById?.actor ?? tokenById?.document?.actor ?? null;
+    if (tokenActor) return tokenActor;
+
+    return null;
+  }
+
+  function collectMessageTargetActors(rawTargets) {
+    const results = [];
+    if (Array.isArray(rawTargets)) {
+      for (const entry of rawTargets) {
+        const actor = resolveActorFromReference(
+          entry?.actor
+          ?? entry?.actorId
+          ?? entry?.token
+          ?? entry?.tokenId
+          ?? entry?.id
+          ?? entry
+        );
+        if (actor) results.push(actor);
+      }
+      return results;
+    }
+
+    if (rawTargets instanceof Set) {
+      for (const entry of rawTargets) {
+        const actor = resolveActorFromReference(entry?.id ?? entry);
+        if (actor) results.push(actor);
+      }
+      return results;
+    }
+
+    if (rawTargets && typeof rawTargets === "object") {
+      for (const [key, value] of Object.entries(rawTargets)) {
+        const actor = resolveActorFromReference(
+          value?.actor
+          ?? value?.actorId
+          ?? value?.token
+          ?? value?.tokenId
+          ?? value?.id
+          ?? key
+        );
+        if (actor) results.push(actor);
+      }
+    }
+
+    return results;
+  }
+
+  function collectPotentialApplyActors(message, dataset = {}) {
+    const actors = [];
+    const add = (actor) => {
+      if (!actor) return;
+      if (actors.some((entry) => entry === actor || String(entry?.uuid ?? "") === String(actor?.uuid ?? ""))) return;
+      actors.push(actor);
+    };
+
+    add(resolveActorFromReference(
+      message?.speaker?.actor
+      ?? message?.system?.test?.context?.actor
+      ?? message?.system?.context?.actor
+    ));
+
+    const candidateTargets = [
+      message?.system?.test?.context?.targets,
+      message?.system?.context?.targets,
+      message?.system?.test?.targets,
+      message?.system?.targets
+    ];
+    for (const rawTargets of candidateTargets) {
+      for (const actor of collectMessageTargetActors(rawTargets)) add(actor);
+    }
+
+    for (const [key, value] of Object.entries(dataset ?? {})) {
+      const lowerKey = String(key ?? "").trim().toLowerCase();
+      if (!lowerKey || lowerKey === "action") continue;
+      if (!/(actor|token|target)/i.test(lowerKey)) continue;
+      add(resolveActorFromReference(value));
+    }
+
+    for (const token of Array.from(game?.user?.targets ?? [])) {
+      add(token?.actor ?? token?.document?.actor ?? null);
+    }
+
+    return actors;
+  }
+
+  async function withPatchedSkillTests(actors, callback) {
+    const patches = [];
+    for (const actor of Array.isArray(actors) ? actors : []) {
+      if (!actor || typeof actor.setupSkillTest !== "function") continue;
+      const original = actor.setupSkillTest;
+      const boundOriginal = original.bind(actor);
+      const patched = function patchedTowCombatOverlaySpellApplySkillTest(skill, context = {}) {
+        return boundOriginal(skill, createTowCombatOverlayRollContext(actor, context));
+      };
+      actor.setupSkillTest = patched;
+      patches.push({ actor, original, patched });
+    }
+
+    try {
+      return await callback();
+    } finally {
+      for (const patch of patches) {
+        if (patch.actor?.setupSkillTest === patch.patched) {
+          patch.actor.setupSkillTest = patch.original;
+        }
+      }
+    }
+  }
+
+  async function withPatchedDirectTests(actors, callback) {
+    const actorMap = new Map();
+    for (const actor of Array.isArray(actors) ? actors : []) {
+      const actorId = String(actor?.id ?? "").trim();
+      const actorUuid = String(actor?.uuid ?? "").trim();
+      if (actorId) actorMap.set(actorId, actor);
+      if (actorUuid) actorMap.set(actorUuid, actor);
+    }
+
+    const OldWorldTestClass = game?.oldworld?.config?.rollClasses?.OldWorldTest
+      ?? game?.oldworld?.config?.OldWorldTest
+      ?? null;
+    const originalFromData = OldWorldTestClass?.fromData;
+    if (!OldWorldTestClass || typeof originalFromData !== "function") {
+      return callback();
+    }
+
+    OldWorldTestClass.fromData = function patchedTowCombatOverlaySpellApplyFromData(data, ...args) {
+      const sourceData = data && typeof data === "object" ? data : {};
+      const actorRef = sourceData.actor;
+      const resolvedActor = actorMap.get(String(actorRef?.id ?? "").trim())
+        ?? actorMap.get(String(actorRef?.uuid ?? "").trim())
+        ?? actorMap.get(String(sourceData?.speaker?.actor ?? "").trim())
+        ?? actorMap.get(String(sourceData?.context?.actor ?? "").trim())
+        ?? null;
+
+      if (!resolvedActor) {
+        return originalFromData.call(this, data, ...args);
+      }
+
+      const rollFields = createTowCombatOverlayRollContext(resolvedActor).fields ?? {};
+      const nextData = foundry.utils.deepClone(sourceData);
+      const existingBonus = Number(nextData?.bonus ?? NaN);
+      const existingPenalty = Number(nextData?.penalty ?? NaN);
+
+      if ((!Number.isFinite(existingBonus) || existingBonus === 0) && Number(rollFields.bonus ?? 0) !== 0) {
+        nextData.bonus = Number(rollFields.bonus ?? 0);
+      }
+      if ((!Number.isFinite(existingPenalty) || existingPenalty === 0) && Number(rollFields.penalty ?? 0) !== 0) {
+        nextData.penalty = Number(rollFields.penalty ?? 0);
+      }
+
+      return originalFromData.call(this, nextData, ...args);
+    };
+
+    try {
+      return await callback();
+    } finally {
+      OldWorldTestClass.fromData = originalFromData;
+    }
+  }
+
   async function invokeChatMessageActionByName(message, action, targetElement = null) {
     const actionName = String(action ?? "").trim();
     if (!message || !actionName) return false;
@@ -28,7 +200,16 @@ export function createPanelSpellAutoApplyService({
       target: targetElement
     };
     try {
-      await handler.call(system, syntheticEvent, targetElement ?? { dataset: { action: actionName } });
+      const dataset = targetElement?.dataset ?? { action: actionName };
+      const affectedActors = collectPotentialApplyActors(message, dataset);
+      for (const actor of affectedActors) {
+        armApplyRollModifiersToNextTestDialog(actor);
+      }
+      await withPatchedDirectTests(affectedActors, async () => (
+        withPatchedSkillTests(affectedActors, async () => {
+          await handler.call(system, syntheticEvent, targetElement ?? { dataset });
+        })
+      ));
       return true;
     } catch (_error) {
       return false;
@@ -165,7 +346,7 @@ export function createPanelSpellAutoApplyService({
       const performAutoApply = async () => {
         const automation = getOverlayAutomationRef();
         const restoreStaggerPrompt = automation.armDefaultStaggerChoiceWound(panelStaggerPatchDurationMs);
-        const restoreSpellTestAuto = armAutoResolveSpellTriggeredTestDialogs({
+        const restoreSpellTestAuto = armAutoResolveSpellTriggeredTestDialogs(actor, {
           timeoutMs: autoApplyWaitMs + 8000
         });
         const finishSpellAutoPatches = () => setTimeout(() => {
