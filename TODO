@@ -1,17 +1,13 @@
-Crucial:
-- Split top panel monolith code and refactor to be more modular and maintainable
-
 New features:
 - Token overlay dead state grey out in the same style as on both panels
-- Cleanup\adjust token overlay
+- Auto scale token overlay name to fit within the token border
+- Add temporary effects to token overlay
+- Move token overlay statuses inside the token border and adjust size to fit within the token border
 - Introduce settings (grouped)
 - Center both top and control panels if not moved (probably should be controlled by a setting).
   Check for window resize and sidebar appears
 
 TBD:
 - Add wounds and miscast tables if available
-- Auto scale token overlay name to fit within the token border
-- Add temporary effects to token overlay
-- Move token overlay statuses inside the token border and adjust size to fit within the token border
 - Probably switch L\U and R buttons on both panels to icons
 - Think about dark themed tooltips for both panels

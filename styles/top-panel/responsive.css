@@ -1,0 +1,8 @@
+@media (max-width: 900px) {
+  .tow-combat-overlay-top-panel {
+    --tow-top-panel-portrait-size: 96px;
+    --tow-top-panel-padding: 0px;
+    --tow-top-panel-gap: 3px;
+    max-width: calc(100vw - 10px);
+  }
+}

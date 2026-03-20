@@ -1,0 +1,101 @@
+.tow-combat-overlay-top-panel__chips {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 4px;
+  width: auto;
+  max-width: calc(100% - 4px);
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  pointer-events: none;
+}
+
+.tow-combat-overlay-top-panel__chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  row-gap: 1px;
+  max-width: 100%;
+  overflow: visible;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.tow-combat-overlay-top-panel__chip {
+  width: var(--tow-top-panel-chip-size);
+  height: var(--tow-top-panel-chip-size);
+  min-width: var(--tow-top-panel-chip-size);
+  min-height: var(--tow-top-panel-chip-size);
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(205, 205, 205, 0.7);
+  border-radius: 50%;
+  background: rgba(84, 84, 84, 0.9);
+  box-shadow: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  cursor: help;
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: none;
+  transform: none;
+  outline: none;
+}
+
+.tow-combat-overlay-top-panel__chip.is-condition,
+.tow-combat-overlay-top-panel__chip.is-condition-overflow {
+  border-color: rgb(238, 233, 220);
+  background: rgb(222, 217, 205);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.52),
+    0 0 0 1px rgba(126, 116, 98, 0.24);
+}
+
+.tow-combat-overlay-top-panel__chip.is-effect,
+.tow-combat-overlay-top-panel__chip.is-effect-overflow,
+.tow-combat-overlay-top-panel__chip.is-ability,
+.tow-combat-overlay-top-panel__chip.is-ability-overflow {
+  border-color: rgba(205, 205, 205, 0.7);
+}
+
+.tow-combat-overlay-top-panel__chip:hover,
+.tow-combat-overlay-top-panel__chip:focus-visible {
+  background: rgba(84, 84, 84, 0.9);
+}
+
+.tow-combat-overlay-top-panel__chip:focus,
+.tow-combat-overlay-top-panel__chip:focus-visible,
+.tow-combat-overlay-top-panel__chip:active {
+  outline: none;
+  transform: none;
+}
+
+.tow-combat-overlay-top-panel__chip.is-condition:hover,
+.tow-combat-overlay-top-panel__chip.is-condition:focus-visible,
+.tow-combat-overlay-top-panel__chip.is-condition-overflow:hover,
+.tow-combat-overlay-top-panel__chip.is-condition-overflow:focus-visible {
+  background: rgb(222, 217, 205);
+}
+
+.tow-combat-overlay-top-panel__chip-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.tow-combat-overlay-top-panel__chip-text {
+  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  color: #f2ece0;
+  pointer-events: none;
+}
