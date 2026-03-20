@@ -15,9 +15,7 @@ export function createPanelActionFlowService({
     armApplyRollModifiersToNextTestDialog(actor);
 
     const runWithActionRollContext = async (callback) => withPatchedActionSkillTestContext(actor, callback);
-    const normalizedKey = key.toLowerCase();
-
-    if (normalizedKey !== "improvise" && typeof actor?.system?.doAction === "function") {
+    if (typeof actor?.system?.doAction === "function") {
       await runWithActionRollContext(() => actor.system.doAction(key));
       return;
     }
