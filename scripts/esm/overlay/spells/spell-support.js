@@ -4,11 +4,27 @@ export function createPanelSpellSupportService({
 } = {}) {
   let panelItemUseRollCompatibilityPatched = false;
 
-  function armAutoResolveSpellTriggeredTestDialogs(sourceActor = null, { timeoutMs = 20000 } = {}) {
+  function armAutoResolveSpellTriggeredTestDialogs(sourceActor = null, {
+    timeoutMs = 20000,
+    matches = null
+  } = {}) {
+    const sourceActorId = String(sourceActor?.id ?? "").trim();
+    const sourceActorUuid = String(sourceActor?.uuid ?? "").trim();
+
     return towCombatOverlayArmAutoSubmitDialog({
       hookName: "renderTestDialog",
       matches: (app) => {
         if (!app || app._towCombatOverlaySpellAutoResolved === true) return false;
+        if (typeof matches === "function" && !matches(app)) return false;
+
+        if (sourceActorId || sourceActorUuid) {
+          const appActorId = String(app?.actor?.id ?? "").trim();
+          const appActorUuid = String(app?.actor?.uuid ?? app?.context?.actor ?? "").trim();
+          const actorMatchesSource = (sourceActorId && appActorId === sourceActorId)
+            || (sourceActorUuid && appActorUuid === sourceActorUuid);
+          if (!actorMatchesSource && typeof matches !== "function") return false;
+        }
+
         app._towCombatOverlaySpellAutoResolved = true;
         return true;
       },

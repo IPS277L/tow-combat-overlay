@@ -12,6 +12,16 @@ function effectHasDeadStatus(effect) {
   return statuses.includes(DEAD_STATUS_ID);
 }
 
+function changedDataTouchesDeadStatus(changed = {}) {
+  const statuses = changed?.statuses;
+  if (Array.isArray(statuses)) return statuses.map((entry) => String(entry ?? "")).includes(DEAD_STATUS_ID);
+  if (statuses instanceof Set) return Array.from(statuses).map((entry) => String(entry ?? "")).includes(DEAD_STATUS_ID);
+  if (statuses && typeof statuses === "object") {
+    return Object.keys(statuses).some((key) => key === DEAD_STATUS_ID || key === `-=${DEAD_STATUS_ID}`);
+  }
+  return false;
+}
+
 export function registerTowCombatOverlayDeadWoundSyncHooks() {
   if (!game) return;
   const existing = game[HOOK_STATE_KEY];
@@ -38,8 +48,8 @@ export function registerTowCombatOverlayDeadWoundSyncHooks() {
       if (!effectHasDeadStatus(effect)) return;
       towCombatOverlayQueueWoundSyncFromDeadState(effect.parent);
     }),
-    updateActiveEffect: Hooks.on("updateActiveEffect", (effect) => {
-      if (!effectHasDeadStatus(effect)) return;
+    updateActiveEffect: Hooks.on("updateActiveEffect", (effect, changed) => {
+      if (!effectHasDeadStatus(effect) && !changedDataTouchesDeadStatus(changed)) return;
       towCombatOverlayQueueWoundSyncFromDeadState(effect.parent);
     })
   };

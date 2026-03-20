@@ -1,5 +1,6 @@
 export function createPanelTargetPickService({
   panelId,
+  topPanelId = "",
   pickCursor = "crosshair",
   getControlPanelState,
   hideStatusTooltip,
@@ -74,6 +75,14 @@ export function createPanelTargetPickService({
   function getPanelAttackPickState(controlPanelState) {
     if (!controlPanelState.pendingAttackPick) controlPanelState.pendingAttackPick = {};
     return controlPanelState.pendingAttackPick;
+  }
+
+  function isClickInsideOverlayPanels(eventTarget) {
+    if (!(eventTarget instanceof Element)) return false;
+    if (eventTarget.closest(`#${panelId}`)) return true;
+    const resolvedTopPanelId = String(topPanelId ?? "").trim();
+    if (resolvedTopPanelId && eventTarget.closest(`#${resolvedTopPanelId}`)) return true;
+    return false;
   }
 
   function clearPickMode() {
@@ -153,7 +162,7 @@ export function createPanelTargetPickService({
       if (attackTriggered) return;
       if (Number(event?.button ?? 0) !== 0) return;
       const target = event?.target;
-      if (target instanceof Element && target.closest(`#${panelId}`)) return;
+      if (isClickInsideOverlayPanels(target)) return;
       const point = getWorldPointFromClientEvent(event);
       const targetToken = tokenAtPoint(point, { excludeTokenId: sourceToken.id });
       if (!targetToken) return;
@@ -249,7 +258,7 @@ export function createPanelTargetPickService({
       if (aimTriggered) return;
       if (Number(event?.button ?? 0) !== 0) return;
       const target = event?.target;
-      if (target instanceof Element && target.closest(`#${panelId}`)) return;
+      if (isClickInsideOverlayPanels(target)) return;
       const point = getWorldPointFromClientEvent(event);
       const targetToken = tokenAtPoint(point, { excludeTokenId: sourceToken.id });
       if (!targetToken) return;
@@ -345,7 +354,7 @@ export function createPanelTargetPickService({
       if (helpTriggered) return;
       if (Number(event?.button ?? 0) !== 0) return;
       const target = event?.target;
-      if (target instanceof Element && target.closest(`#${panelId}`)) return;
+      if (isClickInsideOverlayPanels(target)) return;
       const point = getWorldPointFromClientEvent(event);
       const targetToken = tokenAtPoint(point, { excludeTokenId: sourceToken.id });
       if (!targetToken) return;

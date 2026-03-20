@@ -13,6 +13,72 @@ export function createPanelSpellAutoApplyService({
   towCombatOverlayArmAutoSubmitDialog,
   createTowCombatOverlayRollContext
 } = {}) {
+  let directTestPatchInstalled = false;
+  let directTestPatchOriginalFromData = null;
+  let directTestPatchNextContextId = 1;
+  const directTestPatchContexts = new Map();
+
+  function resolveActorRefsFromTestData(sourceData = {}) {
+    return [
+      String(sourceData?.actor?.id ?? "").trim(),
+      String(sourceData?.actor?.uuid ?? "").trim(),
+      String(sourceData?.speaker?.actor ?? "").trim(),
+      String(sourceData?.context?.actor ?? "").trim()
+    ].filter(Boolean);
+  }
+
+  function installDirectTestPatch(OldWorldTestClass) {
+    if (!OldWorldTestClass || directTestPatchInstalled) return;
+    const originalFromData = OldWorldTestClass?.fromData;
+    if (typeof originalFromData !== "function") return;
+
+    directTestPatchOriginalFromData = originalFromData;
+    OldWorldTestClass.fromData = function patchedTowCombatOverlaySpellApplyFromData(data, ...args) {
+      const sourceData = data && typeof data === "object" ? data : {};
+      const refs = resolveActorRefsFromTestData(sourceData);
+      let resolvedActor = null;
+
+      for (const context of directTestPatchContexts.values()) {
+        for (const ref of refs) {
+          const actor = context.actorMap.get(ref);
+          if (!actor) continue;
+          resolvedActor = actor;
+          break;
+        }
+        if (resolvedActor) break;
+      }
+
+      if (!resolvedActor) {
+        return directTestPatchOriginalFromData.call(this, data, ...args);
+      }
+
+      const rollFields = createTowCombatOverlayRollContext(resolvedActor).fields ?? {};
+      const nextData = foundry.utils.deepClone(sourceData);
+      const existingBonus = Number(nextData?.bonus ?? NaN);
+      const existingPenalty = Number(nextData?.penalty ?? NaN);
+
+      if ((!Number.isFinite(existingBonus) || existingBonus === 0) && Number(rollFields.bonus ?? 0) !== 0) {
+        nextData.bonus = Number(rollFields.bonus ?? 0);
+      }
+      if ((!Number.isFinite(existingPenalty) || existingPenalty === 0) && Number(rollFields.penalty ?? 0) !== 0) {
+        nextData.penalty = Number(rollFields.penalty ?? 0);
+      }
+
+      return directTestPatchOriginalFromData.call(this, nextData, ...args);
+    };
+    directTestPatchInstalled = true;
+  }
+
+  function maybeRestoreDirectTestPatch(OldWorldTestClass) {
+    if (!directTestPatchInstalled || directTestPatchContexts.size > 0) return;
+    if (!OldWorldTestClass || typeof directTestPatchOriginalFromData !== "function") return;
+    if (OldWorldTestClass.fromData !== directTestPatchOriginalFromData) {
+      OldWorldTestClass.fromData = directTestPatchOriginalFromData;
+    }
+    directTestPatchInstalled = false;
+    directTestPatchOriginalFromData = null;
+  }
+
   function resolveActorFromReference(reference) {
     const value = String(reference ?? "").trim();
     if (!value) return null;
@@ -145,43 +211,19 @@ export function createPanelSpellAutoApplyService({
     const OldWorldTestClass = game?.oldworld?.config?.rollClasses?.OldWorldTest
       ?? game?.oldworld?.config?.OldWorldTest
       ?? null;
-    const originalFromData = OldWorldTestClass?.fromData;
-    if (!OldWorldTestClass || typeof originalFromData !== "function") {
+    if (!OldWorldTestClass || typeof OldWorldTestClass?.fromData !== "function") {
       return callback();
     }
 
-    OldWorldTestClass.fromData = function patchedTowCombatOverlaySpellApplyFromData(data, ...args) {
-      const sourceData = data && typeof data === "object" ? data : {};
-      const actorRef = sourceData.actor;
-      const resolvedActor = actorMap.get(String(actorRef?.id ?? "").trim())
-        ?? actorMap.get(String(actorRef?.uuid ?? "").trim())
-        ?? actorMap.get(String(sourceData?.speaker?.actor ?? "").trim())
-        ?? actorMap.get(String(sourceData?.context?.actor ?? "").trim())
-        ?? null;
-
-      if (!resolvedActor) {
-        return originalFromData.call(this, data, ...args);
-      }
-
-      const rollFields = createTowCombatOverlayRollContext(resolvedActor).fields ?? {};
-      const nextData = foundry.utils.deepClone(sourceData);
-      const existingBonus = Number(nextData?.bonus ?? NaN);
-      const existingPenalty = Number(nextData?.penalty ?? NaN);
-
-      if ((!Number.isFinite(existingBonus) || existingBonus === 0) && Number(rollFields.bonus ?? 0) !== 0) {
-        nextData.bonus = Number(rollFields.bonus ?? 0);
-      }
-      if ((!Number.isFinite(existingPenalty) || existingPenalty === 0) && Number(rollFields.penalty ?? 0) !== 0) {
-        nextData.penalty = Number(rollFields.penalty ?? 0);
-      }
-
-      return originalFromData.call(this, nextData, ...args);
-    };
+    installDirectTestPatch(OldWorldTestClass);
+    const contextId = `ctx-${directTestPatchNextContextId++}`;
+    directTestPatchContexts.set(contextId, { actorMap });
 
     try {
       return await callback();
     } finally {
-      OldWorldTestClass.fromData = originalFromData;
+      directTestPatchContexts.delete(contextId);
+      maybeRestoreDirectTestPatch(OldWorldTestClass);
     }
   }
 
@@ -347,7 +389,28 @@ export function createPanelSpellAutoApplyService({
         const automation = getOverlayAutomationRef();
         const restoreStaggerPrompt = automation.armDefaultStaggerChoiceWound(panelStaggerPatchDurationMs);
         const restoreSpellTestAuto = armAutoResolveSpellTriggeredTestDialogs(actor, {
-          timeoutMs: autoApplyWaitMs + 8000
+          timeoutMs: autoApplyWaitMs + 8000,
+          matches: (app) => {
+            const appActorId = String(app?.actor?.id ?? "").trim();
+            const appActorUuid = String(app?.actor?.uuid ?? app?.context?.actor ?? "").trim();
+            const sourceActorId = String(actor?.id ?? "").trim();
+            const sourceActorUuid = String(actor?.uuid ?? "").trim();
+            if ((sourceActorId && appActorId === sourceActorId) || (sourceActorUuid && appActorUuid === sourceActorUuid)) {
+              return true;
+            }
+            const appSpellId = String(app?.spell?.id ?? app?.data?.spell?.id ?? "").trim();
+            const appItemUuid = String(app?.context?.itemUuid ?? app?.context?.spellUuid ?? "").trim();
+            if (appSpellId && appSpellId === String(spell?.id ?? "").trim()) return true;
+            if (appItemUuid && appItemUuid === String(spell?.uuid ?? "").trim()) return true;
+            const contextTargets = app?.context?.targets;
+            if (Array.isArray(contextTargets)) {
+              return contextTargets.some((target) => {
+                const actorRef = String(target?.actor ?? target?.actorId ?? "").trim();
+                return (sourceActorId && actorRef === sourceActorId) || (sourceActorUuid && actorRef === sourceActorUuid);
+              });
+            }
+            return false;
+          }
         });
         const finishSpellAutoPatches = () => setTimeout(() => {
           restoreStaggerPrompt();

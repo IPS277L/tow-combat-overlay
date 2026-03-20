@@ -126,6 +126,7 @@ import { createPanelSlotBindingService } from "./slots/slot-binding.js";
 import { createPanelDomLifecycleService } from "./lifecycle/dom-lifecycle.js";
 import { createPanelBaseServices } from "./core/base-services.js";
 import { createPanelStatusDisplayService } from "./selection/status-display.js";
+import { TOP_PANEL_ID } from "../top-panel/top-panel-constants.js";
 import {
   PANEL_ACTIONS_ORDER,
   PANEL_ACTION_ICON_BY_KEY,
@@ -267,6 +268,7 @@ const panelSlotRenderService = createPanelSlotRenderService({
 });
 const panelTargetPickService = createPanelTargetPickService({
   panelId: PANEL_ID,
+  topPanelId: TOP_PANEL_ID,
   pickCursor: PANEL_ATTACK_PICK_CURSOR,
   getControlPanelState: () => getControlPanelState(),
   hideStatusTooltip,
@@ -363,7 +365,9 @@ const panelSpellAutoApplyService = createPanelSpellAutoApplyService({
   getOverlayAutomationRef: () => getOverlayAutomationRef(),
   panelStaggerPatchDurationMs: PANEL_STAGGER_PATCH_DURATION_MS,
   autoApplyWaitMs: AUTO_APPLY_WAIT_MS,
-  armAutoResolveSpellTriggeredTestDialogs: (actor = null, { timeoutMs } = {}) => armAutoResolveSpellTriggeredTestDialogs(actor, { timeoutMs }),
+  armAutoResolveSpellTriggeredTestDialogs: (actor = null, { timeoutMs, matches } = {}) => (
+    armAutoResolveSpellTriggeredTestDialogs(actor, { timeoutMs, matches })
+  ),
   spellRequiresTargetPick: (spell) => spellRequiresTargetPick(spell),
   spellTargetsSelf: (spell) => spellTargetsSelf(spell),
   withTemporaryUserTargets: (targetToken, callback) => withTemporaryUserTargets(targetToken, callback),
@@ -606,8 +610,8 @@ function armAutoSubmitActionSkillDialog(actor, skill) {
   panelActionFlowService.armAutoSubmitActionSkillDialog(actor, skill);
 }
 
-function armAutoResolveSpellTriggeredTestDialogs(actor = null, { timeoutMs = 20000 } = {}) {
-  return panelSpellSupportService.armAutoResolveSpellTriggeredTestDialogs(actor, { timeoutMs });
+function armAutoResolveSpellTriggeredTestDialogs(actor = null, { timeoutMs = 20000, matches = null } = {}) {
+  return panelSpellSupportService.armAutoResolveSpellTriggeredTestDialogs(actor, { timeoutMs, matches });
 }
 
 function ensurePanelItemUseRollCompatibility() {

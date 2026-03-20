@@ -55,12 +55,13 @@ function buildPortraitElement(token) {
     { type: typeLabel },
     `Type: ${typeLabel}`
   );
+  portrait.setAttribute("aria-label", tokenName);
   portrait.draggable = true;
 
   const image = document.createElement("img");
   image.classList.add("tow-combat-overlay-top-panel__portrait-image");
   image.src = getTokenPortraitSrc(token);
-  image.alt = "";
+  image.alt = tokenName;
   portrait.appendChild(image);
 
   const actor = token.actor ?? token.document?.actor ?? null;

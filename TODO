@@ -3,6 +3,8 @@ New features:
 - Auto scale token overlay name to fit within the token border
 - Add temporary effects to token overlay
 - Move token overlay statuses inside the token border and adjust size to fit within the token border
+
+Settings:
 - Introduce settings (grouped)
 - Center both top and control panels if not moved (probably should be controlled by a setting).
   Check for window resize and sidebar appears
