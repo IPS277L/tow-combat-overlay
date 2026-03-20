@@ -8,13 +8,5 @@ export {
   towCombatOverlayGetNameTypeStyle,
   towCombatOverlayTuneOverlayText,
   towCombatOverlayUpdateNameLabel,
-  towCombatOverlayUpdateResilienceLabel,
-  towCombatOverlayClearAllNameLabels,
-  towCombatOverlayClearAllResilienceLabels
+  towCombatOverlayClearAllNameLabels
 } from "./controls/control-style.js";
-
-export {
-  towCombatOverlayCreateWoundControlUI,
-  towCombatOverlayUpdateWoundControlUI,
-  towCombatOverlayClearAllWoundControls
-} from "./controls/wound-controls.js";

@@ -1,29 +1,21 @@
 import {
-  ICON_SRC_RES,
   KEYS,
   NAME_TYPE_STACK_OVERLAP_PX,
   NAME_TYPE_TO_TOKEN_OFFSET_PX,
-  OVERLAY_CONTROL_ROW_GAP_PX,
-  OVERLAY_FONT_SIZE,
   PreciseTextClass,
   TOKEN_CONTROL_PAD
 } from "../../runtime/overlay-constants.js";
-import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
 import {
   towCombatOverlayBindTooltipHandlers,
   towCombatOverlayForEachSceneToken,
   towCombatOverlayGetOverlayEdgePadPx,
   towCombatOverlayGetTokenOverlayScale
 } from "../shared/core-helpers.js";
-import { towCombatOverlayClearDisplayObject, towCombatOverlayGetResilienceValue } from "../layout-state.js";
+import { towCombatOverlayClearDisplayObject } from "../layout-state.js";
 import { getTypeTooltipData } from "../shared/shared.js";
 import {
   formatActorTypeLabel,
-  towCombatOverlayCreateOverlayIconSprite,
-  towCombatOverlayDrawHitBoxRect,
-  towCombatOverlayGetControlStyle,
   towCombatOverlayGetActorTypeLabel,
-  towCombatOverlayGetIconValueStyle,
   towCombatOverlayGetNameStyle,
   towCombatOverlayGetNameTypeStyle,
   towCombatOverlayTuneOverlayText
@@ -38,8 +30,6 @@ export {
   towCombatOverlayGetNameTypeStyle,
   towCombatOverlayTuneOverlayText
 } from "./control-style-foundation.js";
-
-const { tooltips: MODULE_TOOLTIPS } = getTowCombatOverlayConstants();
 
 function overlayControlsForEachSceneTokenRef(callback) {
   return towCombatOverlayForEachSceneToken(callback);
@@ -163,117 +153,6 @@ export function towCombatOverlayUpdateNameLabel(tokenObject) {
   if (deltaY !== 0) labelContainer.y += deltaY;
 
   labelContainer.visible = tokenObject.visible;
-}
-
-export function towCombatOverlayUpdateResilienceLabel(tokenObject) {
-  if (!tokenObject || tokenObject.destroyed) return;
-
-  const resilience = towCombatOverlayGetResilienceValue(tokenObject.document);
-  if (resilience === null || resilience === undefined) {
-    const label = tokenObject[KEYS.resilienceLabel];
-    if (!label) return;
-    label.parent?.removeChild(label);
-    label.destroy();
-    delete tokenObject[KEYS.resilienceLabel];
-    return;
-  }
-
-  let label = tokenObject[KEYS.resilienceLabel];
-  const staleLabel = !!label && (
-    label.destroyed ||
-    label.parent == null ||
-    label.parent !== tokenObject
-  );
-  if (staleLabel) {
-    towCombatOverlayClearDisplayObject(label);
-    delete tokenObject[KEYS.resilienceLabel];
-    label = null;
-  }
-
-  if (!label) {
-    label = new PIXI.Container();
-    label.eventMode = "passive";
-    label.interactiveChildren = true;
-
-    const hitBox = new PIXI.Graphics();
-    hitBox.eventMode = "static";
-    hitBox.interactive = true;
-    hitBox.buttonMode = true;
-    hitBox.cursor = "help";
-
-    const icon = towCombatOverlayCreateOverlayIconSprite(ICON_SRC_RES, OVERLAY_FONT_SIZE + 1);
-    const valueText = new PreciseTextClass("", towCombatOverlayGetIconValueStyle());
-    towCombatOverlayTuneOverlayText(valueText);
-    valueText.anchor.set(0, 0.5);
-    valueText.eventMode = "none";
-
-    label.addChild(hitBox);
-    label.addChild(icon);
-    label.addChild(valueText);
-    label[KEYS.resilienceLabelHitBox] = hitBox;
-    label[KEYS.resilienceLabelIcon] = icon;
-    label[KEYS.resilienceLabelValueText] = valueText;
-    tokenObject.addChild(label);
-    tokenObject[KEYS.resilienceLabel] = label;
-
-    overlayControlsBindTooltipHandlersRef(hitBox, () => MODULE_TOOLTIPS.resilience);
-  }
-
-  const hitBox = label[KEYS.resilienceLabelHitBox];
-  const icon = label[KEYS.resilienceLabelIcon];
-  const valueText = label[KEYS.resilienceLabelValueText];
-  if (!hitBox || !icon || !valueText) {
-    towCombatOverlayClearDisplayObject(label);
-    delete tokenObject[KEYS.resilienceLabel];
-    return towCombatOverlayUpdateResilienceLabel(tokenObject);
-  }
-
-  valueText.text = `${resilience}`;
-  towCombatOverlayTuneOverlayText(valueText);
-  const gap = 4;
-  const padX = 0;
-  const padY = 0;
-  icon.position.set(0, Math.round(-icon.height / 2));
-  valueText.position.set(Math.round(icon.width + gap), 0);
-  const iconBounds = icon.getLocalBounds();
-  const valueBounds = valueText.getLocalBounds();
-  const hitLeft = Math.min(icon.x + iconBounds.x, valueText.x + valueBounds.x);
-  const hitTop = Math.min(icon.y + iconBounds.y, valueText.y + valueBounds.y);
-  const hitRight = Math.max(
-    icon.x + iconBounds.x + iconBounds.width,
-    valueText.x + valueBounds.x + valueBounds.width
-  );
-  const hitBottom = Math.max(
-    icon.y + iconBounds.y + iconBounds.height,
-    valueText.y + valueBounds.y + valueBounds.height
-  );
-  towCombatOverlayDrawHitBoxRect(
-    hitBox,
-    Math.round(hitLeft - padX),
-    Math.round(hitTop - padY),
-    Math.round(Math.max(1, (hitRight - hitLeft) + (padX * 2))),
-    Math.round(Math.max(1, (hitBottom - hitTop) + (padY * 2)))
-  );
-
-  const overlayScale = overlayControlsGetTokenOverlayScaleRef(tokenObject);
-  const edgePad = overlayControlsGetOverlayEdgePadPxRef(tokenObject);
-  const rowGap = OVERLAY_CONTROL_ROW_GAP_PX;
-  const rightTopY = (tokenObject.h / 2) - ((rowGap * overlayScale) / 2);
-  label.position.set(Math.round(tokenObject.w + edgePad), Math.round(rightTopY));
-  label.scale.set(overlayScale);
-  icon.alpha = 1;
-  valueText.alpha = 1;
-  label.visible = tokenObject.visible;
-}
-
-export function towCombatOverlayClearAllResilienceLabels() {
-  overlayControlsForEachSceneTokenRef((token) => {
-    const label = token[KEYS.resilienceLabel];
-    if (!label) return;
-    label.parent?.removeChild(label);
-    label.destroy();
-    delete token[KEYS.resilienceLabel];
-  });
 }
 
 export function towCombatOverlayClearAllNameLabels() {

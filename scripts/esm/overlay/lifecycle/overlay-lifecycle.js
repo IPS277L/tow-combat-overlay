@@ -23,14 +23,8 @@ import {
 } from "../layout-state.js";
 import {
   towCombatOverlayClearAllNameLabels,
-  towCombatOverlayClearAllResilienceLabels,
-  towCombatOverlayUpdateNameLabel,
-  towCombatOverlayUpdateResilienceLabel
+  towCombatOverlayUpdateNameLabel
 } from "../controls/control-style.js";
-import {
-  towCombatOverlayClearAllWoundControls,
-  towCombatOverlayUpdateWoundControlUI
-} from "../controls/wound-controls.js";
 import {
   clearAllStatusOverlays,
   hideDefaultStatusPanelForOverlay,
@@ -44,9 +38,7 @@ function setTowCombatOverlayTokenVisualVisibility(tokenObject, visible) {
   if (!tokenObject || tokenObject.destroyed) return;
   const safeVisible = !!visible;
   const parts = [
-    tokenObject[KEYS.woundUi],
     tokenObject[KEYS.nameLabel],
-    tokenObject[KEYS.resilienceLabel],
     tokenObject[KEYS.statusPaletteLayer],
     tokenObject[KEYS.layoutBorder]
   ];
@@ -93,9 +85,7 @@ export function towCombatOverlayRefreshTokenOverlay(tokenObject) {
   towCombatOverlayEnsureTokenOverlayInteractivity(tokenObject);
   towCombatOverlayHideCoreTokenHoverVisuals(tokenObject);
   setupStatusPalette(tokenObject);
-  towCombatOverlayUpdateWoundControlUI(tokenObject);
   towCombatOverlayUpdateNameLabel(tokenObject);
-  towCombatOverlayUpdateResilienceLabel(tokenObject);
   towCombatOverlayUpdateTokenOverlayHitArea(tokenObject);
   towCombatOverlayUpdateCustomLayoutBorderVisibility(tokenObject);
   towCombatOverlayEnsureDeadVisual(tokenObject);
@@ -206,9 +196,7 @@ export function towCombatOverlayDisable() {
     foundry.applications.api.Dialog.wait = state.staggerWaitPatch.originalWait;
   }
   delete game[MODULE_KEY];
-  towCombatOverlayClearAllWoundControls();
   towCombatOverlayClearAllNameLabels();
-  towCombatOverlayClearAllResilienceLabels();
   clearAllStatusOverlays();
   ui.notifications.info(MODULE_NOTIFICATIONS.overlayDisabled);
   return true;

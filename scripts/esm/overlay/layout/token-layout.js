@@ -31,9 +31,7 @@ export function towCombatOverlayUpdateTokenOverlayHitArea(tokenObject) {
   ];
   const points = [...tokenCornerPoints];
   const overlayChildren = [
-    tokenObject[KEYS.woundUi],
     tokenObject[KEYS.nameLabel],
-    tokenObject[KEYS.resilienceLabel],
     tokenObject[KEYS.statusPaletteLayer]
   ].filter((child) => child && !child.destroyed);
 

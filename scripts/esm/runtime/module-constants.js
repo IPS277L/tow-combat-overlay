@@ -27,7 +27,7 @@ export function getTowCombatOverlayConstants() {
     notifications: Object.freeze({
       selectAtLeastOneToken: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.SelectAtLeastOneToken", "Select at least one token."),
       noPermissionToEditActor: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.NoPermissionToEditActor", "No permission to edit {actorName}."),
-      overlayEnabled: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.OverlayEnabled", "Overlay enabled: wounds, resilience, and status highlights."),
+      overlayEnabled: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.OverlayEnabled", "Overlay enabled: name labels and status highlights."),
       overlayDisabled: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.OverlayDisabled", "Overlay disabled."),
       moduleApiUnavailable: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.ModuleApiUnavailable", "The Old World Combat Overlay module API is unavailable."),
       oldWorldTestClassUnavailable: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.OldWorldTestClassUnavailable", "OldWorldTest roll class is unavailable."),
@@ -70,21 +70,9 @@ export function getTowCombatOverlayConstants() {
         title: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.Wounds.Title", "Wounds"),
         description: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.Wounds.Description", "Left-click adds 1 wound. Right-click removes 1 wound.")
       }),
-      attack: Object.freeze({
-        title: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.Attack.Title", "Attack"),
-        description: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.Attack.Description", "Attack roll. Left-click attacks. Drag to a target for quick targeting. Hold Shift for manual mode.")
-      }),
-      defence: Object.freeze({
-        title: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.Defence.Title", "Defence"),
-        description: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.Defence.Description", "Defence roll. Left-click defends. Hold Shift for manual mode.")
-      }),
       rollModifier: Object.freeze({
         title: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.RollModifier.Title", "Roll Modifier"),
         description: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.RollModifier.Description", "Left-click adds 1 bonus die. Right-click adds 1 penalty die. Shift + left-click cycles Common, Glorious, and Grim.")
-      }),
-      resilience: Object.freeze({
-        title: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.Resilience.Title", "Resilience"),
-        description: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.Resilience.Description", "Resilience value used for durability and damage resolution thresholds.")
       }),
       speed: Object.freeze({
         title: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.Speed.Title", "Speed"),

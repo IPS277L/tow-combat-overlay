@@ -13,30 +13,12 @@ function resolvePreciseTextClass() {
 export const PreciseTextClass = resolvePreciseTextClass();
 
 export const KEYS = Object.freeze({
-  woundUi: "_towCombatOverlayWoundUi",
-  woundUiMarker: "_towCombatOverlayWoundUiMarker",
-  woundUiTokenId: "_towCombatOverlayWoundUiTokenId",
-  woundUiCountText: "_towCombatOverlayWoundUiCountText",
-  woundUiCountIcon: "_towCombatOverlayWoundUiCountIcon",
-  woundUiCountHitBox: "_towCombatOverlayWoundUiCountHitBox",
-  woundUiAttackHitBox: "_towCombatOverlayWoundUiAttackHitBox",
-  woundUiDefenceHitBox: "_towCombatOverlayWoundUiDefenceHitBox",
-  woundUiAttackIcon: "_towCombatOverlayWoundUiAttackIcon",
-  woundUiActionSeparatorText: "_towCombatOverlayWoundUiActionSeparatorText",
-  woundUiDefenceIcon: "_towCombatOverlayWoundUiDefenceIcon",
-  woundUiModifierSignText: "_towCombatOverlayWoundUiModifierSignText",
-  woundUiModifierText: "_towCombatOverlayWoundUiModifierText",
-  woundUiModifierHitBox: "_towCombatOverlayWoundUiModifierHitBox",
   nameLabel: "_towCombatOverlayNameLabel",
   nameLabelMarker: "_towCombatOverlayNameLabelMarker",
   nameLabelTokenId: "_towCombatOverlayNameLabelTokenId",
   nameLabelNameText: "_towCombatOverlayNameLabelNameText",
   nameLabelTypeText: "_towCombatOverlayNameLabelTypeText",
   nameLabelTooltipBinding: "_towCombatOverlayNameLabelTooltipBinding",
-  resilienceLabel: "_towCombatOverlayResilienceLabel",
-  resilienceLabelHitBox: "_towCombatOverlayResilienceLabelHitBox",
-  resilienceLabelIcon: "_towCombatOverlayResilienceLabelIcon",
-  resilienceLabelValueText: "_towCombatOverlayResilienceLabelValueText",
   defaultEffectsVisible: "_towCombatOverlayDefaultEffectsVisible",
   statusPaletteLayer: "_towCombatOverlayStatusPaletteLayer",
   statusPaletteBackdrop: "_towCombatOverlayStatusPaletteBackdrop",
@@ -97,22 +79,6 @@ export const LAYOUT_BORDER_ALPHA = 0.85;
 export const LAYOUT_BORDER_WIDTH = 1.6;
 export const LAYOUT_BORDER_RADIUS = 6;
 export const OVERLAY_FONT_SIZE = 22;
-export const OVERLAY_CONTROL_ROW_GAP_PX = 30;
-export const WOUND_CONTROL_LEFT_GROUP_INSET_PX = 5;
-export const WOUND_CONTROL_MODIFIER_SIGN_SLOT_WIDTH = 13;
-export const ROLL_MODIFIER_GRIM_TINT = 0x802C2F;
-export const ROLL_MODIFIER_GLORIOUS_TINT = 0x407E41;
-export const DRAG_START_THRESHOLD_PX = 8;
-export const DRAG_LINE_OUTER_COLOR = 0x1A0909;
-export const DRAG_LINE_OUTER_ALPHA = 0.85;
-export const DRAG_LINE_OUTER_WIDTH = 7;
-export const DRAG_LINE_INNER_COLOR = 0x8F2A2A;
-export const DRAG_LINE_INNER_ALPHA = 0.96;
-export const DRAG_LINE_INNER_WIDTH = 3;
-export const DRAG_ARROW_SIZE = 13;
-export const DRAG_ENDPOINT_OUTER_RADIUS = 6;
-export const DRAG_ENDPOINT_RING_WIDTH = 2;
-export const DRAG_STYLE_SCALE_EXP = 1.05;
 export const ATTACK_DEDUPE_WINDOW_MS = 700;
 export const TARGET_DEDUPE_WINDOW_MS = 300;
 export const AUTO_DEFENCE_WAIT_MS = 4000;
@@ -157,10 +123,7 @@ export const STATUS_SPECIAL_BG_OUTLINE_SCALE_EXP = 1.2;
 export const STATUS_SPECIAL_BG_RADIUS_SCALE_EXP = 0.95;
 
 export const WOUND_ITEM_TYPE = "wound";
-export const ICON_SRC_ATK = "icons/svg/sword.svg";
-export const ICON_SRC_DEF = "icons/svg/shield.svg";
 export const ICON_SRC_WOUND = "icons/svg/blood.svg";
-export const ICON_SRC_RES = "icons/svg/statue.svg";
 
 function clampNumber(value, min, max) {
   const numeric = Number(value);
