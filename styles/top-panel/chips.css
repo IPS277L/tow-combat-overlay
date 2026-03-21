@@ -25,6 +25,8 @@
 }
 
 .tow-combat-overlay-top-panel__chip {
+  position: relative;
+  --tow-top-panel-chip-image-offset-x: 0.25px;
   width: var(--tow-top-panel-chip-size);
   height: var(--tow-top-panel-chip-size);
   min-width: var(--tow-top-panel-chip-size);
@@ -102,12 +104,18 @@
 }
 
 .tow-combat-overlay-top-panel__chip-image {
-  width: calc(var(--tow-top-panel-chip-size) - 2px);
-  height: calc(var(--tow-top-panel-chip-size) - 2px);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 88%;
+  height: 88%;
   object-fit: contain;
   object-position: center center;
   border-radius: 50%;
   display: block;
+  margin: 0;
+  flex: 0 0 auto;
+  transform: translate(calc(-50% + var(--tow-top-panel-chip-image-offset-x)), -50%);
   pointer-events: none;
 }
 

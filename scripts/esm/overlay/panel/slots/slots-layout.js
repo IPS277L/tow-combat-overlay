@@ -1,5 +1,6 @@
+import { getOverlayWoundIndicatorData } from "../../shared/wound-chip-data.js";
+
 export function createPanelSlotsLayoutService({
-  updatePanelWoundActionIndicator,
   iconSrcWound,
   escapePanelHtml,
   buildPanelItemGroupsForActor,
@@ -22,12 +23,54 @@ export function createPanelSlotsLayoutService({
   readSavedPanelButtonKeyOrder,
   updateGroupSlots
 } = {}) {
-  function updatePanelSlots(panelElement, token = null) {
-    const actor = token?.actor ?? token?.document?.actor ?? null;
-    updatePanelWoundActionIndicator(panelElement, actor, {
+  function localizeMaybe(key, fallback = "") {
+    const localized = game?.i18n?.localize?.(String(key ?? ""));
+    if (typeof localized === "string" && localized !== key) return localized;
+    return String(fallback ?? key ?? "");
+  }
+
+  function supportsWoundActionChip(actor) {
+    return !!actor && actor.type === "npc" && actor.system?.hasThresholds === true;
+  }
+
+  function buildTopChips(groups, actor) {
+    const abilities = Array.isArray(groups?.abilities) ? groups.abilities : [];
+    const temporaryEffects = Array.isArray(groups?.temporaryEffects) ? groups.temporaryEffects : [];
+    const woundIndicator = getOverlayWoundIndicatorData(actor, {
       woundIconSrc: iconSrcWound,
       escapeHtml: escapePanelHtml
     });
+    const woundChipData = woundIndicator ?? (supportsWoundActionChip(actor)
+      ? {
+        title: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.Panel.WoundActions.Title", "Wound Actions"),
+        description: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.Panel.WoundActions.Fallback", "Use wounds controls below."),
+        image: iconSrcWound,
+        isActive: false
+      }
+      : null);
+    const woundChip = woundChipData
+      ? [{
+        id: "__wound_actions__",
+        key: "ability:wound-actions",
+        name: String(woundChipData.title ?? "Wounds").trim(),
+        img: String(woundChipData.image ?? "").trim() || iconSrcWound,
+        system: {
+          description: String(woundChipData.description ?? "").trim()
+        },
+        panelTopChipType: "woundActions",
+        panelTopChipActive: woundChipData.isActive === true
+      }]
+      : [];
+
+    return [
+      ...abilities.map((item) => ({ ...item, panelTopChipType: "abilities" })),
+      ...woundChip,
+      ...temporaryEffects.map((item) => ({ ...item, panelTopChipType: "temporaryEffects" }))
+    ];
+  }
+
+  function updatePanelSlots(panelElement, token = null) {
+    const actor = token?.actor ?? token?.document?.actor ?? null;
     const groups = actor
       ? buildPanelItemGroupsForActor(actor, {
         getPanelActionEntries,
@@ -40,6 +83,7 @@ export function createPanelSlotsLayoutService({
         actionIconByKey: panelActionIconByKey
       })
       : { actions: [], attacks: [], abilities: [], temporaryEffects: [], manoeuvre: [], recover: [], magic: [] };
+    const topChips = buildTopChips(groups, actor);
     const buttonOrderScope = resolvePanelButtonOrderScope(token);
     const controlPanelState = getControlPanelState();
     if (controlPanelState) controlPanelState.buttonOrderScope = buttonOrderScope;
@@ -152,8 +196,7 @@ export function createPanelSlotsLayoutService({
     appendUnconsumedItems("magic");
 
     updateGroupSlots(panelElement, "all", flattenedItems, actor);
-    updateGroupSlots(panelElement, "abilities", groups.abilities, actor);
-    updateGroupSlots(panelElement, "temporaryEffects", groups.temporaryEffects, actor);
+    updateGroupSlots(panelElement, "topChips", topChips, actor);
   }
 
   return {

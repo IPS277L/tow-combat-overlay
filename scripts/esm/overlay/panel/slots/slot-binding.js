@@ -21,7 +21,9 @@ export function createPanelSlotBindingService({
     });
     slotElement.addEventListener("contextmenu", (event) => {
       event.preventDefault();
-      if (String(slotElement.dataset.itemGroup ?? "") !== "temporaryEffects") return;
+      const itemGroup = String(slotElement.dataset.itemGroup ?? "").trim();
+      const topChipType = String(slotElement.dataset.itemTopChipType ?? "").trim();
+      if (itemGroup !== "temporaryEffects" && !(itemGroup === "topChips" && topChipType === "temporaryEffects")) return;
       void handlePanelSlotClick(slotElement, event);
     });
 

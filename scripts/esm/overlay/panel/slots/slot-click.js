@@ -43,9 +43,38 @@ export function createPanelSlotClickService({
     const rawItemGroup = String(slotElement.dataset.itemGroup ?? "").trim();
     const rawItemId = String(slotElement.dataset.itemId ?? "").trim();
     const orderKey = String(slotElement.dataset.itemOrderKey ?? "").trim();
+    const topChipType = String(slotElement.dataset.itemTopChipType ?? "").trim();
     const parsedOrderKey = parsePanelButtonKey(orderKey);
     const itemGroup = rawItemGroup || String(parsedOrderKey?.groupKey ?? "").trim();
     const itemId = rawItemId || String(parsedOrderKey?.itemId ?? "").trim();
+    if (itemGroup === "topChips") {
+      if (topChipType === "temporaryEffects" && itemId) {
+        if (event?.button !== 2) return;
+        const actor = getSingleControlledActor();
+        if (!actor) return;
+        if (!canEditActor(actor)) {
+          warnNoPermission(actor);
+          return;
+        }
+        const liveEffect = actor.effects?.get?.(itemId) ?? null;
+        if (!liveEffect || typeof liveEffect.delete !== "function") return;
+        await liveEffect.delete();
+        const panelElement = getPanelElement(slotElement);
+        if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
+        return;
+      }
+
+      if (topChipType === "abilities" && itemId) {
+        const actor = getSingleControlledActor();
+        const sourceItemName = String(slotElement.dataset.itemName ?? "").trim().toLowerCase();
+        const item = actor?.items?.get?.(itemId)
+          ?? actor?.items?.find?.((entry) => String(entry?.name ?? "").trim().toLowerCase() === sourceItemName)
+          ?? null;
+        if (item?.sheet?.render) item.sheet.render(true);
+      }
+      return;
+    }
+
     if (itemGroup === "temporaryEffects" && itemId) {
       if (event?.button !== 2) return;
       const actor = getSingleControlledActor();

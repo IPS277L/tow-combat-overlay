@@ -104,8 +104,7 @@ import {
   getActorEffectsByStatus,
   getActorStatusSet,
   getAllConditionEntries,
-  getConditionTooltipData,
-  updatePanelWoundActionIndicator
+  getConditionTooltipData
 } from "./shared/status.js";
 import { createPanelActionControlsService } from "./actions/action-controls.js";
 import { createPanelStatsStatusBindingsService } from "./selection/stats-status-bindings.js";
@@ -381,7 +380,6 @@ const panelSpellAutoApplyService = createPanelSpellAutoApplyService({
   createTowCombatOverlayRollContext
 });
 const panelSlotsLayoutService = createPanelSlotsLayoutService({
-  updatePanelWoundActionIndicator,
   iconSrcWound: ICON_SRC_WOUND,
   escapePanelHtml,
   buildPanelItemGroupsForActor,

@@ -125,8 +125,6 @@ export const STATUS_SPECIAL_BG_RADIUS_SCALE_EXP = 0.95;
 
 export const WOUND_ITEM_TYPE = "wound";
 export const ICON_SRC_WOUND = "icons/svg/blood.svg";
-export const CONTROL_PANEL_TEMP_EFFECTS_MAX_COLS = 12;
-export const CONTROL_PANEL_TEMP_EFFECTS_BRIDGE_GAP_PX = 4;
 
 function clampNumber(value, min, max) {
   const numeric = Number(value);

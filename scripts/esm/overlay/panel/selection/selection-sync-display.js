@@ -1,9 +1,3 @@
-import {
-  CONTROL_PANEL_TEMP_EFFECTS_BRIDGE_GAP_PX,
-  CONTROL_PANEL_TEMP_EFFECTS_MAX_COLS
-} from "../../../runtime/overlay-constants.js";
-import { syncTemporaryEffectsWrapLayout } from "./temporary-effects-wrap.js";
-
 export function createPanelSelectionSyncDisplayService({
   getControlPanelState,
   clearPanelAttackPickMode,
@@ -33,14 +27,10 @@ export function createPanelSelectionSyncDisplayService({
     if (!(itemGroupsElement instanceof HTMLElement)) return;
 
     itemGroupsElement.style.removeProperty("min-width");
-    const isTemporaryEffectsWrapped = syncTemporaryEffectsWrapLayout(panelElement, {
-      maxCols: CONTROL_PANEL_TEMP_EFFECTS_MAX_COLS,
-      bridgeGapPx: CONTROL_PANEL_TEMP_EFFECTS_BRIDGE_GAP_PX
-    });
 
     const widths = [
       statusesBottomElement instanceof HTMLElement ? statusesBottomElement.getBoundingClientRect().width : 0,
-      (!isTemporaryEffectsWrapped && statusesTopElement instanceof HTMLElement)
+      (statusesTopElement instanceof HTMLElement)
         ? statusesTopElement.getBoundingClientRect().width
         : 0
     ].map((value) => Number(value) || 0);

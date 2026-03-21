@@ -66,6 +66,19 @@ export function createPanelSlotRenderService({
       || (groupElement instanceof HTMLElement
         && groupElement.classList.contains("tow-combat-overlay-control-panel__status-abilities"));
 
+    if (groupKey === "topChips") {
+      const count = Math.max(0, Math.trunc(Number(slotCount) || 0));
+      const cols = Math.max(1, Math.min(12, count || 1));
+      gridElement.style.display = "flex";
+      gridElement.style.flexWrap = "wrap-reverse";
+      gridElement.style.gap = "var(--tow-control-panel-gap)";
+      gridElement.style.width = `calc((${cols} * var(--tow-control-panel-slot-size)) + ((${cols} - 1) * var(--tow-control-panel-gap)))`;
+      gridElement.style.maxWidth = gridElement.style.width;
+      gridElement.style.justifyContent = "flex-start";
+      gridElement.style.alignContent = "flex-start";
+      return;
+    }
+
     if (isStatusStripAbilities) {
       const count = Math.max(1, Math.trunc(Number(slotCount) || 1));
       gridElement.style.gridTemplateColumns = `repeat(${count}, var(--tow-control-panel-slot-size))`;
@@ -145,8 +158,11 @@ export function createPanelSlotRenderService({
         slotElement.dataset.itemId = "";
         slotElement.dataset.itemName = "";
         slotElement.dataset.itemOrderKey = emptyOrderKey;
+        slotElement.dataset.itemTopChipType = "";
+        slotElement.dataset.itemTopChipActive = "";
         slotElement.dataset.tooltipTitle = "";
         slotElement.dataset.tooltipDescription = "";
+        slotElement.classList.remove("is-top-chip-wound-active");
         slotElement.setAttribute("aria-label", `Slot ${index + 1}`);
         image.src = "";
         image.alt = "";
@@ -168,7 +184,15 @@ export function createPanelSlotRenderService({
       slotElement.dataset.itemId = String(item?.id ?? "");
       slotElement.dataset.itemName = itemName;
       slotElement.dataset.itemOrderKey = String(item?.panelButtonKey ?? toPanelButtonKey(resolvedGroupKey, item?.id));
+      slotElement.dataset.itemTopChipType = String(item?.panelTopChipType ?? "");
+      slotElement.dataset.itemTopChipActive = String(item?.panelTopChipActive === true);
       slotElement.dataset.tooltipTitle = itemName;
+      const isTopChipWoundActive = (
+        resolvedGroupKey === "topChips"
+        && String(item?.panelTopChipType ?? "") === "woundActions"
+        && item?.panelTopChipActive === true
+      );
+      slotElement.classList.toggle("is-top-chip-wound-active", isTopChipWoundActive);
       const itemKey = String(item?.id ?? "").trim().toLowerCase();
       if (resolvedGroupKey === "attacks") {
         const attackHint = itemKey === panelUnarmedActionId
@@ -247,6 +271,21 @@ export function createPanelSlotRenderService({
         slotElement.dataset.tooltipDescription = itemDescription
           ? `${abilitiesHint}<br><br>${itemDescription}`
           : abilitiesHint;
+      } else if (resolvedGroupKey === "topChips") {
+        const topChipType = String(item?.panelTopChipType ?? "").trim();
+        if (topChipType === "temporaryEffects") {
+          const infoHint = localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.TemporaryEffects", "<em>Right click: remove temporary effect.</em>");
+          slotElement.dataset.tooltipDescription = itemDescription
+            ? `${infoHint}<br><br>${itemDescription}`
+            : infoHint;
+        } else if (topChipType === "abilities") {
+          const abilitiesHint = localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.Abilities", "<em>Left click: show details.</em>");
+          slotElement.dataset.tooltipDescription = itemDescription
+            ? `${abilitiesHint}<br><br>${itemDescription}`
+            : abilitiesHint;
+        } else {
+          slotElement.dataset.tooltipDescription = itemDescription;
+        }
       } else if (resolvedGroupKey === "magic") {
         const magicHint = localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.Magic", "<em>Click: cast and auto-process Apply buttons (with target pick when needed). Shift+click: same cast flow, but using only currently selected targets (no target pick mode, no self fallback). Alt+click: pick target then cast manually (no auto-apply).</em>");
         const magicDamageLabel = resolvePanelAttackDamageLabel(item) || "0";
