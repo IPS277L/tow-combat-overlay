@@ -1,7 +1,5 @@
 New features:
 - Token statuses chips images aligned left
-- Add wounds ability chip to top panel and token ui
-- Move temporary efects to new line if the exceed control panel width
 
 Settings:
 - Introduce settings (grouped)

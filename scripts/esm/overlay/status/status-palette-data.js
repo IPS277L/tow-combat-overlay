@@ -3,6 +3,7 @@ import {
   towCombatOverlayResolveConditionLabel
 } from "../shared/shared.js";
 import { resolveTemporaryEffectDescription } from "../panel/shared/description.js";
+import { getOverlayWoundIndicatorData } from "../shared/wound-chip-data.js";
 
 export function getIconSrc(displayObject) {
   return (
@@ -90,4 +91,19 @@ export function getTemporaryEffectEntries(actor) {
         img
       };
     });
+}
+
+export function getWoundsAbilityEntry(actor) {
+  if (!actor) return null;
+  const woundIndicatorData = getOverlayWoundIndicatorData(actor);
+  if (!woundIndicatorData) return null;
+  if (woundIndicatorData.isActive !== true) return null;
+  return {
+    id: "__wound_actions__",
+    key: "ability:wound-actions",
+    name: String(woundIndicatorData.title ?? "Wounds").trim(),
+    description: String(woundIndicatorData.description ?? "No description.").trim(),
+    img: String(woundIndicatorData.image ?? "").trim(),
+    isActive: woundIndicatorData.isActive === true
+  };
 }

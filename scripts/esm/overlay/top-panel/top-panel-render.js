@@ -11,6 +11,7 @@ import {
 import {
   createTopPanelChipGroup,
   getActiveConditionChips,
+  getWoundsAbilityChip,
   getTemporaryEffectChips,
   limitChipList
 } from "./top-panel-chips.js";
@@ -66,8 +67,13 @@ function buildPortraitElement(token) {
 
   const actor = token.actor ?? token.document?.actor ?? null;
   if (actor) {
+    const woundAbilityChip = getWoundsAbilityChip(actor);
     const allChips = limitChipList(
-      [...getActiveConditionChips(actor), ...getTemporaryEffectChips(actor)],
+      [
+        ...getActiveConditionChips(actor),
+        ...(woundAbilityChip ? [woundAbilityChip] : []),
+        ...getTemporaryEffectChips(actor)
+      ],
       TOP_PANEL_CHIP_MAX_PER_ROW,
       "row-overflow"
     );

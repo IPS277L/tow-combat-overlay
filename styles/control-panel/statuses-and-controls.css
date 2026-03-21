@@ -34,6 +34,47 @@
   justify-content: center;
 }
 
+.tow-combat-overlay-control-panel.is-temporary-effects-wrapped .tow-combat-overlay-control-panel__statuses-top {
+  justify-content: flex-start;
+  align-items: flex-end;
+}
+
+.tow-combat-overlay-control-panel.is-temporary-effects-wrapped .tow-combat-overlay-control-panel__statuses {
+  width: min(max-content, var(--tow-statuses-max-width, 100%));
+  max-width: var(--tow-statuses-max-width, 100%);
+}
+
+.tow-combat-overlay-control-panel.is-temporary-effects-wrapped .tow-combat-overlay-control-panel__statuses-top .tow-combat-overlay-control-panel__item-group[data-item-group="temporaryEffects"] {
+  max-width: 100%;
+  align-self: flex-end;
+  width: var(--tow-statuses-max-width, 100%);
+  margin-left: calc(-1 * var(--tow-temp-effects-container-shift, 0px) + var(--tow-temp-effects-bridge-gap, 0px));
+}
+
+.tow-combat-overlay-control-panel.is-temporary-effects-wrapped .tow-combat-overlay-control-panel__statuses-top .tow-combat-overlay-control-panel__item-group[data-item-group="temporaryEffects"] .tow-combat-overlay-control-panel__group-grid {
+  display: flex !important;
+  flex-wrap: wrap-reverse;
+  gap: var(--tow-control-panel-gap);
+  width: calc(
+    (var(--tow-temp-effects-cols, 1) * var(--tow-control-panel-slot-size))
+    + ((var(--tow-temp-effects-cols, 1) - 1) * var(--tow-control-panel-gap))
+  );
+  max-width: calc(
+    (var(--tow-temp-effects-cols, 1) * var(--tow-control-panel-slot-size))
+    + ((var(--tow-temp-effects-cols, 1) - 1) * var(--tow-control-panel-gap))
+  );
+  justify-content: flex-start;
+  align-content: flex-start;
+}
+
+.tow-combat-overlay-control-panel.is-temporary-effects-wrapped .tow-combat-overlay-control-panel__statuses-top .tow-combat-overlay-control-panel__item-group[data-item-group="temporaryEffects"] .tow-combat-overlay-control-panel__group-grid::before {
+  content: "";
+  flex: 0 0 var(--tow-temp-effects-first-row-offset, 0px);
+  width: var(--tow-temp-effects-first-row-offset, 0px);
+  height: 0;
+  pointer-events: none;
+}
+
 .tow-combat-overlay-control-panel__statuses-bottom {
   width: 100%;
   justify-content: flex-start;

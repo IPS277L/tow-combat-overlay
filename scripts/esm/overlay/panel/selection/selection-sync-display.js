@@ -1,3 +1,9 @@
+import {
+  CONTROL_PANEL_TEMP_EFFECTS_BRIDGE_GAP_PX,
+  CONTROL_PANEL_TEMP_EFFECTS_MAX_COLS
+} from "../../../runtime/overlay-constants.js";
+import { syncTemporaryEffectsWrapLayout } from "./temporary-effects-wrap.js";
+
 export function createPanelSelectionSyncDisplayService({
   getControlPanelState,
   clearPanelAttackPickMode,
@@ -21,16 +27,22 @@ export function createPanelSelectionSyncDisplayService({
 } = {}) {
   function syncItemGroupsMinWidth(panelElement) {
     if (!(panelElement instanceof HTMLElement)) return;
-    const statusesElement = panelElement.querySelector(".tow-combat-overlay-control-panel__statuses");
     const statusesTopElement = panelElement.querySelector(".tow-combat-overlay-control-panel__statuses-top");
     const statusesBottomElement = panelElement.querySelector(".tow-combat-overlay-control-panel__statuses-bottom");
     const itemGroupsElement = panelElement.querySelector(".tow-combat-overlay-control-panel__item-groups");
     if (!(itemGroupsElement instanceof HTMLElement)) return;
 
+    itemGroupsElement.style.removeProperty("min-width");
+    const isTemporaryEffectsWrapped = syncTemporaryEffectsWrapLayout(panelElement, {
+      maxCols: CONTROL_PANEL_TEMP_EFFECTS_MAX_COLS,
+      bridgeGapPx: CONTROL_PANEL_TEMP_EFFECTS_BRIDGE_GAP_PX
+    });
+
     const widths = [
-      statusesElement instanceof HTMLElement ? statusesElement.scrollWidth : 0,
-      statusesTopElement instanceof HTMLElement ? statusesTopElement.scrollWidth : 0,
-      statusesBottomElement instanceof HTMLElement ? statusesBottomElement.scrollWidth : 0
+      statusesBottomElement instanceof HTMLElement ? statusesBottomElement.getBoundingClientRect().width : 0,
+      (!isTemporaryEffectsWrapped && statusesTopElement instanceof HTMLElement)
+        ? statusesTopElement.getBoundingClientRect().width
+        : 0
     ].map((value) => Number(value) || 0);
     const targetWidth = Math.max(0, Math.max(...widths) - 12);
     if (targetWidth > 0) itemGroupsElement.style.minWidth = `${Math.ceil(targetWidth)}px`;

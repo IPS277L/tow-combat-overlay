@@ -5,6 +5,7 @@ import {
   getAllConditionEntries
 } from "../panel/shared/status.js";
 import { resolveTemporaryEffectDescription } from "../panel/shared/description.js";
+import { getOverlayWoundIndicatorData } from "../shared/wound-chip-data.js";
 import {
   TOP_PANEL_CHIP_MAX_PER_ROW,
   TOP_PANEL_CHIP_TOOLTIP_FALLBACK,
@@ -112,6 +113,21 @@ export function getTemporaryEffectChips(actor) {
     }));
 }
 
+export function getWoundsAbilityChip(actor) {
+  if (!actor) return null;
+  const woundIndicatorData = getOverlayWoundIndicatorData(actor);
+  if (!woundIndicatorData) return null;
+  if (woundIndicatorData.isActive !== true) return null;
+  return {
+    type: "ability",
+    key: "ability:wound-actions",
+    title: String(woundIndicatorData.title ?? localizeMaybe("TOWCOMBATOVERLAY.Tooltip.Wounds.Title", "Wounds")).trim(),
+    description: String(woundIndicatorData.description ?? TOP_PANEL_CHIP_TOOLTIP_FALLBACK).trim(),
+    img: String(woundIndicatorData.image ?? "").trim(),
+    active: woundIndicatorData.isActive === true
+  };
+}
+
 export function limitChipList(items, maxCount = TOP_PANEL_CHIP_MAX_PER_ROW, overflowType = "overflow") {
   const list = Array.isArray(items) ? items : [];
   if (list.length <= maxCount) return list;
@@ -131,6 +147,7 @@ export function createTopPanelChipElement(chip) {
   const button = document.createElement("button");
   button.type = "button";
   button.classList.add("tow-combat-overlay-top-panel__chip", `is-${String(chip?.type ?? "ability")}`);
+  button.classList.toggle("is-active", chip?.active === true);
   button.dataset.chipType = String(chip?.type ?? "ability");
   button.dataset.tooltipTitle = String(chip?.title ?? "").trim();
   button.dataset.tooltipDescription = String(chip?.description ?? TOP_PANEL_CHIP_TOOLTIP_FALLBACK).trim();

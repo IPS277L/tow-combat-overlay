@@ -25,7 +25,8 @@ import {
   getActorStatusSet,
   getAllConditionEntries,
   getConditionTooltipData,
-  getTemporaryEffectEntries
+  getTemporaryEffectEntries,
+  getWoundsAbilityEntry
 } from "./status-palette-data.js";
 import {
   CHIP_ACTIVE_BORDER,
@@ -187,14 +188,19 @@ function stylePaletteSprite(sprite, actor, conditionId, activeStatuses = null, f
   }
 
   chipBg.clear();
-  const isEffectLike = variant === "effect";
+  const isEffectLike = variant === "effect" || variant === "ability";
+  const isAbilityActive = variant === "ability" && active;
+  const activeBorder = isAbilityActive ? 0xD64A4A : (isEffectLike ? CHIP_EFFECT_BORDER : CHIP_ACTIVE_BORDER);
+  const activeBorderAlpha = isAbilityActive ? 0.96 : (isEffectLike ? CHIP_EFFECT_BORDER_ALPHA : 1);
+  const activeFill = isAbilityActive ? 0x5C1616 : (isEffectLike ? CHIP_EFFECT_FILL : CHIP_ACTIVE_FILL);
+  const activeFillAlpha = isAbilityActive ? 0.9 : (isEffectLike ? CHIP_EFFECT_FILL_ALPHA : 1);
   chipBg.lineStyle({
     width: CHIP_BORDER_WIDTH,
-    color: isEffectLike ? CHIP_EFFECT_BORDER : CHIP_ACTIVE_BORDER,
-    alpha: isEffectLike ? CHIP_EFFECT_BORDER_ALPHA : 1,
+    color: activeBorder,
+    alpha: activeBorderAlpha,
     alignment: 0.5
   });
-  chipBg.beginFill(isEffectLike ? CHIP_EFFECT_FILL : CHIP_ACTIVE_FILL, isEffectLike ? CHIP_EFFECT_FILL_ALPHA : 1);
+  chipBg.beginFill(activeFill, activeFillAlpha);
   chipBg.drawCircle(centerX, centerY, Math.max(1, radius - (CHIP_BORDER_WIDTH * 0.5)));
   chipBg.endFill();
   if (isOverflow) {
@@ -202,7 +208,7 @@ function stylePaletteSprite(sprite, actor, conditionId, activeStatuses = null, f
     sprite.alpha = 1;
     return;
   }
-  sprite.tint = 0xFFFFFF;
+  sprite.tint = isAbilityActive ? 0xEFB2B2 : 0xFFFFFF;
   sprite.alpha = 0.98;
 }
 
@@ -280,6 +286,7 @@ export function setupStatusPalette(tokenObject) {
   if (!actor) return;
   const allConditions = getAllConditionEntries();
   const activeStatuses = getActorStatusSet(actor);
+  const woundAbility = getWoundsAbilityEntry(actor);
   const temporaryEffects = getTemporaryEffectEntries(actor);
   const entries = [
     ...allConditions
@@ -292,6 +299,20 @@ export function setupStatusPalette(tokenObject) {
         forceActive: false,
         tooltipData: getConditionTooltipData(entry?.id)
       })),
+    ...(woundAbility
+      ? [{
+        key: String(woundAbility?.key ?? ""),
+        id: String(woundAbility?.id ?? ""),
+        img: String(woundAbility?.img ?? "").trim(),
+        variant: "ability",
+        forceActive: woundAbility?.isActive === true,
+        overflowCount: 0,
+        tooltipData: {
+          name: String(woundAbility?.name ?? "Wounds"),
+          description: String(woundAbility?.description ?? "")
+        }
+      }]
+      : []),
     ...temporaryEffects.map((entry) => ({
       key: String(entry?.key ?? ""),
       id: String(entry?.id ?? ""),
@@ -326,6 +347,9 @@ export function setupStatusPalette(tokenObject) {
 
   const expectedCount = visibleEntries.length;
   const expectedIdsSignature = visibleEntries.map((entry) => String(entry?.key ?? "")).join("|");
+  const expectedStateSignature = visibleEntries.map((entry) => (
+    `${String(entry?.key ?? "")}:${String(entry?.variant ?? "")}:${entry?.forceActive === true ? "1" : "0"}:${String(entry?.img ?? "")}`
+  )).join("|");
   const { columns, iconSize, iconGap } = getStatusPaletteLayoutForToken(tokenObject, expectedCount);
   let layer = tokenObject[KEYS.statusPaletteLayer];
   const iconChildrenCount = layer
@@ -338,6 +362,7 @@ export function setupStatusPalette(tokenObject) {
     || tokenObject[KEYS.statusPaletteMetrics]?.iconSize !== iconSize
     || tokenObject[KEYS.statusPaletteMetrics]?.iconGap !== iconGap
     || tokenObject[KEYS.statusPaletteMetrics]?.idsSignature !== expectedIdsSignature
+    || tokenObject[KEYS.statusPaletteMetrics]?.stateSignature !== expectedStateSignature
     || tokenObject[KEYS.statusPaletteMetrics]?.renderVersion !== STATUS_RENDER_VERSION;
 
   if (shouldRebuild) {
@@ -407,6 +432,7 @@ export function setupStatusPalette(tokenObject) {
       iconSize,
       iconGap,
       idsSignature: expectedIdsSignature,
+      stateSignature: expectedStateSignature,
       renderVersion: STATUS_RENDER_VERSION
     };
   }
@@ -423,6 +449,19 @@ export function setupStatusPalette(tokenObject) {
   layer.visible = tokenObject.visible;
   for (let i = 0; i < statusSprites.length; i++) {
     const sprite = statusSprites[i];
+    const entry = visibleEntries[i] ?? null;
+    if (entry) {
+      const nextImg = String(entry?.img ?? "").trim();
+      const priorImg = String(sprite?.[KEYS.statusConditionImg] ?? "").trim();
+      const isOverflow = Number(entry?.overflowCount ?? 0) > 0;
+      sprite[STATUS_CHIP_VARIANT] = String(entry?.variant ?? "condition");
+      sprite[STATUS_FORCE_ACTIVE] = entry?.forceActive === true;
+      sprite[STATUS_TOOLTIP_DATA] = entry?.tooltipData ?? sprite?.[STATUS_TOOLTIP_DATA] ?? { name: "", description: "" };
+      if (!isOverflow && sprite instanceof PIXI.Sprite && nextImg && nextImg !== priorImg) {
+        sprite.texture = PIXI.Texture.from(nextImg);
+      }
+      sprite[KEYS.statusConditionImg] = nextImg || priorImg;
+    }
     if (Number(sprite?.[STATUS_OVERFLOW_COUNT] ?? 0) <= 0 && sprite instanceof PIXI.Sprite) {
       const bounds = sprite.getLocalBounds();
       const centerX = Number(bounds?.x ?? 0) + (Number(bounds?.width ?? 0) / 2);
