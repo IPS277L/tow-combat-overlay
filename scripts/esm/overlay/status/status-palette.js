@@ -12,9 +12,9 @@ import {
 import {
   towCombatOverlayBindTooltipHandlers,
   towCombatOverlayForEachSceneToken,
-  towCombatOverlayGetActorFromToken,
-  towCombatOverlayRoundTo
+  towCombatOverlayGetActorFromToken
 } from "../shared/core-helpers.js";
+import { towCombatOverlayTuneTextForScale } from "../shared/text-rendering.js";
 import {
   towCombatOverlayClearCustomLayoutBorder,
   towCombatOverlayClearDeadVisual,
@@ -29,6 +29,12 @@ import {
   getWoundsAbilityEntry
 } from "./status-palette-data.js";
 import {
+  applyStatusIconSpriteStyle,
+  clearStatusIconMask,
+  ensureStatusIconMask,
+  syncStatusIconMaskPosition
+} from "./status-palette-visuals.js";
+import {
   CHIP_ACTIVE_BORDER,
   CHIP_ACTIVE_FILL,
   CHIP_BORDER_WIDTH,
@@ -40,6 +46,10 @@ import {
   CHIP_INACTIVE_BORDER,
   CHIP_INACTIVE_BORDER_ALPHA,
   CHIP_INACTIVE_FILL,
+  STATUS_ABILITY_ACTIVE_INNER_RING_ALPHA,
+  STATUS_ABILITY_ACTIVE_INNER_RING_COLOR,
+  STATUS_ABILITY_ACTIVE_OUTER_RING_ALPHA,
+  STATUS_ABILITY_ACTIVE_OUTER_RING_COLOR,
   STATUS_CHIP_SIZE,
   STATUS_CHIP_VARIANT,
   STATUS_FORCE_ACTIVE,
@@ -47,6 +57,7 @@ import {
   STATUS_ICON_SIZE_MIN,
   STATUS_MAX_VISIBLE_CHIPS,
   STATUS_OVERFLOW_COUNT,
+  STATUS_OVERFLOW_TEXT_COLOR,
   STATUS_OVERFLOW_TEXT,
   STATUS_RENDER_VERSION,
   STATUS_TARGET_CHIPS_PER_ROW,
@@ -77,6 +88,7 @@ function clearStatusIconHandler(sprite) {
     }
     delete sprite[key];
   }
+  clearStatusIconMask(sprite);
 }
 
 function clearStatusPalette(tokenObject) {
@@ -176,6 +188,17 @@ function stylePaletteSprite(sprite, actor, conditionId, activeStatuses = null, f
     }
   }
 
+  if (isOverflow) {
+    chipBg.clear();
+    chipBg.lineStyle({ width: CHIP_BORDER_WIDTH, color: CHIP_INACTIVE_BORDER, alpha: CHIP_INACTIVE_BORDER_ALPHA, alignment: 0.5 });
+    chipBg.beginFill(CHIP_INACTIVE_FILL, 0.9);
+    chipBg.drawCircle(centerX, centerY, Math.max(1, radius - (CHIP_BORDER_WIDTH * 0.5)));
+    chipBg.endFill();
+    sprite.tint = 0xFFFFFF;
+    sprite.alpha = 1;
+    return;
+  }
+
   if (!active) {
     chipBg.clear();
     chipBg.lineStyle({ width: CHIP_BORDER_WIDTH, color: CHIP_INACTIVE_BORDER, alpha: CHIP_INACTIVE_BORDER_ALPHA, alignment: 0.5 });
@@ -203,12 +226,25 @@ function stylePaletteSprite(sprite, actor, conditionId, activeStatuses = null, f
   chipBg.beginFill(activeFill, activeFillAlpha);
   chipBg.drawCircle(centerX, centerY, Math.max(1, radius - (CHIP_BORDER_WIDTH * 0.5)));
   chipBg.endFill();
-  if (isOverflow) {
-    sprite.tint = 0xFFFFFF;
-    sprite.alpha = 1;
-    return;
+  if (isAbilityActive) {
+    // Mirror control-panel active wound chip finish:
+    // inset highlight + subtle outer ring.
+    chipBg.lineStyle({
+      width: 1,
+      color: STATUS_ABILITY_ACTIVE_INNER_RING_COLOR,
+      alpha: STATUS_ABILITY_ACTIVE_INNER_RING_ALPHA,
+      alignment: 1
+    });
+    chipBg.drawCircle(centerX, centerY, Math.max(1, radius - 1.5));
+    chipBg.lineStyle({
+      width: 1,
+      color: STATUS_ABILITY_ACTIVE_OUTER_RING_COLOR,
+      alpha: STATUS_ABILITY_ACTIVE_OUTER_RING_ALPHA,
+      alignment: 0
+    });
+    chipBg.drawCircle(centerX, centerY, Math.max(1, radius + 0.5));
   }
-  sprite.tint = isAbilityActive ? 0xEFB2B2 : 0xFFFFFF;
+  sprite.tint = 0xFFFFFF;
   sprite.alpha = 0.98;
 }
 
@@ -232,8 +268,8 @@ function getStatusPaletteLayoutForToken(tokenObject, expectedCount) {
   const ratio = STATUS_PALETTE_ICON_GAP / Math.max(1, STATUS_PALETTE_ICON_SIZE);
   const denom = STATUS_TARGET_CHIPS_PER_ROW + ((STATUS_TARGET_CHIPS_PER_ROW - 1) * ratio);
   const scaledSize = widthSafe / Math.max(1, denom);
-  iconSize = towCombatOverlayRoundTo(Math.min(STATUS_ICON_SIZE_MAX, Math.max(STATUS_ICON_SIZE_MIN, scaledSize)), 2);
-  iconGap = towCombatOverlayRoundTo(iconSize * ratio, 2);
+  iconSize = Math.round(Math.min(STATUS_ICON_SIZE_MAX, Math.max(STATUS_ICON_SIZE_MIN, scaledSize)));
+  iconGap = Math.round(iconSize * ratio);
   if (count <= 1) return { columns: Math.max(1, count), iconSize, iconGap };
   const columns = Math.max(1, Math.min(count, STATUS_TARGET_CHIPS_PER_ROW));
   return { columns, iconSize, iconGap };
@@ -258,7 +294,7 @@ function layoutStatusSpritesCentered(sprites, columns, iconSize, iconGap) {
     const rowCount = Math.min(columnsSafe, Math.max(0, count - rowStart));
     if (rowCount <= 0) continue;
     const rowWidth = (rowCount * sizeSafe) + ((rowCount - 1) * gapSafe);
-    const rowOffsetX = (maxRowWidth - rowWidth) / 2;
+    const rowOffsetX = Math.round((maxRowWidth - rowWidth) / 2);
     for (let col = 0; col < rowCount; col++) {
       const index = rowStart + col;
       const sprite = list[index];
@@ -270,10 +306,13 @@ function layoutStatusSpritesCentered(sprites, columns, iconSize, iconGap) {
       const half = chipSize / 2;
       const baseX = rowOffsetX + (col * rowStride);
       const baseY = row * rowStride;
+      const posX = isOverflow ? baseX : (baseX + half);
+      const posY = isOverflow ? baseY : (baseY + half);
       sprite.position.set(
-        towCombatOverlayRoundTo(isOverflow ? baseX : (baseX + half), 2),
-        towCombatOverlayRoundTo(isOverflow ? baseY : (baseY + half), 2)
+        Math.round(posX),
+        Math.round(posY)
       );
+      syncStatusIconMaskPosition(sprite);
     }
   }
 
@@ -383,11 +422,12 @@ export function setupStatusPalette(tokenObject) {
         ? new PIXI.Container()
         : PIXI.Sprite.from(entry.img);
       const chipSize = iconSize;
-      const iconDrawSize = isOverflow ? chipSize : Math.max(2, towCombatOverlayRoundTo(chipSize - CHIP_ICON_TOTAL_INSET, 2));
+      const insetScale = chipSize / 27;
+      const scaledInset = Math.max(2, Math.round(CHIP_ICON_TOTAL_INSET * insetScale));
+      const iconDrawSize = isOverflow ? chipSize : Math.max(2, Math.round(chipSize - scaledInset));
       if (!isOverflow) {
-        if (typeof sprite.anchor?.set === "function") sprite.anchor.set(0);
-        sprite.width = iconDrawSize;
-        sprite.height = iconDrawSize;
+        applyStatusIconSpriteStyle(sprite, iconDrawSize);
+        ensureStatusIconMask(sprite, layer, chipSize);
       }
       sprite.eventMode = "static";
       sprite.interactive = true;
@@ -407,14 +447,14 @@ export function setupStatusPalette(tokenObject) {
           fontFamily: "CaslonPro, Signika, serif",
           fontSize: Math.max(9, Math.round(iconSize * 0.52)),
           fontWeight: "700",
-          fill: 0x2F2821,
-          stroke: 0xEDE4D2,
-          strokeThickness: 1,
+          fill: STATUS_OVERFLOW_TEXT_COLOR,
+          strokeThickness: 0,
           align: "center"
         });
         overflowText.anchor.set(0.5, 0.5);
         overflowText.eventMode = "none";
         overflowText.position.set(Math.round(iconSize / 2), Math.round(iconSize / 2));
+        towCombatOverlayTuneTextForScale(overflowText, iconSize / Math.max(1, STATUS_PALETTE_ICON_SIZE));
         sprite.addChild(overflowText);
         sprite[STATUS_OVERFLOW_TEXT] = overflowText;
       }
@@ -463,17 +503,21 @@ export function setupStatusPalette(tokenObject) {
       sprite[KEYS.statusConditionImg] = nextImg || priorImg;
     }
     if (Number(sprite?.[STATUS_OVERFLOW_COUNT] ?? 0) <= 0 && sprite instanceof PIXI.Sprite) {
-      const bounds = sprite.getLocalBounds();
-      const centerX = Number(bounds?.x ?? 0) + (Number(bounds?.width ?? 0) / 2);
-      const centerY = Number(bounds?.y ?? 0) + (Number(bounds?.height ?? 0) / 2);
-      if (Number.isFinite(centerX) && Number.isFinite(centerY)) {
-        sprite.pivot.set(centerX, centerY);
-      }
+      const chipSize = Number.isFinite(Number(sprite?.[STATUS_CHIP_SIZE]))
+        ? Number(sprite[STATUS_CHIP_SIZE])
+        : Math.max(1, Number(iconSize) || 1);
+      const insetScale = chipSize / 27;
+      const scaledInset = Math.max(2, Math.round(CHIP_ICON_TOTAL_INSET * insetScale));
+      const iconDrawSize = Math.max(2, Math.round(chipSize - scaledInset));
+      applyStatusIconSpriteStyle(sprite, iconDrawSize);
+      ensureStatusIconMask(sprite, layer, chipSize);
+      syncStatusIconMaskPosition(sprite);
     }
     const overflowText = sprite?.[STATUS_OVERFLOW_TEXT];
     if (overflowText) {
       overflowText.text = `+${Number(sprite?.[STATUS_OVERFLOW_COUNT] ?? 0)}`;
       overflowText.position.set(Math.round(iconSize / 2), Math.round(iconSize / 2));
+      towCombatOverlayTuneTextForScale(overflowText, iconSize / Math.max(1, STATUS_PALETTE_ICON_SIZE));
     }
     sprite.cursor = "default";
     stylePaletteSprite(

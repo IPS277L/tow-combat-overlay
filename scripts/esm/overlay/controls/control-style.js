@@ -76,6 +76,7 @@ export function towCombatOverlayUpdateNameLabel(tokenObject) {
     labelContainer.eventMode = "static";
     labelContainer.interactive = true;
     labelContainer.cursor = "help";
+    labelContainer.roundPixels = true;
 
     const nameText = new PreciseTextClass("", towCombatOverlayGetNameStyle());
     towCombatOverlayTuneOverlayText(nameText);
@@ -135,6 +136,7 @@ export function towCombatOverlayUpdateNameLabel(tokenObject) {
   const maxLocalWidth = Math.max(1, tokenWidthWorld / Math.max(0.0001, labelScale));
   const widthClampScale = Math.min(1, maxLocalWidth / combinedWidth);
   const finalLabelScale = labelScale * widthClampScale;
+  towCombatOverlayTuneOverlayText(nameText, finalLabelScale);
   labelContainer.hitArea = new PIXI.Rectangle(
     Math.floor(combinedMinX - 4),
     Math.floor(combinedMinY - 2),
@@ -148,6 +150,7 @@ export function towCombatOverlayUpdateNameLabel(tokenObject) {
   const targetBottomLocal = -Math.round(edgePad * 0.1);
   const deltaY = Math.round(targetBottomLocal - labelBottomLocal);
   if (deltaY !== 0) labelContainer.y += deltaY;
+  labelContainer.y = Math.round(labelContainer.y);
 
   labelContainer.visible = tokenObject.visible;
 }

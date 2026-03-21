@@ -3,10 +3,9 @@ import {
   OVERLAY_CONTROL_ICON_OUTLINE_COLOR,
   OVERLAY_CONTROL_ICON_OUTLINE_THICKNESS,
   OVERLAY_CONTROL_ICON_TINT,
-  OVERLAY_FONT_SIZE,
-  OVERLAY_TEXT_RESOLUTION_MAX,
-  OVERLAY_TEXT_RESOLUTION_MIN
+  OVERLAY_FONT_SIZE
 } from "../../runtime/overlay-constants.js";
+import { towCombatOverlayTuneTextForScale } from "../shared/text-rendering.js";
 
 export function formatActorTypeLabel(typeLabel) {
   const templateKey = "TOWCOMBATOVERLAY.Label.ActorTypeWrapped";
@@ -105,21 +104,8 @@ export function towCombatOverlayGetActorTypeLabel(actor) {
   return "actor";
 }
 
-export function towCombatOverlayTuneOverlayText(textObject) {
-  if (!textObject) return;
-  textObject.roundPixels = true;
-  const devicePixelRatio = Math.max(1, Number(window.devicePixelRatio ?? 1));
-  const canvasScale = Number(canvas?.stage?.scale?.x ?? 1);
-  const zoom = (Number.isFinite(canvasScale) && canvasScale > 0) ? canvasScale : 1;
-  const zoomBoost = zoom < 1 ? (1 / zoom) : 1;
-  const resolution = Math.min(
-    OVERLAY_TEXT_RESOLUTION_MAX,
-    Math.max(OVERLAY_TEXT_RESOLUTION_MIN, Math.ceil(devicePixelRatio * zoomBoost))
-  );
-  if ("resolution" in textObject && textObject.resolution !== resolution) {
-    textObject.resolution = resolution;
-    textObject.dirty = true;
-  }
+export function towCombatOverlayTuneOverlayText(textObject, renderScale = 1) {
+  towCombatOverlayTuneTextForScale(textObject, renderScale);
 }
 
 export function towCombatOverlayDrawHitBoxRect(graphics, x, y, width, height) {

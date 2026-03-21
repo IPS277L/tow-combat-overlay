@@ -9,6 +9,13 @@ export const CHIP_INACTIVE_BORDER = 0xCDCDCD;
 export const CHIP_INACTIVE_BORDER_ALPHA = 0.7;
 export const CHIP_BORDER_WIDTH = 1;
 export const CHIP_ICON_TOTAL_INSET = 5;
+export const STATUS_OVERFLOW_TEXT_COLOR = 0xFFFFFF;
+export const STATUS_ABILITY_ACTIVE_INNER_RING_COLOR = 0xFFAEAE;
+export const STATUS_ABILITY_ACTIVE_INNER_RING_ALPHA = 0.46;
+export const STATUS_ABILITY_ACTIVE_OUTER_RING_COLOR = 0xAD1C1C;
+export const STATUS_ABILITY_ACTIVE_OUTER_RING_ALPHA = 0.55;
+export const STATUS_ICON_MASK_RADIUS_INSET = 1;
+export const STATUS_ICON_MASK_ALPHA = 0.001;
 
 export const STATUS_MAX_VISIBLE_CHIPS = 23;
 export const STATUS_TARGET_CHIPS_PER_ROW = 6;
@@ -16,7 +23,7 @@ export const STATUS_ICON_SIZE_MIN = 8;
 export const STATUS_ICON_SIZE_MAX = 72;
 export const STATUS_TOKEN_INSET_X = 2;
 export const STATUS_TOKEN_INSET_BOTTOM = 2;
-export const STATUS_RENDER_VERSION = 2;
+export const STATUS_RENDER_VERSION = 10;
 
 export const STATUS_FORCE_ACTIVE = "_towCombatOverlayStatusForceActive";
 export const STATUS_CHIP_VARIANT = "_towCombatOverlayStatusChipVariant";
