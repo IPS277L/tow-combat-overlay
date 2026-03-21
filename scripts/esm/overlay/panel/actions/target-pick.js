@@ -94,6 +94,7 @@ export function createPanelTargetPickService({
     if (pending.windowPointerDownCapture) window.removeEventListener("pointerdown", pending.windowPointerDownCapture, true);
     if (pending.windowPointerMove) window.removeEventListener("pointermove", pending.windowPointerMove, true);
     if (pending.onEscape) window.removeEventListener("keydown", pending.onEscape, true);
+    if (pending.onRightClickCancel) window.removeEventListener("contextmenu", pending.onRightClickCancel, true);
     if (pending.hoverTokenHookId != null) Hooks.off("hoverToken", pending.hoverTokenHookId);
     if (pending.panelElement instanceof HTMLElement) pending.panelElement.classList.remove("is-picking-attack");
     if (pending.slotElement instanceof HTMLElement) pending.slotElement.classList.remove("is-picking-attack");
@@ -103,6 +104,16 @@ export function createPanelTargetPickService({
     hideStatusTooltip();
 
     delete controlPanelState.pendingAttackPick;
+  }
+
+  function createRightClickCancelHandler() {
+    return (event) => {
+      if (Number(event?.button ?? 2) !== 2) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+      clearPickMode();
+    };
   }
 
   function startAttackPickMode(panelElement, slotElement, sourceToken, attackItem, originEvent = null, options = {}) {
@@ -176,6 +187,7 @@ export function createPanelTargetPickService({
       if (event.key !== "Escape") return;
       clearPickMode();
     };
+    const onRightClickCancel = createRightClickCancelHandler();
     const onWindowPointerMove = (event) => {
       if (attackTriggered) return;
       const liveState = getControlPanelState();
@@ -191,12 +203,14 @@ export function createPanelTargetPickService({
     window.addEventListener("pointerdown", onWindowPointerDownCapture, true);
     window.addEventListener("pointermove", onWindowPointerMove, true);
     window.addEventListener("keydown", onEscape, true);
+    window.addEventListener("contextmenu", onRightClickCancel, true);
     showPickTooltip(originEvent);
 
     const pending = getPanelAttackPickState(controlPanelState);
     pending.windowPointerDownCapture = onWindowPointerDownCapture;
     pending.windowPointerMove = onWindowPointerMove;
     pending.onEscape = onEscape;
+    pending.onRightClickCancel = onRightClickCancel;
     pending.panelElement = panelElement;
     pending.slotElement = slotElement;
     pending.canvasView = canvasView;
@@ -272,6 +286,7 @@ export function createPanelTargetPickService({
       if (event.key !== "Escape") return;
       clearPickMode();
     };
+    const onRightClickCancel = createRightClickCancelHandler();
     const onWindowPointerMove = (event) => {
       if (aimTriggered) return;
       const liveState = getControlPanelState();
@@ -287,12 +302,14 @@ export function createPanelTargetPickService({
     window.addEventListener("pointerdown", onWindowPointerDownCapture, true);
     window.addEventListener("pointermove", onWindowPointerMove, true);
     window.addEventListener("keydown", onEscape, true);
+    window.addEventListener("contextmenu", onRightClickCancel, true);
     showPickTooltip(originEvent);
 
     const pending = getPanelAttackPickState(controlPanelState);
     pending.windowPointerDownCapture = onWindowPointerDownCapture;
     pending.windowPointerMove = onWindowPointerMove;
     pending.onEscape = onEscape;
+    pending.onRightClickCancel = onRightClickCancel;
     pending.panelElement = panelElement;
     pending.slotElement = slotElement;
     pending.canvasView = canvasView;
@@ -368,6 +385,7 @@ export function createPanelTargetPickService({
       if (event.key !== "Escape") return;
       clearPickMode();
     };
+    const onRightClickCancel = createRightClickCancelHandler();
     const onWindowPointerMove = (event) => {
       if (helpTriggered) return;
       const liveState = getControlPanelState();
@@ -383,12 +401,14 @@ export function createPanelTargetPickService({
     window.addEventListener("pointerdown", onWindowPointerDownCapture, true);
     window.addEventListener("pointermove", onWindowPointerMove, true);
     window.addEventListener("keydown", onEscape, true);
+    window.addEventListener("contextmenu", onRightClickCancel, true);
     showPickTooltip(originEvent);
 
     const pending = getPanelAttackPickState(controlPanelState);
     pending.windowPointerDownCapture = onWindowPointerDownCapture;
     pending.windowPointerMove = onWindowPointerMove;
     pending.onEscape = onEscape;
+    pending.onRightClickCancel = onRightClickCancel;
     pending.panelElement = panelElement;
     pending.slotElement = slotElement;
     pending.canvasView = canvasView;

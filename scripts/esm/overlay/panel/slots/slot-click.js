@@ -173,7 +173,7 @@ export function createPanelSlotClickService({
         warnNoPermission(actor);
         return;
       }
-      const useDefaultDialog = isAltModifier(event);
+      const useDefaultDialog = (itemId === "recover") ? false : isAltModifier(event);
       await runPanelRecoverAction(actor, itemId, { autoRoll: !useDefaultDialog });
       const panelElement = getPanelElement(slotElement);
       if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);

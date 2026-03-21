@@ -252,7 +252,9 @@ export function createPanelSlotRenderService({
         }
         slotElement.dataset.tooltipDescription = itemDescription ? `${actionsHint}<br><br>${itemDescription}` : actionsHint;
       } else if (resolvedGroupKey === "recover") {
-        const recoverHint = localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.Recover", "<em>Click: run selected Recover action with auto flow. Alt+click: open default Recover chooser dialog.</em>");
+        const recoverHint = (itemKey === "recover")
+          ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.RecoverMain", "<em>Click: run Recover with auto flow.</em>")
+          : localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.Recover", "<em>Click: run selected Recover action with auto flow. Alt+click: open manual dialogs for the selected Recover action.</em>");
         slotElement.dataset.tooltipDescription = itemDescription
           ? `${recoverHint}<br><br>${itemDescription}`
           : recoverHint;

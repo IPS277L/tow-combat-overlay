@@ -224,6 +224,9 @@ export function createPanelActionFlowService({
   async function runPanelRecoverAction(actor, subAction, { autoRoll = true } = {}) {
     const actionKey = String(subAction ?? "").trim();
     if (!actor || !actionKey) return;
+    const forcedChoice = (actionKey === "condition" || actionKey === "treat" || actionKey === "recover")
+      ? actionKey
+      : "recover";
 
     if (!autoRoll) {
       if (actionKey === "treat") {
@@ -236,7 +239,7 @@ export function createPanelActionFlowService({
           }
         });
       }
-      await runDefaultRecoverAction(actor);
+      await withForcedRecoverDialogChoice(forcedChoice, () => runDefaultRecoverAction(actor));
       return;
     }
 
@@ -253,9 +256,6 @@ export function createPanelActionFlowService({
       armAutoPickFirstRecoverItemDialog("treat");
     }
     if (actionKey === "condition") armAutoPickFirstRecoverItemDialog("condition");
-    const forcedChoice = (actionKey === "condition" || actionKey === "treat" || actionKey === "recover")
-      ? actionKey
-      : "recover";
     await withForcedRecoverDialogChoice(forcedChoice, () => runDefaultRecoverAction(actor));
   }
 

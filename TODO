@@ -1,9 +1,0 @@
-Settings:
-- Introduce settings (grouped)
-- Settings to enable\disable certain UI parts
-- Center both top and control panels if not moved (probably should be controlled by a setting).
-  Check for window resize and sidebar appears
-
-TBD:
-- Add wounds and miscast tables if available
-- Probably switch L\U and R buttons on both panels to icons
