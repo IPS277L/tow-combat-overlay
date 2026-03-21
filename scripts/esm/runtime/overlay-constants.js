@@ -42,14 +42,14 @@ export const KEYS = Object.freeze({
   coreNameplateRenderable: "_towCombatOverlayCoreNameplateRenderable",
   coreBorderVisible: "_towCombatOverlayCoreBorderVisible",
   coreBorderAlpha: "_towCombatOverlayCoreBorderAlpha",
-  layoutBorder: "_towCombatOverlayLayoutBorder",
-  layoutBounds: "_towCombatOverlayLayoutBounds"
+  layoutBorder: "_towCombatOverlayLayoutBorder"
 });
 
-export const STATUS_PALETTE_ICON_SIZE = 20;
-export const STATUS_PALETTE_ICON_GAP = 2;
+export const STATUS_PALETTE_ICON_SIZE = 22;
+export const STATUS_PALETTE_ICON_GAP = 4;
 export const STATUS_PALETTE_ROWS = 2;
 export const TOKEN_CONTROL_PAD = 6;
+export const NAME_LABEL_MAX_WIDTH_MULTIPLIER = 2;
 export const NAME_TYPE_STACK_OVERLAP_PX = 9;
 export const NAME_TYPE_TO_TOKEN_OFFSET_PX = 6;
 export const STATUS_PALETTE_TOKEN_PAD = TOKEN_CONTROL_PAD;

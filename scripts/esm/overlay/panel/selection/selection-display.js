@@ -30,6 +30,15 @@ export function getPrimaryTokenName(token) {
   return actorName || nameplateName || documentName || fallbackName || "Selected token";
 }
 
+export function getPrimaryTokenNameStrict(token) {
+  const actor = token?.document?.actor ?? token?.actor ?? null;
+  const actorName = String(actor?.name ?? "").trim();
+  const nameplateName = String(token?.nameplate?.text ?? "").trim();
+  const documentName = String(token?.document?.name ?? "").trim();
+  const fallbackName = String(token?.name ?? actorName ?? "").trim();
+  return actorName || nameplateName || documentName || fallbackName || "";
+}
+
 export function getPrimaryTokenTypeLabel(token) {
   const actor = token?.actor ?? token?.document?.actor;
   const systemType = String(actor?.system?.type ?? "").trim();

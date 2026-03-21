@@ -2,6 +2,7 @@ import {
   towCombatOverlayLocalizeSystemKey,
   towCombatOverlayResolveConditionLabel
 } from "../shared/shared.js";
+import { resolveTemporaryEffectDescription } from "../panel/shared/description.js";
 
 export function getIconSrc(displayObject) {
   return (
@@ -58,4 +59,35 @@ export function getConditionTooltipData(conditionId) {
     ? (localizedDescription.split(/(?<=[.!?])\s+/)[0] ?? localizedDescription).trim()
     : "";
   return { name: String(name ?? conditionId ?? "Condition"), description: String(shortDescription ?? "") };
+}
+
+export function getTemporaryEffectEntries(actor) {
+  if (!actor) return [];
+  const conditionKeys = new Set(
+    Object.keys(game?.oldworld?.config?.conditions ?? {}).map((key) => String(key ?? "").toLowerCase())
+  );
+
+  return getActorEffects(actor)
+    .filter((effect) => {
+      if (!effect) return false;
+      if (effect.disabled || effect.isSuppressed) return false;
+      if (effect.transfer) return false;
+      const statuses = Array.from(effect.statuses ?? []).map((status) => String(status ?? "").toLowerCase());
+      if (statuses.some((status) => conditionKeys.has(status))) return false;
+      return true;
+    })
+    .sort((left, right) => Number(left?.sort ?? 0) - Number(right?.sort ?? 0))
+    .map((effect) => {
+      const id = String(effect?.id ?? "");
+      const name = String(effect?.name ?? "Effect").trim() || "Effect";
+      const description = resolveTemporaryEffectDescription(effect) || "No description.";
+      const img = String(effect?.img ?? effect?.icon ?? "icons/svg/aura.svg").trim();
+      return {
+        id,
+        key: `effect:${id}`,
+        name,
+        description,
+        img
+      };
+    });
 }

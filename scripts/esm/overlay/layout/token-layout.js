@@ -78,7 +78,7 @@ export function towCombatOverlayUpdateTokenOverlayHitArea(tokenObject) {
     height: Math.max(1, (maxY - minY) + (pad * 2))
   };
   tokenObject.hitArea = new PIXI.Rectangle(hitBounds.x, hitBounds.y, hitBounds.width, hitBounds.height);
-  tokenObject[KEYS.layoutBounds] = { ...hitBounds };
+  // Border is always drawn around the token image; hit area may still extend to overlay children.
   towCombatOverlayDrawCustomLayoutBorder(tokenObject);
 }
 
@@ -111,9 +111,10 @@ export function towCombatOverlayDrawCustomLayoutBorder(tokenObject) {
   if (!tokenObject || tokenObject.destroyed) return;
   const border = towCombatOverlayEnsureCustomLayoutBorder(tokenObject);
   if (!border) return;
-  const bounds = tokenObject[KEYS.layoutBounds];
   border.clear();
-  if (!bounds) return;
+  const tokenWidth = Math.max(1, Number(tokenObject?.w ?? 0));
+  const tokenHeight = Math.max(1, Number(tokenObject?.h ?? 0));
+  if (!Number.isFinite(tokenWidth) || !Number.isFinite(tokenHeight)) return;
   const borderStyle = getLayoutBorderStyle(tokenObject);
   const borderColor = getLayoutBorderColor(tokenObject);
   border.lineStyle({
@@ -124,7 +125,7 @@ export function towCombatOverlayDrawCustomLayoutBorder(tokenObject) {
     cap: "round",
     join: "round"
   });
-  border.drawRoundedRect(bounds.x, bounds.y, bounds.width, bounds.height, borderStyle.radius);
+  border.drawRoundedRect(0, 0, tokenWidth, tokenHeight, borderStyle.radius);
 }
 
 export function towCombatOverlayUpdateCustomLayoutBorderVisibility(tokenObject, { hovered = null, controlled = null } = {}) {
@@ -140,7 +141,6 @@ export function towCombatOverlayClearCustomLayoutBorder(tokenObject) {
   const border = tokenObject?.[KEYS.layoutBorder];
   if (border) towCombatOverlayClearDisplayObject(border);
   delete tokenObject?.[KEYS.layoutBorder];
-  delete tokenObject?.[KEYS.layoutBounds];
 }
 
 export async function towCombatOverlayBringTokenToFront(tokenObject) {
@@ -196,9 +196,20 @@ export function towCombatOverlayEnsureDeadVisual(tokenObject) {
     const originalAlpha = Number(displayObject.alpha ?? 1);
     const originalTint = Number(displayObject.tint ?? 0xFFFFFF);
     const deadFilter = new PIXI.ColorMatrixFilter();
-    deadFilter.brightness(0.70, false);
-    displayObject.alpha = Math.max(0.92, originalAlpha);
-    if ("tint" in displayObject) displayObject.tint = 0x5A5A5A;
+    deadFilter.reset();
+    // Use a single explicit grayscale+darken matrix to avoid renderer/API color casts.
+    const deadLuma = 0.56;
+    const lr = 0.2126 * deadLuma;
+    const lg = 0.7152 * deadLuma;
+    const lb = 0.0722 * deadLuma;
+    deadFilter.matrix = [
+      lr, lg, lb, 0, 0,
+      lr, lg, lb, 0, 0,
+      lr, lg, lb, 0, 0,
+      0, 0, 0, 1, 0
+    ];
+    displayObject.alpha = Math.max(0.18, originalAlpha * 0.92);
+    if ("tint" in displayObject) displayObject.tint = 0xFFFFFF;
     displayObject.filters = [...originalFilters, deadFilter];
     entries.push({ displayObject, originalFilters, deadFilter, originalAlpha, originalTint });
   }

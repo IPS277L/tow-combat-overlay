@@ -1,15 +1,14 @@
 New features:
-- Token overlay dead state grey out in the same style as on both panels
-- Auto scale token overlay name to fit within the token border
-- Add temporary effects to token overlay
-- Move token overlay statuses inside the token border and adjust size to fit within the token border
+- Token statuses chips images aligned left
+- Add wounds ability chip to top panel and token ui
+- Move temporary efects to new line if the exceed control panel width
 
 Settings:
 - Introduce settings (grouped)
+- Settings to enable\disable certain UI parts
 - Center both top and control panels if not moved (probably should be controlled by a setting).
   Check for window resize and sidebar appears
 
 TBD:
 - Add wounds and miscast tables if available
 - Probably switch L\U and R buttons on both panels to icons
-- Think about dark themed tooltips for both panels

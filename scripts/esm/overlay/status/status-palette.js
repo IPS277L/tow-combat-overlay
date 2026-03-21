@@ -1,38 +1,19 @@
 import {
   KEYS,
-  OVERLAY_FONT_SIZE,
-  STATUS_PALETTE_ACTIVE_TINT,
-  STATUS_PALETTE_BACKDROP_COLOR,
   STATUS_PALETTE_ICON_GAP,
   STATUS_PALETTE_ICON_SIZE,
   STATUS_PALETTE_INACTIVE_ALPHA,
-  STATUS_PALETTE_INACTIVE_TINT,
-  STATUS_PALETTE_ROWS,
-  STATUS_PALETTE_SPECIAL_BG_DEAD_ALPHA,
-  STATUS_PALETTE_SPECIAL_BG_OUTLINE,
-  STATUS_PALETTE_SPECIAL_BG_STAGGERED_ALPHA,
-  STATUS_PALETTE_DEAD_RING,
-  STATUS_PALETTE_STAGGERED_RING,
-  getStatusPaletteBackdropStyle,
-  getStatusSpecialBgStyle
+  STATUS_PALETTE_INACTIVE_TINT
 } from "../../runtime/overlay-constants.js";
 import {
   clearStatusTooltip,
-  hideStatusTooltip,
-  runActorOpLock
+  hideStatusTooltip
 } from "../shared/shared.js";
 import {
   towCombatOverlayBindTooltipHandlers,
-  towCombatOverlayCanEditActor,
-  towCombatOverlayClampNumber,
   towCombatOverlayForEachSceneToken,
   towCombatOverlayGetActorFromToken,
-  towCombatOverlayGetMouseButton,
-  towCombatOverlayGetOverlayEdgePadPx,
-  towCombatOverlayGetTokenOverlayScale,
-  towCombatOverlayPreventPointerDefault,
-  towCombatOverlayRoundTo,
-  towCombatOverlayWarnNoPermission
+  towCombatOverlayRoundTo
 } from "../shared/core-helpers.js";
 import {
   towCombatOverlayClearCustomLayoutBorder,
@@ -40,28 +21,38 @@ import {
   towCombatOverlayClearDisplayObject,
   towCombatOverlayRestoreTokenOverlayInteractivity
 } from "../layout-state.js";
-import { towCombatOverlayAddActorCondition, towCombatOverlayRemoveActorCondition } from "../shared/actions-bridge.js";
 import {
-  getActorEffectsByStatus,
   getActorStatusSet,
   getAllConditionEntries,
   getConditionTooltipData,
-  getIconSrc,
-  normalizeIconSrc
+  getTemporaryEffectEntries
 } from "./status-palette-data.js";
-
-async function setActorConditionState(actor, conditionId, active) {
-  if (!actor || !conditionId) return;
-  const id = String(conditionId);
-  if (id !== "staggered" && typeof actor.toggleStatusEffect === "function") {
-    try {
-      await actor.toggleStatusEffect(id, { active });
-      return;
-    } catch (_error) {}
-  }
-  if (active) await towCombatOverlayAddActorCondition(actor, id);
-  else await towCombatOverlayRemoveActorCondition(actor, id);
-}
+import {
+  CHIP_ACTIVE_BORDER,
+  CHIP_ACTIVE_FILL,
+  CHIP_BORDER_WIDTH,
+  CHIP_EFFECT_BORDER,
+  CHIP_EFFECT_BORDER_ALPHA,
+  CHIP_EFFECT_FILL,
+  CHIP_EFFECT_FILL_ALPHA,
+  CHIP_ICON_TOTAL_INSET,
+  CHIP_INACTIVE_BORDER,
+  CHIP_INACTIVE_BORDER_ALPHA,
+  CHIP_INACTIVE_FILL,
+  STATUS_CHIP_SIZE,
+  STATUS_CHIP_VARIANT,
+  STATUS_FORCE_ACTIVE,
+  STATUS_ICON_SIZE_MAX,
+  STATUS_ICON_SIZE_MIN,
+  STATUS_MAX_VISIBLE_CHIPS,
+  STATUS_OVERFLOW_COUNT,
+  STATUS_OVERFLOW_TEXT,
+  STATUS_RENDER_VERSION,
+  STATUS_TARGET_CHIPS_PER_ROW,
+  STATUS_TOKEN_INSET_BOTTOM,
+  STATUS_TOKEN_INSET_X,
+  STATUS_TOOLTIP_DATA
+} from "./status-palette-constants.js";
 
 function clearStatusIconHandler(sprite) {
   const keys = [
@@ -159,169 +150,195 @@ function restoreCoreTokenHoverVisuals(tokenObject) {
   delete tokenObject[KEYS.coreBorderAlpha];
 }
 
-async function toggleConditionFromPalette(actor, conditionId) {
-  if (!actor || !conditionId) return;
-  if (!towCombatOverlayCanEditActor(actor)) {
-    towCombatOverlayWarnNoPermission(actor);
-    return;
-  }
-  const id = String(conditionId);
-  await runActorOpLock(actor, `condition:${id}`, async () => {
-    const active = getActorStatusSet(actor).has(id);
-    if (!active) return setActorConditionState(actor, id, true);
-    await setActorConditionState(actor, id, false);
-    for (let i = 0; i < 4; i++) {
-      if (!getActorStatusSet(actor).has(id)) return;
-      await new Promise((resolve) => setTimeout(resolve, 25));
-    }
-    for (const effect of getActorEffectsByStatus(actor, id)) {
-      const liveEffect = effect?.id ? actor.effects?.get?.(effect.id) : null;
-      if (liveEffect) await liveEffect.delete();
-    }
-  });
-}
-
-function stylePaletteSprite(sprite, actor, conditionId, activeStatuses = null) {
+function stylePaletteSprite(sprite, actor, conditionId, activeStatuses = null, forceActive = false) {
   const statuses = activeStatuses instanceof Set ? activeStatuses : getActorStatusSet(actor);
-  const active = statuses.has(String(conditionId ?? ""));
-  const key = String(conditionId ?? "").toLowerCase();
-  const iconSrc = normalizeIconSrc(getIconSrc(sprite));
-  const conditionImgSrc = normalizeIconSrc(sprite?.[KEYS.statusConditionImg] ?? "");
-  const specialKind = key.includes("stagger") || conditionImgSrc.includes("staggered.svg") || iconSrc.includes("staggered.svg")
-    ? "staggered"
-    : key.includes("dead") || conditionImgSrc.includes("dead.svg") || iconSrc.includes("dead.svg")
-      ? "dead"
-      : null;
+  const active = forceActive || statuses.has(String(conditionId ?? ""));
+  const isOverflow = Number(sprite?.[STATUS_OVERFLOW_COUNT] ?? 0) > 0;
+  const variant = String(sprite?.[STATUS_CHIP_VARIANT] ?? "condition");
+  const chipSize = Number.isFinite(Number(sprite?.[STATUS_CHIP_SIZE]))
+    ? Number(sprite[STATUS_CHIP_SIZE])
+    : STATUS_PALETTE_ICON_SIZE;
+  const radius = Math.max(1, chipSize / 2);
+  const centerX = isOverflow ? (Number(sprite?.x ?? 0) + radius) : Number(sprite?.x ?? 0);
+  const centerY = isOverflow ? (Number(sprite?.y ?? 0) + radius) : Number(sprite?.y ?? 0);
+  const parent = sprite?.parent;
 
-  const clearSpecialBg = () => {
-    const bg = sprite[KEYS.statusPaletteBg];
-    if (!bg) return;
-    bg.parent?.removeChild(bg);
-    bg.destroy();
-    delete sprite[KEYS.statusPaletteBg];
-  };
-
-  const applySpecialBg = (color, alpha) => {
-    let bg = sprite[KEYS.statusPaletteBg];
-    if (!bg || bg.destroyed) {
-      bg = new PIXI.Graphics();
-      bg.eventMode = "none";
-      sprite[KEYS.statusPaletteBg] = bg;
-      const parent = sprite.parent;
-      if (parent) parent.addChildAt(bg, Math.min(1, parent.children.length));
+  let chipBg = sprite?.[KEYS.statusPaletteBg];
+  if (!chipBg || chipBg.destroyed || chipBg.parent !== parent) {
+    if (chipBg && !chipBg.destroyed) chipBg.destroy();
+    chipBg = new PIXI.Graphics();
+    chipBg.eventMode = "none";
+    sprite[KEYS.statusPaletteBg] = chipBg;
+    if (parent) {
+      const index = Math.max(0, parent.getChildIndex(sprite));
+      parent.addChildAt(chipBg, index);
     }
-    const size = Number.isFinite(Number(sprite[KEYS.statusIconSize]))
-      ? Number(sprite[KEYS.statusIconSize])
-      : STATUS_PALETTE_ICON_SIZE;
-    const bgStyle = getStatusSpecialBgStyle(size, alpha);
-    bg.clear();
-    bg.lineStyle({ width: bgStyle.outlineWidth, color: STATUS_PALETTE_SPECIAL_BG_OUTLINE, alpha: bgStyle.outlineAlpha, alignment: 0.5 });
-    bg.beginFill(color, bgStyle.fillAlpha);
-    bg.drawRoundedRect(sprite.x - bgStyle.pad, sprite.y - bgStyle.pad, Math.max(2, size + (bgStyle.pad * 2)), Math.max(2, size + (bgStyle.pad * 2)), bgStyle.radius);
-    bg.endFill();
-  };
+  }
 
   if (!active) {
+    chipBg.clear();
+    chipBg.lineStyle({ width: CHIP_BORDER_WIDTH, color: CHIP_INACTIVE_BORDER, alpha: CHIP_INACTIVE_BORDER_ALPHA, alignment: 0.5 });
+    chipBg.beginFill(CHIP_INACTIVE_FILL, 0.9);
+    chipBg.drawCircle(centerX, centerY, Math.max(1, radius - (CHIP_BORDER_WIDTH * 0.5)));
+    chipBg.endFill();
     sprite.tint = STATUS_PALETTE_INACTIVE_TINT;
     sprite.alpha = STATUS_PALETTE_INACTIVE_ALPHA;
-    clearSpecialBg();
     return;
   }
 
-  sprite.tint = STATUS_PALETTE_ACTIVE_TINT;
+  chipBg.clear();
+  const isEffectLike = variant === "effect";
+  chipBg.lineStyle({
+    width: CHIP_BORDER_WIDTH,
+    color: isEffectLike ? CHIP_EFFECT_BORDER : CHIP_ACTIVE_BORDER,
+    alpha: isEffectLike ? CHIP_EFFECT_BORDER_ALPHA : 1,
+    alignment: 0.5
+  });
+  chipBg.beginFill(isEffectLike ? CHIP_EFFECT_FILL : CHIP_ACTIVE_FILL, isEffectLike ? CHIP_EFFECT_FILL_ALPHA : 1);
+  chipBg.drawCircle(centerX, centerY, Math.max(1, radius - (CHIP_BORDER_WIDTH * 0.5)));
+  chipBg.endFill();
+  if (isOverflow) {
+    sprite.tint = 0xFFFFFF;
+    sprite.alpha = 1;
+    return;
+  }
+  sprite.tint = 0xFFFFFF;
   sprite.alpha = 0.98;
-  if (specialKind === "staggered") return applySpecialBg(STATUS_PALETTE_STAGGERED_RING, STATUS_PALETTE_SPECIAL_BG_STAGGERED_ALPHA);
-  if (specialKind === "dead") return applySpecialBg(STATUS_PALETTE_DEAD_RING, STATUS_PALETTE_SPECIAL_BG_DEAD_ALPHA);
-  clearSpecialBg();
 }
 
-function drawStatusPaletteBackdrop(layer, { iconSize, totalWidth, totalHeight, backdropStyle = null }) {
+function clearStatusPaletteBackdrop(layer) {
   let backdrop = layer[KEYS.statusPaletteBackdrop];
-  if (!backdrop || backdrop.destroyed || backdrop.parent !== layer) {
-    if (backdrop && !backdrop.destroyed) backdrop.destroy();
-    backdrop = new PIXI.Graphics();
-    backdrop.eventMode = "none";
-    layer.addChildAt(backdrop, 0);
-    layer[KEYS.statusPaletteBackdrop] = backdrop;
-  }
-  const style = backdropStyle ?? getStatusPaletteBackdropStyle(iconSize);
-  backdrop.clear();
-  backdrop.beginFill(STATUS_PALETTE_BACKDROP_COLOR, style.fillAlpha);
-  backdrop.drawRoundedRect(-style.padX, -style.padY, Math.max(2, totalWidth + (style.padX * 2)), Math.max(2, totalHeight + (style.padY * 2)), style.radius);
-  backdrop.endFill();
+  if (!backdrop) return;
+  backdrop.parent?.removeChild(backdrop);
+  backdrop.destroy();
+  delete layer[KEYS.statusPaletteBackdrop];
 }
 
 function getStatusPaletteLayoutForToken(tokenObject, expectedCount) {
-  const columns = Math.max(1, Math.ceil(Number(expectedCount ?? 0) / STATUS_PALETTE_ROWS));
-  const overlayScale = towCombatOverlayGetTokenOverlayScale(tokenObject);
-  const minSize = 4;
-  const maxSize = 96;
-  const baseSize = Math.max(minSize, (OVERLAY_FONT_SIZE + 2) * overlayScale);
+  const count = Math.max(0, Number(expectedCount ?? 0) || 0);
+  let iconSize = STATUS_PALETTE_ICON_SIZE;
+  let iconGap = STATUS_PALETTE_ICON_GAP;
   const tokenWidth = Number(tokenObject?.w ?? NaN);
   const hasTokenWidth = Number.isFinite(tokenWidth) && tokenWidth > 0;
+  if (!hasTokenWidth) return { columns: Math.max(1, count), iconSize, iconGap };
 
-  const getMetrics = (size) => {
-    const iconSize = towCombatOverlayRoundTo(towCombatOverlayClampNumber(size, minSize, maxSize), 2);
-    const iconGap = towCombatOverlayRoundTo(Math.max(0, STATUS_PALETTE_ICON_GAP * (iconSize / STATUS_PALETTE_ICON_SIZE)), 2);
-    const totalWidth = (columns * iconSize) + ((columns - 1) * iconGap);
-    const backdropStyle = getStatusPaletteBackdropStyle(iconSize);
-    const renderedWidth = totalWidth + (backdropStyle.padX * 2);
-    return { iconSize, iconGap, totalWidth, renderedWidth, backdropStyle };
-  };
+  const widthSafe = Math.max(1, tokenWidth - (STATUS_TOKEN_INSET_X * 2));
+  const ratio = STATUS_PALETTE_ICON_GAP / Math.max(1, STATUS_PALETTE_ICON_SIZE);
+  const denom = STATUS_TARGET_CHIPS_PER_ROW + ((STATUS_TARGET_CHIPS_PER_ROW - 1) * ratio);
+  const scaledSize = widthSafe / Math.max(1, denom);
+  iconSize = towCombatOverlayRoundTo(Math.min(STATUS_ICON_SIZE_MAX, Math.max(STATUS_ICON_SIZE_MIN, scaledSize)), 2);
+  iconGap = towCombatOverlayRoundTo(iconSize * ratio, 2);
+  if (count <= 1) return { columns: Math.max(1, count), iconSize, iconGap };
+  const columns = Math.max(1, Math.min(count, STATUS_TARGET_CHIPS_PER_ROW));
+  return { columns, iconSize, iconGap };
+}
 
-  if (!hasTokenWidth) {
-    const fallback = getMetrics(baseSize);
-    return { columns, iconSize: fallback.iconSize, iconGap: fallback.iconGap };
-  }
+function layoutStatusSpritesCentered(sprites, columns, iconSize, iconGap) {
+  const list = Array.isArray(sprites) ? sprites : [];
+  const count = list.length;
+  const columnsSafe = Math.max(1, Number(columns) || 1);
+  const sizeSafe = Math.max(1, Number(iconSize) || STATUS_PALETTE_ICON_SIZE);
+  const gapSafe = Math.max(0, Number(iconGap) || 0);
+  if (count <= 0) return { totalWidth: 0, totalHeight: 0 };
 
-  let iconSize = towCombatOverlayClampNumber(baseSize, minSize, maxSize);
-  for (let i = 0; i < 5; i++) {
-    const current = getMetrics(iconSize);
-    const availableContentWidth = Math.max(1, tokenWidth - (current.backdropStyle.padX * 2));
-    const nextSize = (availableContentWidth - ((columns - 1) * current.iconGap)) / columns;
-    const clampedNext = towCombatOverlayClampNumber(nextSize, minSize, maxSize);
-    if (!Number.isFinite(clampedNext)) break;
-    if (Math.abs(clampedNext - iconSize) < 0.05) {
-      iconSize = clampedNext;
-      break;
+  const rowStride = sizeSafe + gapSafe;
+  const maxItemsInRow = Math.min(columnsSafe, count);
+  const maxRowWidth = (maxItemsInRow * sizeSafe) + ((maxItemsInRow - 1) * gapSafe);
+  const totalRows = Math.ceil(count / columnsSafe);
+  const totalHeight = (totalRows * sizeSafe) + ((totalRows - 1) * gapSafe);
+
+  for (let row = 0; row < totalRows; row++) {
+    const rowStart = row * columnsSafe;
+    const rowCount = Math.min(columnsSafe, Math.max(0, count - rowStart));
+    if (rowCount <= 0) continue;
+    const rowWidth = (rowCount * sizeSafe) + ((rowCount - 1) * gapSafe);
+    const rowOffsetX = (maxRowWidth - rowWidth) / 2;
+    for (let col = 0; col < rowCount; col++) {
+      const index = rowStart + col;
+      const sprite = list[index];
+      if (!sprite) continue;
+      const isOverflow = Number(sprite?.[STATUS_OVERFLOW_COUNT] ?? 0) > 0;
+      const chipSize = Number.isFinite(Number(sprite?.[STATUS_CHIP_SIZE]))
+        ? Number(sprite[STATUS_CHIP_SIZE])
+        : sizeSafe;
+      const half = chipSize / 2;
+      const baseX = rowOffsetX + (col * rowStride);
+      const baseY = row * rowStride;
+      sprite.position.set(
+        towCombatOverlayRoundTo(isOverflow ? baseX : (baseX + half), 2),
+        towCombatOverlayRoundTo(isOverflow ? baseY : (baseY + half), 2)
+      );
     }
-    iconSize = clampedNext;
   }
 
-  let fitted = getMetrics(iconSize);
-  if (fitted.renderedWidth > tokenWidth) {
-    let probe = iconSize;
-    for (let i = 0; i < 40; i++) {
-      probe = towCombatOverlayClampNumber(probe - 0.25, minSize, maxSize);
-      const candidate = getMetrics(probe);
-      if (candidate.renderedWidth <= tokenWidth || probe <= minSize) {
-        fitted = candidate;
-        break;
-      }
-    }
-  }
-
-  return {
-    columns,
-    iconSize: towCombatOverlayRoundTo(fitted.iconSize, 2),
-    iconGap: towCombatOverlayRoundTo(fitted.iconGap, 2)
-  };
+  return { totalWidth: maxRowWidth, totalHeight };
 }
 
 export function setupStatusPalette(tokenObject) {
   if (!tokenObject || tokenObject.destroyed) return;
   const actor = towCombatOverlayGetActorFromToken(tokenObject);
   if (!actor) return;
-  const conditions = getAllConditionEntries();
-  if (!conditions.length) return clearStatusPalette(tokenObject);
+  const allConditions = getAllConditionEntries();
+  const activeStatuses = getActorStatusSet(actor);
+  const temporaryEffects = getTemporaryEffectEntries(actor);
+  const entries = [
+    ...allConditions
+      .filter((entry) => activeStatuses.has(String(entry?.id ?? "")))
+      .map((entry) => ({
+        key: `condition:${String(entry?.id ?? "")}`,
+        id: String(entry?.id ?? ""),
+        img: String(entry?.img ?? "").trim(),
+        variant: "condition",
+        forceActive: false,
+        tooltipData: getConditionTooltipData(entry?.id)
+      })),
+    ...temporaryEffects.map((entry) => ({
+      key: String(entry?.key ?? ""),
+      id: String(entry?.id ?? ""),
+      img: String(entry?.img ?? "").trim(),
+      variant: "effect",
+      forceActive: true,
+      overflowCount: 0,
+      tooltipData: {
+        name: String(entry?.name ?? "Effect"),
+        description: String(entry?.description ?? "")
+      }
+    }))
+  ].filter((entry) => !!entry.key && !!entry.id && !!entry.img);
+  const visibleEntries = entries.length > STATUS_MAX_VISIBLE_CHIPS
+    ? [
+      ...entries.slice(0, STATUS_MAX_VISIBLE_CHIPS),
+      {
+        key: `overflow:${entries.length - STATUS_MAX_VISIBLE_CHIPS}`,
+        id: `__overflow__:${entries.length - STATUS_MAX_VISIBLE_CHIPS}`,
+        img: "",
+        variant: "overflow",
+        forceActive: true,
+        overflowCount: entries.length - STATUS_MAX_VISIBLE_CHIPS,
+        tooltipData: {
+          name: `+${entries.length - STATUS_MAX_VISIBLE_CHIPS}`,
+          description: `+${entries.length - STATUS_MAX_VISIBLE_CHIPS} more`
+        }
+      }
+    ]
+    : entries;
+  if (!visibleEntries.length) return clearStatusPalette(tokenObject);
 
-  const expectedCount = conditions.length;
+  const expectedCount = visibleEntries.length;
+  const expectedIdsSignature = visibleEntries.map((entry) => String(entry?.key ?? "")).join("|");
   const { columns, iconSize, iconGap } = getStatusPaletteLayoutForToken(tokenObject, expectedCount);
   let layer = tokenObject[KEYS.statusPaletteLayer];
   const iconChildrenCount = layer
     ? (layer.children?.filter((child) => child?.[KEYS.statusConditionId]).length ?? 0)
     : 0;
-  const shouldRebuild = !layer || layer.destroyed || layer.parent !== tokenObject || iconChildrenCount !== expectedCount || tokenObject[KEYS.statusPaletteMetrics]?.iconSize !== iconSize || tokenObject[KEYS.statusPaletteMetrics]?.iconGap !== iconGap;
+  const shouldRebuild = !layer
+    || layer.destroyed
+    || layer.parent !== tokenObject
+    || iconChildrenCount !== expectedCount
+    || tokenObject[KEYS.statusPaletteMetrics]?.iconSize !== iconSize
+    || tokenObject[KEYS.statusPaletteMetrics]?.iconGap !== iconGap
+    || tokenObject[KEYS.statusPaletteMetrics]?.idsSignature !== expectedIdsSignature
+    || tokenObject[KEYS.statusPaletteMetrics]?.renderVersion !== STATUS_RENDER_VERSION;
 
   if (shouldRebuild) {
     clearStatusPalette(tokenObject);
@@ -334,54 +351,99 @@ export function setupStatusPalette(tokenObject) {
     tokenObject.addChild(layer);
     tokenObject[KEYS.statusPaletteLayer] = layer;
 
-    for (let i = 0; i < conditions.length; i++) {
-      const condition = conditions[i];
-      const sprite = PIXI.Sprite.from(condition.img);
-      sprite.width = iconSize;
-      sprite.height = iconSize;
+    for (let i = 0; i < visibleEntries.length; i++) {
+      const entry = visibleEntries[i];
+      const isOverflow = Number(entry?.overflowCount ?? 0) > 0;
+      const sprite = isOverflow
+        ? new PIXI.Container()
+        : PIXI.Sprite.from(entry.img);
+      const chipSize = iconSize;
+      const iconDrawSize = isOverflow ? chipSize : Math.max(2, towCombatOverlayRoundTo(chipSize - CHIP_ICON_TOTAL_INSET, 2));
+      if (!isOverflow) {
+        if (typeof sprite.anchor?.set === "function") sprite.anchor.set(0);
+        sprite.width = iconDrawSize;
+        sprite.height = iconDrawSize;
+      }
       sprite.eventMode = "static";
       sprite.interactive = true;
-      sprite.cursor = towCombatOverlayCanEditActor(actor) ? "pointer" : "default";
-      sprite[KEYS.statusConditionId] = condition.id;
-      sprite[KEYS.statusConditionImg] = condition.img;
+      if (isOverflow) {
+        sprite.hitArea = new PIXI.Circle(iconSize / 2, iconSize / 2, iconSize / 2);
+      }
+      sprite[KEYS.statusConditionId] = entry.id;
+      sprite[KEYS.statusConditionImg] = entry.img;
       sprite[KEYS.statusIconSize] = iconSize;
-      const col = i % columns;
-      const row = Math.floor(i / columns);
-      sprite.position.set(col * (iconSize + iconGap), row * (iconSize + iconGap));
-      const onDown = async (event) => {
-        towCombatOverlayPreventPointerDefault(event);
-        if (towCombatOverlayGetMouseButton(event) !== 0) return;
-        await toggleConditionFromPalette(actor, condition.id);
-      };
-      sprite.on("pointerdown", onDown);
-      sprite[KEYS.statusIconHandler] = onDown;
-      towCombatOverlayBindTooltipHandlers(sprite, () => getConditionTooltipData(condition.id), {
+      sprite[STATUS_CHIP_SIZE] = chipSize;
+      sprite[STATUS_CHIP_VARIANT] = String(entry?.variant ?? "condition");
+      sprite[STATUS_FORCE_ACTIVE] = entry.forceActive === true;
+      sprite[STATUS_TOOLTIP_DATA] = entry.tooltipData;
+      sprite[STATUS_OVERFLOW_COUNT] = Number(entry?.overflowCount ?? 0) || 0;
+      if (isOverflow) {
+        const overflowText = new PIXI.Text(`+${sprite[STATUS_OVERFLOW_COUNT]}`, {
+          fontFamily: "CaslonPro, Signika, serif",
+          fontSize: Math.max(9, Math.round(iconSize * 0.52)),
+          fontWeight: "700",
+          fill: 0x2F2821,
+          stroke: 0xEDE4D2,
+          strokeThickness: 1,
+          align: "center"
+        });
+        overflowText.anchor.set(0.5, 0.5);
+        overflowText.eventMode = "none";
+        overflowText.position.set(Math.round(iconSize / 2), Math.round(iconSize / 2));
+        sprite.addChild(overflowText);
+        sprite[STATUS_OVERFLOW_TEXT] = overflowText;
+      }
+      towCombatOverlayBindTooltipHandlers(sprite, () => (sprite?.[STATUS_TOOLTIP_DATA] ?? { name: "", description: "" }), {
         over: KEYS.statusIconTooltipOverHandler,
         move: KEYS.statusIconTooltipMoveHandler,
         out: KEYS.statusIconTooltipOutHandler
+      }, {
+        theme: "panel",
+        descriptionIsHtml: true
       });
       layer.addChild(sprite);
     }
-    tokenObject[KEYS.statusPaletteMetrics] = { iconSize, iconGap };
+    tokenObject[KEYS.statusPaletteMetrics] = {
+      iconSize,
+      iconGap,
+      idsSignature: expectedIdsSignature,
+      renderVersion: STATUS_RENDER_VERSION
+    };
   }
 
-  const totalRows = Math.ceil(expectedCount / columns);
-  const totalWidth = (columns * iconSize) + ((columns - 1) * iconGap);
-  const totalHeight = (totalRows * iconSize) + ((totalRows - 1) * iconGap);
-  const edgePad = towCombatOverlayGetOverlayEdgePadPx(tokenObject);
-  const backdropStyle = getStatusPaletteBackdropStyle(iconSize);
-  const renderedWidth = totalWidth + (backdropStyle.padX * 2);
+  const statusSprites = layer.children?.filter((child) => child?.[KEYS.statusConditionId]) ?? [];
+  const { totalWidth, totalHeight } = layoutStatusSpritesCentered(statusSprites, columns, iconSize, iconGap);
+  const availableWidth = Math.max(1, Number(tokenObject?.w ?? 0) - (STATUS_TOKEN_INSET_X * 2));
   layer.scale.set(1);
   layer.position.set(
-    Math.round(((tokenObject.w - renderedWidth) / 2) + backdropStyle.padX),
-    Math.round(tokenObject.h + edgePad + backdropStyle.padY)
+    Math.round(STATUS_TOKEN_INSET_X + ((availableWidth - totalWidth) / 2)),
+    Math.round(Math.max(0, tokenObject.h - totalHeight - STATUS_TOKEN_INSET_BOTTOM))
   );
-  drawStatusPaletteBackdrop(layer, { iconSize, totalWidth, totalHeight, backdropStyle });
+  clearStatusPaletteBackdrop(layer);
   layer.visible = tokenObject.visible;
-  const activeStatuses = getActorStatusSet(actor);
-  for (const sprite of layer.children?.filter((child) => child?.[KEYS.statusConditionId]) ?? []) {
-    sprite.cursor = towCombatOverlayCanEditActor(actor) ? "pointer" : "default";
-    stylePaletteSprite(sprite, actor, sprite[KEYS.statusConditionId], activeStatuses);
+  for (let i = 0; i < statusSprites.length; i++) {
+    const sprite = statusSprites[i];
+    if (Number(sprite?.[STATUS_OVERFLOW_COUNT] ?? 0) <= 0 && sprite instanceof PIXI.Sprite) {
+      const bounds = sprite.getLocalBounds();
+      const centerX = Number(bounds?.x ?? 0) + (Number(bounds?.width ?? 0) / 2);
+      const centerY = Number(bounds?.y ?? 0) + (Number(bounds?.height ?? 0) / 2);
+      if (Number.isFinite(centerX) && Number.isFinite(centerY)) {
+        sprite.pivot.set(centerX, centerY);
+      }
+    }
+    const overflowText = sprite?.[STATUS_OVERFLOW_TEXT];
+    if (overflowText) {
+      overflowText.text = `+${Number(sprite?.[STATUS_OVERFLOW_COUNT] ?? 0)}`;
+      overflowText.position.set(Math.round(iconSize / 2), Math.round(iconSize / 2));
+    }
+    sprite.cursor = "default";
+    stylePaletteSprite(
+      sprite,
+      actor,
+      sprite[KEYS.statusConditionId],
+      activeStatuses,
+      sprite?.[STATUS_FORCE_ACTIVE] === true
+    );
   }
 }
 
@@ -405,4 +467,3 @@ export function clearAllStatusOverlays() {
 export function hideDefaultStatusPanelForOverlay(tokenObject) {
   hideDefaultStatusPanel(tokenObject);
 }
-

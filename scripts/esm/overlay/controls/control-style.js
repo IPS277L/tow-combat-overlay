@@ -1,7 +1,6 @@
 import {
   KEYS,
-  NAME_TYPE_STACK_OVERLAP_PX,
-  NAME_TYPE_TO_TOKEN_OFFSET_PX,
+  NAME_LABEL_MAX_WIDTH_MULTIPLIER,
   PreciseTextClass,
   TOKEN_CONTROL_PAD
 } from "../../runtime/overlay-constants.js";
@@ -12,14 +11,15 @@ import {
   towCombatOverlayGetTokenOverlayScale
 } from "../shared/core-helpers.js";
 import { towCombatOverlayClearDisplayObject } from "../layout-state.js";
-import { getTypeTooltipData } from "../shared/shared.js";
 import {
-  formatActorTypeLabel,
-  towCombatOverlayGetActorTypeLabel,
   towCombatOverlayGetNameStyle,
-  towCombatOverlayGetNameTypeStyle,
   towCombatOverlayTuneOverlayText
 } from "./control-style-foundation.js";
+import {
+  getPrimaryTokenName,
+  getPrimaryTokenNameStrict,
+  getPrimaryTokenTypeLabel
+} from "../panel/selection/selection-display.js";
 export {
   towCombatOverlayCreateOverlayIconSprite,
   towCombatOverlayDrawHitBoxRect,
@@ -43,24 +43,14 @@ function overlayControlsGetOverlayEdgePadPxRef(tokenObject) {
   return towCombatOverlayGetOverlayEdgePadPx(tokenObject) ?? TOKEN_CONTROL_PAD;
 }
 
-function overlayControlsBindTooltipHandlersRef(displayObject, getTooltipData) {
-  return towCombatOverlayBindTooltipHandlers(displayObject, getTooltipData);
+function overlayControlsBindTooltipHandlersRef(displayObject, getTooltipData, keyStore = null, options = null) {
+  return towCombatOverlayBindTooltipHandlers(displayObject, getTooltipData, keyStore, options ?? undefined);
 }
 
 export function towCombatOverlayUpdateNameLabel(tokenObject) {
   if (!tokenObject || tokenObject.destroyed) return;
 
-  const actor = tokenObject.document?.actor ?? null;
-  const actorName = String(actor?.name ?? "").trim();
-  const nameplateName = String(tokenObject.nameplate?.text ?? "").trim();
-  const documentName = String(tokenObject.document?.name ?? "").trim();
-  const fallbackName = String(
-    tokenObject.name
-      ?? actorName
-      ?? ""
-  ).trim();
-  const tokenName = actorName || nameplateName || documentName || fallbackName;
-  const typeLabel = towCombatOverlayGetActorTypeLabel(actor).toLowerCase();
+  const tokenName = getPrimaryTokenNameStrict(tokenObject);
   if (!tokenName) {
     const labelContainer = tokenObject[KEYS.nameLabel];
     if (!labelContainer) return;
@@ -75,8 +65,7 @@ export function towCombatOverlayUpdateNameLabel(tokenObject) {
     !labelContainer ||
     labelContainer.destroyed ||
     labelContainer.parent !== tokenObject ||
-    !labelContainer[KEYS.nameLabelNameText] ||
-    !labelContainer[KEYS.nameLabelTypeText]
+    !labelContainer[KEYS.nameLabelNameText]
   ) {
     if (labelContainer && !labelContainer.destroyed) {
       labelContainer.parent?.removeChild(labelContainer);
@@ -92,16 +81,8 @@ export function towCombatOverlayUpdateNameLabel(tokenObject) {
     towCombatOverlayTuneOverlayText(nameText);
     nameText.anchor.set(0.5, 1);
     nameText.eventMode = "none";
-
-    const typeText = new PreciseTextClass("", towCombatOverlayGetNameTypeStyle());
-    towCombatOverlayTuneOverlayText(typeText);
-    typeText.anchor.set(0.5, 1);
-    typeText.eventMode = "none";
-
     labelContainer.addChild(nameText);
-    labelContainer.addChild(typeText);
     labelContainer[KEYS.nameLabelNameText] = nameText;
-    labelContainer[KEYS.nameLabelTypeText] = typeText;
     labelContainer[KEYS.nameLabelMarker] = true;
     labelContainer[KEYS.nameLabelTokenId] = tokenObject.id;
 
@@ -110,34 +91,50 @@ export function towCombatOverlayUpdateNameLabel(tokenObject) {
   }
 
   const nameText = labelContainer[KEYS.nameLabelNameText];
-  const typeText = labelContainer[KEYS.nameLabelTypeText];
   towCombatOverlayTuneOverlayText(nameText);
-  towCombatOverlayTuneOverlayText(typeText);
   if (!labelContainer[KEYS.nameLabelTooltipBinding]) {
     labelContainer[KEYS.nameLabelTooltipBinding] = overlayControlsBindTooltipHandlersRef(
       labelContainer,
-      () => getTypeTooltipData(actor)
+      () => {
+        const liveName = getPrimaryTokenName(tokenObject)
+          || game?.i18n?.localize?.("TOWCOMBATOVERLAY.Tooltip.Panel.SelectionTokenFallbackName")
+          || "Token";
+        const typeLabel = getPrimaryTokenTypeLabel(tokenObject) || "-";
+        const description = game?.i18n?.format?.(
+          "TOWCOMBATOVERLAY.Tooltip.Panel.SelectionTypeDescription",
+          { type: typeLabel }
+        );
+        return {
+          title: liveName,
+          description: (typeof description === "string" && description !== "TOWCOMBATOVERLAY.Tooltip.Panel.SelectionTypeDescription")
+            ? description
+            : `Type: ${typeLabel}`
+        };
+      },
+      null,
+      { theme: "panel", descriptionIsHtml: true }
     );
   }
   nameText.text = tokenName;
-  typeText.text = formatActorTypeLabel(typeLabel);
   const labelScale = overlayControlsGetTokenOverlayScaleRef(tokenObject);
   const edgePad = overlayControlsGetOverlayEdgePadPxRef(tokenObject);
   const inverseScale = (labelScale > 0) ? (1 / labelScale) : 1;
   const tokenEdgePad = edgePad * inverseScale;
-  const tokenOffset = NAME_TYPE_TO_TOKEN_OFFSET_PX * inverseScale * (edgePad / TOKEN_CONTROL_PAD);
-  const typeBounds = typeText.getLocalBounds();
-  const typeTop = typeBounds.y;
-  const typeBottom = typeBounds.y + typeBounds.height;
-  typeText.position.set(0, Math.round(-(tokenEdgePad + typeBottom) + tokenOffset));
-
   const nameBounds = nameText.getLocalBounds();
   const nameBottom = nameBounds.y + nameBounds.height;
-  nameText.position.set(0, Math.round((typeText.y + typeTop) + NAME_TYPE_STACK_OVERLAP_PX - nameBottom));
-  const combinedMinX = Math.min(nameBounds.x, typeBounds.x);
-  const combinedMinY = Math.min(nameText.y + nameBounds.y, typeText.y + typeBounds.y);
-  const combinedMaxX = Math.max(nameBounds.x + nameBounds.width, typeBounds.x + typeBounds.width);
-  const combinedMaxY = Math.max(nameText.y + nameBounds.y + nameBounds.height, typeText.y + typeBounds.y + typeBounds.height);
+  nameText.position.set(0, Math.round(-tokenEdgePad - nameBottom + (2 * inverseScale * (edgePad / TOKEN_CONTROL_PAD))));
+  const combinedMinX = nameBounds.x;
+  const combinedMinY = nameText.y + nameBounds.y;
+  const combinedMaxX = nameBounds.x + nameBounds.width;
+  const combinedMaxY = nameText.y + nameBounds.y + nameBounds.height;
+  const combinedWidth = Math.max(1, combinedMaxX - combinedMinX);
+  const tokenWidthWorld = Math.max(
+    1,
+    (Number(tokenObject.w ?? 0) * NAME_LABEL_MAX_WIDTH_MULTIPLIER) - (edgePad * 2)
+  );
+  const maxLocalWidth = Math.max(1, tokenWidthWorld / Math.max(0.0001, labelScale));
+  const widthClampScale = Math.min(1, maxLocalWidth / combinedWidth);
+  const finalLabelScale = labelScale * widthClampScale;
   labelContainer.hitArea = new PIXI.Rectangle(
     Math.floor(combinedMinX - 4),
     Math.floor(combinedMinY - 2),
@@ -145,10 +142,10 @@ export function towCombatOverlayUpdateNameLabel(tokenObject) {
     Math.max(8, Math.ceil((combinedMaxY - combinedMinY) + 4))
   );
   labelContainer.position.set(Math.round(tokenObject.w / 2), 0);
-  labelContainer.scale.set(labelScale);
+  labelContainer.scale.set(finalLabelScale);
 
-  const labelBottomLocal = labelContainer.y + (combinedMaxY * labelScale);
-  const targetBottomLocal = -edgePad;
+  const labelBottomLocal = labelContainer.y + (combinedMaxY * finalLabelScale);
+  const targetBottomLocal = -Math.round(edgePad * 0.1);
   const deltaY = Math.round(targetBottomLocal - labelBottomLocal);
   if (deltaY !== 0) labelContainer.y += deltaY;
 
@@ -170,4 +167,3 @@ export function towCombatOverlayClearAllNameLabels() {
   }
   for (const labelContainer of orphaned) towCombatOverlayClearDisplayObject(labelContainer);
 }
-

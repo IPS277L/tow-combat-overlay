@@ -161,7 +161,7 @@ export function towCombatOverlayGetTooltipPointFromEvent(event) {
   return towCombatOverlayGetScreenPoint(event) ?? towCombatOverlayGetWorldPoint(event);
 }
 
-export function towCombatOverlayBindTooltipHandlers(displayObject, getTooltipData, keyStore = null) {
+export function towCombatOverlayBindTooltipHandlers(displayObject, getTooltipData, keyStore = null, options = {}) {
   if (!displayObject || typeof getTooltipData !== "function") return null;
 
   const onShow = (event) => {
@@ -171,7 +171,10 @@ export function towCombatOverlayBindTooltipHandlers(displayObject, getTooltipDat
     const title = data.title ?? data.name ?? "";
     const description = data.description ?? "No description.";
     if (!title) return;
-    showOverlayTooltip(title, description, point);
+    showOverlayTooltip(title, description, point, null, {
+      theme: String(options?.theme ?? "overlay"),
+      descriptionIsHtml: options?.descriptionIsHtml === true
+    });
   };
   const onHide = () => hideStatusTooltip();
 
