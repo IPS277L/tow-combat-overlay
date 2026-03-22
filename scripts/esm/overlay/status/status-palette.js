@@ -65,6 +65,17 @@ import {
   STATUS_TOKEN_INSET_X,
   STATUS_TOOLTIP_DATA
 } from "./status-palette-constants.js";
+import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
+import { isTowCombatOverlayDisplaySettingEnabled } from "../../bootstrap/register-settings.js";
+
+function getTokenLayoutPaletteVisibilitySettings() {
+  const { settings } = getTowCombatOverlayConstants();
+  return {
+    enableStatuses: isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableStatuses, true),
+    enableWounds: isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableWounds, true),
+    enableTemporaryEffects: isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableTemporaryEffects, true)
+  };
+}
 
 function clearStatusIconHandler(sprite) {
   const keys = [
@@ -323,12 +334,13 @@ export function setupStatusPalette(tokenObject) {
   if (!tokenObject || tokenObject.destroyed) return;
   const actor = towCombatOverlayGetActorFromToken(tokenObject);
   if (!actor) return;
+  const visibilitySettings = getTokenLayoutPaletteVisibilitySettings();
   const allConditions = getAllConditionEntries();
   const activeStatuses = getActorStatusSet(actor);
-  const woundAbility = getWoundsAbilityEntry(actor);
-  const temporaryEffects = getTemporaryEffectEntries(actor);
+  const woundAbility = visibilitySettings.enableWounds ? getWoundsAbilityEntry(actor) : null;
+  const temporaryEffects = visibilitySettings.enableTemporaryEffects ? getTemporaryEffectEntries(actor) : [];
   const entries = [
-    ...allConditions
+    ...(visibilitySettings.enableStatuses ? allConditions : [])
       .filter((entry) => activeStatuses.has(String(entry?.id ?? "")))
       .map((entry) => ({
         key: `condition:${String(entry?.id ?? "")}`,

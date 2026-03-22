@@ -8,6 +8,7 @@ import {
   registerTowCombatOverlayHooks,
   unregisterTowCombatOverlayHooks
 } from "../../bootstrap/register-overlay-hooks.js";
+import { isTowCombatOverlayDisplaySettingEnabled } from "../../bootstrap/register-settings.js";
 import {
   towCombatOverlayForEachSceneToken,
   towCombatOverlayGetActorFromToken,
@@ -48,6 +49,15 @@ function setTowCombatOverlayTokenVisualVisibility(tokenObject, visible) {
   }
 }
 
+function clearTowCombatOverlayTokenNameLabel(tokenObject) {
+  if (!tokenObject || tokenObject.destroyed) return;
+  const labelContainer = tokenObject[KEYS.nameLabel];
+  if (!labelContainer) return;
+  labelContainer.parent?.removeChild(labelContainer);
+  labelContainer.destroy({ children: true });
+  delete tokenObject[KEYS.nameLabel];
+}
+
 function hasTowCombatOverlayPreviewClone(tokenObject) {
   const previewChildren = tokenObject?.layer?.preview?.children;
   if (!Array.isArray(previewChildren) || previewChildren.length === 0) return false;
@@ -85,7 +95,10 @@ export function towCombatOverlayRefreshTokenOverlay(tokenObject) {
   towCombatOverlayEnsureTokenOverlayInteractivity(tokenObject);
   towCombatOverlayHideCoreTokenHoverVisuals(tokenObject);
   setupStatusPalette(tokenObject);
-  towCombatOverlayUpdateNameLabel(tokenObject);
+  const { settings } = getTowCombatOverlayConstants();
+  const showCustomName = isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutShowCustomName, true);
+  if (showCustomName) towCombatOverlayUpdateNameLabel(tokenObject);
+  else clearTowCombatOverlayTokenNameLabel(tokenObject);
   towCombatOverlayUpdateTokenOverlayHitArea(tokenObject);
   towCombatOverlayUpdateCustomLayoutBorderVisibility(tokenObject);
   towCombatOverlayEnsureDeadVisual(tokenObject);

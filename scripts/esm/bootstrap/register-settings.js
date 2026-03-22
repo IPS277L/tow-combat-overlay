@@ -67,6 +67,30 @@ function buildDisplaySettingsGroups(settingKeys) {
           hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutShowBorder.Hint"
         },
         {
+          key: settingKeys.tokenLayoutEnableStatuses,
+          defaultValue: true,
+          nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatuses.Name",
+          hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatuses.Hint"
+        },
+        {
+          key: settingKeys.tokenLayoutEnableWounds,
+          defaultValue: true,
+          nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableWounds.Name",
+          hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableWounds.Hint"
+        },
+        {
+          key: settingKeys.tokenLayoutEnableTemporaryEffects,
+          defaultValue: true,
+          nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTemporaryEffects.Name",
+          hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTemporaryEffects.Hint"
+        },
+        {
+          key: settingKeys.tokenLayoutShowCustomName,
+          defaultValue: true,
+          nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutShowCustomName.Name",
+          hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutShowCustomName.Hint"
+        },
+        {
           key: settingKeys.tokenLayoutShowDeadVisuals,
           defaultValue: true,
           nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutShowDeadVisuals.Name",

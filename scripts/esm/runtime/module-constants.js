@@ -24,6 +24,10 @@ const MODULE_CONSTANTS_BASE = Object.freeze({
     tokensPanelShowDeadVisual: "tokensPanelShowDeadVisual",
     tokensPanelAlwaysCentered: "tokensPanelAlwaysCentered",
     tokenLayoutShowBorder: "tokenLayoutShowBorder",
+    tokenLayoutEnableStatuses: "tokenLayoutEnableStatuses",
+    tokenLayoutEnableWounds: "tokenLayoutEnableWounds",
+    tokenLayoutEnableTemporaryEffects: "tokenLayoutEnableTemporaryEffects",
+    tokenLayoutShowCustomName: "tokenLayoutShowCustomName",
     tokenLayoutShowDeadVisuals: "tokenLayoutShowDeadVisuals",
     controlPanelShowStatuses: "controlPanelShowStatuses",
     controlPanelEnableButtonReorder: "controlPanelEnableButtonReorder"
