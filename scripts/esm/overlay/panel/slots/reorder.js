@@ -82,7 +82,10 @@ export function createPanelReorderService({
     button.removeAttribute("title");
     panelElement.classList.toggle("is-reorder-unlocked", unlocked);
     const icon = button.querySelector(".tow-combat-overlay-control-panel__reorder-toggle-icon");
-    if (icon instanceof HTMLElement) icon.textContent = unlocked ? "U" : "L";
+    if (icon instanceof HTMLElement) {
+      icon.classList.remove("fa-lock", "fa-lock-open");
+      icon.classList.add(unlocked ? "fa-lock-open" : "fa-lock");
+    }
   }
 
   function bindPanelReorderToggle(panelElement) {

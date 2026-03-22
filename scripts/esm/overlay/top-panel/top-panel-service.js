@@ -60,7 +60,10 @@ function bindTopPanelElementEvents(topPanelElement) {
       lockButton.dataset.tooltipDescription = dragTooltipData.description;
       lockButton.removeAttribute("title");
       const icon = lockButton.querySelector(".tow-combat-overlay-top-panel__control-toggle-icon");
-      if (icon instanceof HTMLElement) icon.textContent = unlocked ? "U" : "L";
+      if (icon instanceof HTMLElement) {
+        icon.classList.remove("fa-lock", "fa-lock-open");
+        icon.classList.add(unlocked ? "fa-lock-open" : "fa-lock");
+      }
     }
 
     if (resetButton instanceof HTMLButtonElement) {
