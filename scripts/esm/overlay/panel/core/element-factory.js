@@ -1,3 +1,6 @@
+import { getTowCombatOverlayConstants } from "../../../runtime/module-constants.js";
+import { isTowCombatOverlayDisplaySettingEnabled } from "../../../bootstrap/register-settings.js";
+
 export function createPanelElementFactoryService({
   panelTemplatePath,
   panelSelectionTemplatePath,
@@ -12,8 +15,13 @@ export function createPanelElementFactoryService({
   towCombatOverlayRenderTemplate
 } = {}) {
   function getPanelTemplateData() {
+    const { settings } = getTowCombatOverlayConstants();
     const statuses = getAllConditionEntries();
-    return { statuses };
+    return {
+      statuses,
+      showStatuses: isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelShowStatuses, true),
+      showReorderControls: isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableButtonReorder, true)
+    };
   }
 
   async function createSelectionPanelElement() {

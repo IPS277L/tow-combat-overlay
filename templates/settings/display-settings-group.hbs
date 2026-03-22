@@ -1,0 +1,18 @@
+<form class="tow-combat-overlay-settings-group-form" autocomplete="off">
+  {{#each fields}}
+    <div class="form-group">
+      <label for="{{this.id}}">{{this.name}}</label>
+      <div class="form-fields">
+        <input id="{{this.id}}" type="checkbox" name="{{this.key}}" {{#if this.value}}checked{{/if}} />
+      </div>
+      <p class="hint">{{this.hint}}</p>
+    </div>
+  {{/each}}
+
+  <footer class="sheet-footer flexrow">
+    <button type="submit" name="submit">
+      <i class="fas fa-save"></i>
+      <span>{{saveLabel}}</span>
+    </button>
+  </footer>
+</form>

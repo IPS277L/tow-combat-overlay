@@ -16,7 +16,9 @@ import {
   limitChipList
 } from "./top-panel-chips.js";
 import {
+  applyDefaultTopPanelPosition,
   getOrderedSceneTokens,
+  isTopPanelAlwaysCenteredEnabled,
   syncTopPanelListBottomPadding,
   syncTopPanelWidth
 } from "./top-panel-layout.js";
@@ -25,6 +27,8 @@ import {
   clearLinkedTopPanelHover
 } from "./top-panel-interactions.js";
 import { formatMaybe, getTopPanelState, localizeMaybe } from "./top-panel-shared.js";
+import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
+import { isTowCombatOverlayDisplaySettingEnabled } from "../../bootstrap/register-settings.js";
 
 export function getTokenPortraitSrc(token) {
   const textureSrc = String(token?.document?.texture?.src ?? "").trim();
@@ -39,12 +43,17 @@ function resolveTokenDispositionClass(token) {
   return "is-neutral";
 }
 
-function buildPortraitElement(token) {
+function buildPortraitElement(token, {
+  enableStatuses = true,
+  enableWounds = true,
+  enableTemporaryEffects = true,
+  showDeadVisual = true
+} = {}) {
   const portrait = document.createElement("button");
   portrait.type = "button";
   portrait.classList.add("tow-combat-overlay-top-panel__portrait", resolveTokenDispositionClass(token));
   if (token.controlled === true) portrait.classList.add("is-controlled");
-  if (token.actor?.hasCondition?.("dead")) portrait.classList.add("is-dead");
+  if (showDeadVisual && token.actor?.hasCondition?.("dead")) portrait.classList.add("is-dead");
 
   portrait.dataset.tokenId = String(token.id ?? "").trim();
   const tokenName = getPrimaryTokenName(token)
@@ -67,12 +76,14 @@ function buildPortraitElement(token) {
 
   const actor = token.actor ?? token.document?.actor ?? null;
   if (actor) {
-    const woundAbilityChip = getWoundsAbilityChip(actor);
+    const conditionChips = enableStatuses ? getActiveConditionChips(actor) : [];
+    const woundAbilityChip = enableWounds ? getWoundsAbilityChip(actor) : null;
+    const temporaryEffectChips = enableTemporaryEffects ? getTemporaryEffectChips(actor) : [];
     const allChips = limitChipList(
       [
-        ...getActiveConditionChips(actor),
+        ...conditionChips,
         ...(woundAbilityChip ? [woundAbilityChip] : []),
-        ...getTemporaryEffectChips(actor)
+        ...temporaryEffectChips
       ],
       TOP_PANEL_CHIP_MAX_PER_ROW,
       "row-overflow"
@@ -106,6 +117,18 @@ export async function renderTopPanelContent() {
   if (!(panelElement instanceof HTMLElement) || !panelElement.isConnected) return;
   if (state) clearLinkedTopPanelHover(state, { panelElement });
   syncTopPanelWidth(panelElement);
+  const { settings } = getTowCombatOverlayConstants();
+  const enableStatuses = isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableStatuses, true);
+  const enableWounds = isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableWounds, true);
+  const enableTemporaryEffects = isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableTemporaryEffects, true);
+  const showDeadVisual = isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelShowDeadVisual, true);
+  const alwaysCentered = isTopPanelAlwaysCenteredEnabled();
+  const isDragLocked = alwaysCentered || state?.panelDragUnlocked === false;
+  const controlsElement = panelElement.querySelector(".tow-combat-overlay-top-panel__controls");
+  if (controlsElement instanceof HTMLElement) controlsElement.hidden = alwaysCentered;
+  panelElement.classList.toggle("is-drag-locked", isDragLocked);
+  panelElement.dataset.alwaysCentered = alwaysCentered ? "true" : "false";
+  if (alwaysCentered) applyDefaultTopPanelPosition(panelElement);
 
   const listElement = panelElement.querySelector(".tow-combat-overlay-top-panel__list");
   if (!(listElement instanceof HTMLElement)) return;
@@ -123,10 +146,16 @@ export async function renderTopPanelContent() {
   panelElement.dataset.hasTokens = "true";
   const fragment = document.createDocumentFragment();
   for (const token of tokens) {
-    fragment.appendChild(buildPortraitElement(token));
+    fragment.appendChild(buildPortraitElement(token, {
+      enableStatuses,
+      enableWounds,
+      enableTemporaryEffects,
+      showDeadVisual
+    }));
   }
   listElement.appendChild(fragment);
   syncTopPanelListBottomPadding(panelElement);
+  if (alwaysCentered) applyDefaultTopPanelPosition(panelElement);
   applyTopPanelHoveredCardHighlight(panelElement, state?.hoveredCanvasTokenId ?? "");
 }
 

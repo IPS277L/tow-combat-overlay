@@ -7,6 +7,7 @@ import {
 } from "../layout/wound-state.js";
 import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
 import { MODULE_KEY } from "../../runtime/overlay-constants.js";
+import { isTowCombatOverlayDisplaySettingEnabled } from "../../bootstrap/register-settings.js";
 import {
   AUTO_DEFENCE_WAIT_MS,
   AUTO_APPLY_WAIT_MS,
@@ -429,6 +430,7 @@ const panelStatusDisplayService = createPanelStatusDisplayService({
 const panelReorderService = createPanelReorderService({
   bindPanelTooltipEvent,
   getControlPanelState: () => getControlPanelState(),
+  isButtonReorderEnabled: () => isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableButtonReorder, true),
   writeSavedPanelReorderUnlocked,
   clearSavedPanelButtonKeyOrder,
   readSavedPanelButtonKeyOrder,

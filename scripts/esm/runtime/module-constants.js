@@ -17,7 +17,16 @@ const MODULE_CONSTANTS_BASE = Object.freeze({
   settings: Object.freeze({
     enableOverlay: "enableOverlay",
     enableControlPanel: "enableControlPanel",
-    enableTopPanel: "enableTopPanel"
+    enableTopPanel: "enableTopPanel",
+    tokensPanelEnableStatuses: "tokensPanelEnableStatuses",
+    tokensPanelEnableWounds: "tokensPanelEnableWounds",
+    tokensPanelEnableTemporaryEffects: "tokensPanelEnableTemporaryEffects",
+    tokensPanelShowDeadVisual: "tokensPanelShowDeadVisual",
+    tokensPanelAlwaysCentered: "tokensPanelAlwaysCentered",
+    tokenLayoutShowBorder: "tokenLayoutShowBorder",
+    tokenLayoutShowDeadVisuals: "tokenLayoutShowDeadVisuals",
+    controlPanelShowStatuses: "controlPanelShowStatuses",
+    controlPanelEnableButtonReorder: "controlPanelEnableButtonReorder"
   })
 });
 

@@ -4,6 +4,8 @@ import {
   readSavedTopPanelTokenOrder
 } from "./top-panel-state.js";
 import { TOP_PANEL_VIEWPORT_MARGIN_PX } from "./top-panel-constants.js";
+import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
+import { isTowCombatOverlayDisplaySettingEnabled } from "../../bootstrap/register-settings.js";
 
 export function getCanvasClientBounds(viewportMarginPx = TOP_PANEL_VIEWPORT_MARGIN_PX) {
   const canvasView = canvas?.app?.view;
@@ -93,6 +95,10 @@ export function applyDefaultTopPanelPosition(panelElement, viewportMarginPx = TO
 
 export function applyInitialTopPanelPosition(panelElement, viewportMarginPx = TOP_PANEL_VIEWPORT_MARGIN_PX) {
   syncTopPanelWidth(panelElement, viewportMarginPx);
+  if (isTopPanelAlwaysCenteredEnabled()) {
+    applyDefaultTopPanelPosition(panelElement, viewportMarginPx);
+    return;
+  }
   const saved = readSavedTopPanelPosition();
   if (saved) {
     applyTopPanelPosition(panelElement, saved.left, saved.top, viewportMarginPx);
@@ -116,6 +122,11 @@ export function getSceneTokens() {
       if (!actor) return false;
       return token.visible !== false;
     });
+}
+
+export function isTopPanelAlwaysCenteredEnabled() {
+  const { settings } = getTowCombatOverlayConstants();
+  return isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelAlwaysCentered, false);
 }
 
 export function getCurrentSceneId() {

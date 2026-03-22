@@ -1,6 +1,7 @@
 export function createPanelReorderService({
   bindPanelTooltipEvent,
   getControlPanelState,
+  isButtonReorderEnabled = () => true,
   writeSavedPanelReorderUnlocked,
   clearSavedPanelButtonKeyOrder,
   readSavedPanelButtonKeyOrder,
@@ -43,6 +44,7 @@ export function createPanelReorderService({
   }
 
   function isPanelButtonReorderUnlocked() {
+    if (!isButtonReorderEnabled()) return false;
     const controlPanelState = getControlPanelState();
     return !!controlPanelState?.buttonReorderUnlocked;
   }
@@ -89,6 +91,7 @@ export function createPanelReorderService({
   }
 
   function bindPanelReorderToggle(panelElement) {
+    if (!isButtonReorderEnabled()) return;
     if (!(panelElement instanceof HTMLElement)) return;
     const button = panelElement.querySelector("[data-action='toggle-button-reorder']");
     if (!(button instanceof HTMLButtonElement)) return;
@@ -108,6 +111,7 @@ export function createPanelReorderService({
   }
 
   function bindPanelReorderReset(panelElement) {
+    if (!isButtonReorderEnabled()) return;
     if (!(panelElement instanceof HTMLElement)) return;
     const button = panelElement.querySelector("[data-action='reset-button-order']");
     if (!(button instanceof HTMLButtonElement)) return;

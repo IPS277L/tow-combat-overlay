@@ -18,6 +18,7 @@ import {
   applyTopPanelPosition,
   getCurrentSceneId,
   getOrderedSceneTokens,
+  isTopPanelAlwaysCenteredEnabled,
   moveTokenRelativeToTarget,
   shouldDropAfterTarget,
   syncTopPanelListBottomPadding,
@@ -46,11 +47,15 @@ function bindTopPanelElementEvents(topPanelElement) {
 
   const lockButton = topPanelElement.querySelector("[data-action='toggle-panel-drag-lock']");
   const resetButton = topPanelElement.querySelector("[data-action='reset-panel-position']");
+  const controlsElement = topPanelElement.querySelector(".tow-combat-overlay-top-panel__controls");
 
   const syncDragControls = () => {
+    const alwaysCentered = isTopPanelAlwaysCenteredEnabled();
+    if (controlsElement instanceof HTMLElement) controlsElement.hidden = alwaysCentered;
+    if (alwaysCentered) applyDefaultTopPanelPosition(topPanelElement);
     const unlocked = state.panelDragUnlocked !== false;
     const dragTooltipData = getTopPanelDragToggleTooltipData(unlocked);
-    topPanelElement.classList.toggle("is-drag-locked", !unlocked);
+    topPanelElement.classList.toggle("is-drag-locked", alwaysCentered || !unlocked);
 
     if (lockButton instanceof HTMLButtonElement) {
       lockButton.dataset.state = unlocked ? "unlocked" : "locked";
@@ -96,6 +101,7 @@ function bindTopPanelElementEvents(topPanelElement) {
 
   const onPanelPointerDown = (event) => {
     if (event.button !== 0) return;
+    if (isTopPanelAlwaysCenteredEnabled()) return;
     if (state.panelDragUnlocked === false) return;
     const target = event.target;
     if (!(target instanceof Element)) return;
@@ -120,8 +126,12 @@ function bindTopPanelElementEvents(topPanelElement) {
   const onResize = () => {
     syncTopPanelWidth(topPanelElement);
     syncTopPanelListBottomPadding(topPanelElement);
-    const rect = topPanelElement.getBoundingClientRect();
-    applyTopPanelPosition(topPanelElement, rect.left, rect.top);
+    if (isTopPanelAlwaysCenteredEnabled()) {
+      applyDefaultTopPanelPosition(topPanelElement);
+    } else {
+      const rect = topPanelElement.getBoundingClientRect();
+      applyTopPanelPosition(topPanelElement, rect.left, rect.top);
+    }
   };
 
   state.onPanelPointerDown = onPanelPointerDown;

@@ -3,6 +3,18 @@ import {
   getLayoutBorderColor,
   getLayoutBorderStyle
 } from "../../runtime/overlay-constants.js";
+import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
+import { isTowCombatOverlayDisplaySettingEnabled } from "../../bootstrap/register-settings.js";
+
+function isTokenLayoutBorderEnabled() {
+  const { settings } = getTowCombatOverlayConstants();
+  return isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutShowBorder, true);
+}
+
+function isTokenLayoutDeadVisualEnabled() {
+  const { settings } = getTowCombatOverlayConstants();
+  return isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutShowDeadVisuals, true);
+}
 
 export function towCombatOverlayClearDisplayObject(displayObject) {
   if (!displayObject) return;
@@ -132,6 +144,10 @@ export function towCombatOverlayUpdateCustomLayoutBorderVisibility(tokenObject, 
   if (!tokenObject || tokenObject.destroyed) return;
   const border = towCombatOverlayEnsureCustomLayoutBorder(tokenObject);
   if (!border) return;
+  if (!isTokenLayoutBorderEnabled()) {
+    border.visible = false;
+    return;
+  }
   const isHovered = (typeof hovered === "boolean") ? hovered : (tokenObject.hover === true || tokenObject._hover === true);
   const isControlled = (typeof controlled === "boolean") ? controlled : (tokenObject.controlled === true || tokenObject._controlled === true);
   border.visible = tokenObject.visible && (isHovered || isControlled);
@@ -182,6 +198,10 @@ export function towCombatOverlayGetDeadFilterTargets(tokenObject) {
 
 export function towCombatOverlayEnsureDeadVisual(tokenObject) {
   if (!tokenObject) return;
+  if (!isTokenLayoutDeadVisualEnabled()) {
+    towCombatOverlayClearDeadVisual(tokenObject);
+    return;
+  }
   const hasDead = !!tokenObject.document?.actor?.hasCondition?.("dead");
   if (!hasDead) {
     towCombatOverlayClearDeadVisual(tokenObject);

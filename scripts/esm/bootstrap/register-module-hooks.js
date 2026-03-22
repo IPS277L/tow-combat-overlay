@@ -45,10 +45,13 @@ function ensureTowCombatOverlayStylesheetLoaded() {
   return injected;
 }
 
-export function syncTowCombatOverlayDisplaySettings() {
+export function syncTowCombatOverlayDisplaySettings(changedSettingKey = "") {
   const { settings } = getTowCombatOverlayConstants();
   const overlayApi = getTowCombatOverlayOverlayApi();
   let didChange = false;
+  const normalizedChangedSettingKey = String(changedSettingKey ?? "").trim();
+  const shouldRebuildControlPanel = normalizedChangedSettingKey === settings.controlPanelShowStatuses
+    || normalizedChangedSettingKey === settings.controlPanelEnableButtonReorder;
 
   const wantsEnabled = isTowCombatOverlayDisplaySettingEnabled(settings.enableOverlay, true);
   const wantsControlPanel = isTowCombatOverlayDisplaySettingEnabled(settings.enableControlPanel, true);
@@ -78,8 +81,14 @@ export function syncTowCombatOverlayDisplaySettings() {
     overlayApi.disable();
     didChange = true;
   }
+  if (wantsEnabled && typeof overlayApi.refreshAll === "function") {
+    void Promise.resolve(overlayApi.refreshAll()).catch((error) => {
+      console.error("[tow-combat-overlay] Failed to refresh token overlays after settings update.", error);
+    });
+  }
 
   if (wantsControlPanel) {
+    if (shouldRebuildControlPanel) towCombatOverlayRemoveControlPanel();
     void towCombatOverlayEnsureControlPanel().catch((error) => {
       console.error("[tow-combat-overlay] Failed to initialize control panel.", error);
     });
