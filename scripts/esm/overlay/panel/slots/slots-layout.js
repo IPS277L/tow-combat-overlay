@@ -1,4 +1,8 @@
 import { getOverlayWoundIndicatorData } from "../../shared/wound-chip-data.js";
+import { getTowCombatOverlayConstants } from "../../../runtime/module-constants.js";
+import { isTowCombatOverlayDisplaySettingEnabled } from "../../../bootstrap/register-settings.js";
+
+const { settings: MODULE_SETTINGS } = getTowCombatOverlayConstants();
 
 export function createPanelSlotsLayoutService({
   iconSrcWound,
@@ -34,20 +38,26 @@ export function createPanelSlotsLayoutService({
   }
 
   function buildTopChips(groups, actor) {
+    const enableWounds = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableWounds, true);
+    const enableTemporaryEffects = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableTemporaryEffects, true);
     const abilities = Array.isArray(groups?.abilities) ? groups.abilities : [];
-    const temporaryEffects = Array.isArray(groups?.temporaryEffects) ? groups.temporaryEffects : [];
-    const woundIndicator = getOverlayWoundIndicatorData(actor, {
-      woundIconSrc: iconSrcWound,
-      escapeHtml: escapePanelHtml
-    });
-    const woundChipData = woundIndicator ?? (supportsWoundActionChip(actor)
+    const temporaryEffects = enableTemporaryEffects
+      ? (Array.isArray(groups?.temporaryEffects) ? groups.temporaryEffects : [])
+      : [];
+    const woundIndicator = enableWounds
+      ? getOverlayWoundIndicatorData(actor, {
+        woundIconSrc: iconSrcWound,
+        escapeHtml: escapePanelHtml
+      })
+      : null;
+    const woundChipData = enableWounds ? (woundIndicator ?? (supportsWoundActionChip(actor)
       ? {
         title: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.Panel.WoundActions.Title", "Wound Actions"),
         description: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.Panel.WoundActions.Fallback", "Use wounds controls below."),
         image: iconSrcWound,
         isActive: false
       }
-      : null);
+      : null)) : null;
     const woundChip = woundChipData
       ? [{
         id: "__wound_actions__",
@@ -70,6 +80,8 @@ export function createPanelSlotsLayoutService({
   }
 
   function updatePanelSlots(panelElement, token = null) {
+    const enableWeaponsButtons = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableWeaponsButtons, true);
+    const enableMagicButtons = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableMagicButtons, true);
     const actor = token?.actor ?? token?.document?.actor ?? null;
     const groups = actor
       ? buildPanelItemGroupsForActor(actor, {
@@ -94,8 +106,14 @@ export function createPanelSlotsLayoutService({
     const groupKeys = ["manoeuvre", "recover", "actions", "attacks", "magic"];
     const groupedItems = Object.fromEntries(groupKeys.map((key) => {
       const items = Array.isArray(groups[key]) ? groups[key] : [];
+      const groupEnabled = (
+        ((key === "actions" || key === "manoeuvre" || key === "recover"))
+        || (key === "attacks" && enableWeaponsButtons)
+        || (key === "magic" && enableMagicButtons)
+      );
       const normalizedItems = items
         .filter(Boolean)
+        .filter(() => groupEnabled)
         .map((item, index) => {
           const stableId = String(item?.id ?? item?.key ?? item?.name ?? `${key}-${index}`).trim();
           const panelButtonKey = toPanelButtonKey(key, stableId);

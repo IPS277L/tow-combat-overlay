@@ -1,11 +1,11 @@
 <section id="tow-combat-overlay-control-panel" class="tow-combat-overlay-control-panel" aria-label="Combat control panel">
-  {{#if showStatuses}}
-    <div class="tow-combat-overlay-control-panel__statuses" data-selection="none">
-      <div class="tow-combat-overlay-control-panel__statuses-top">
-        <div class="tow-combat-overlay-control-panel__item-group tow-combat-overlay-control-panel__status-abilities" data-item-group="topChips">
-          <div class="tow-combat-overlay-control-panel__group-grid tow-combat-overlay-control-panel__status-abilities" data-item-group="topChips"></div>
-        </div>
+  <div class="tow-combat-overlay-control-panel__statuses" data-selection="none">
+    <div class="tow-combat-overlay-control-panel__statuses-top">
+      <div class="tow-combat-overlay-control-panel__item-group tow-combat-overlay-control-panel__status-abilities" data-item-group="topChips">
+        <div class="tow-combat-overlay-control-panel__group-grid tow-combat-overlay-control-panel__status-abilities" data-item-group="topChips"></div>
       </div>
+    </div>
+    {{#if showStatusIcons}}
       <div class="tow-combat-overlay-control-panel__statuses-bottom">
         {{#each statuses}}
           <div class="tow-combat-overlay-control-panel__status-icon" data-status-id="{{this.id}}">
@@ -13,19 +13,17 @@
           </div>
         {{/each}}
       </div>
-    </div>
-  {{/if}}
-  <div class="tow-combat-overlay-control-panel__item-groups">
-    {{#if showReorderControls}}
-      <div class="tow-combat-overlay-control-panel__reorder-controls">
-        <button type="button" class="tow-combat-overlay-control-panel__reorder-toggle" data-action="toggle-button-reorder" aria-pressed="false" aria-label="Unlock button order">
-          <i class="tow-combat-overlay-control-panel__reorder-toggle-icon fa-solid fa-lock" aria-hidden="true"></i>
-        </button>
-        <button type="button" class="tow-combat-overlay-control-panel__reorder-reset" data-action="reset-button-order" aria-label="Reset current token button order">
-          <span class="tow-combat-overlay-control-panel__reorder-reset-icon" aria-hidden="true"></span>
-        </button>
-      </div>
     {{/if}}
+  </div>
+  <div class="tow-combat-overlay-control-panel__item-groups">
+    <div class="tow-combat-overlay-control-panel__reorder-controls">
+      <button type="button" class="tow-combat-overlay-control-panel__reorder-toggle" data-action="toggle-button-reorder" aria-pressed="false" aria-label="Unlock button order">
+        <i class="tow-combat-overlay-control-panel__reorder-toggle-icon fa-solid fa-lock" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="tow-combat-overlay-control-panel__reorder-reset" data-action="reset-button-order" aria-label="Reset current token button order">
+        <span class="tow-combat-overlay-control-panel__reorder-reset-icon" aria-hidden="true"></span>
+      </button>
+    </div>
     <div class="tow-combat-overlay-control-panel__group-grid" data-item-group="all"></div>
   </div>
 </section>

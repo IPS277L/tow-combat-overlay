@@ -108,16 +108,64 @@ function buildDisplaySettingsGroups(settingKeys) {
           hintKey: "TOWCOMBATOVERLAY.Setting.EnableControlPanel.Hint"
         },
         {
-          key: settingKeys.controlPanelShowStatuses,
+          key: settingKeys.controlPanelEnableStatuses,
           defaultValue: true,
-          nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelShowStatuses.Name",
-          hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelShowStatuses.Hint"
+          nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatuses.Name",
+          hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatuses.Hint"
         },
         {
-          key: settingKeys.controlPanelEnableButtonReorder,
+          key: settingKeys.controlPanelEnableWounds,
           defaultValue: true,
-          nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonReorder.Name",
-          hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonReorder.Hint"
+          nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableWounds.Name",
+          hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableWounds.Hint"
+        },
+        {
+          key: settingKeys.controlPanelEnableTemporaryEffects,
+          defaultValue: true,
+          nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableTemporaryEffects.Name",
+          hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableTemporaryEffects.Hint"
+        },
+        {
+          key: settingKeys.controlPanelEnableName,
+          defaultValue: true,
+          nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableName.Name",
+          hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableName.Hint"
+        },
+        {
+          key: settingKeys.controlPanelEnableStats,
+          defaultValue: true,
+          nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStats.Name",
+          hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStats.Hint"
+        },
+        {
+          key: settingKeys.controlPanelEnableImage,
+          defaultValue: true,
+          nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableImage.Name",
+          hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableImage.Hint"
+        },
+        {
+          key: settingKeys.controlPanelEnableActionButtons,
+          defaultValue: true,
+          nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableActionButtons.Name",
+          hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableActionButtons.Hint"
+        },
+        {
+          key: settingKeys.controlPanelEnableWeaponsButtons,
+          defaultValue: true,
+          nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableWeaponsButtons.Name",
+          hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableWeaponsButtons.Hint"
+        },
+        {
+          key: settingKeys.controlPanelEnableMagicButtons,
+          defaultValue: true,
+          nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableMagicButtons.Name",
+          hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableMagicButtons.Hint"
+        },
+        {
+          key: settingKeys.controlPanelShowDeadPortraitStatus,
+          defaultValue: true,
+          nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelShowDeadPortraitStatus.Name",
+          hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelShowDeadPortraitStatus.Hint"
         }
       ])
     })

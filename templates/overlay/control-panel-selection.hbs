@@ -2,48 +2,58 @@
   <div class="tow-combat-overlay-selection-panel__main">
     <div class="tow-combat-overlay-selection-panel__portrait-column">
       <div class="tow-combat-overlay-control-panel__selection" data-selection="none">
-        <img class="tow-combat-overlay-control-panel__selection-image" src="" alt="Selected token" />
-        <span class="tow-combat-overlay-control-panel__selection-name">
-          <span class="tow-combat-overlay-control-panel__selection-name-main">-</span>
-        </span>
-        <div class="tow-combat-overlay-control-panel__selection-side-stack">
-          <button type="button" class="tow-combat-overlay-control-panel__selection-stat-row" data-selection-stat-row="wounds">
-            <span class="tow-combat-overlay-control-panel__selection-stat-value" data-selection-stat="wounds">-</span>
-            <img class="tow-combat-overlay-control-panel__selection-stat-icon" src="{{icons.wound}}" alt="" />
-          </button>
-          <button type="button" class="tow-combat-overlay-control-panel__selection-stat-row" data-selection-stat-row="resilience">
-            <span class="tow-combat-overlay-control-panel__selection-stat-value" data-selection-stat="resilience">-</span>
-            <img class="tow-combat-overlay-control-panel__selection-stat-icon" src="{{icons.resilience}}" alt="" />
-          </button>
-          <button type="button" class="tow-combat-overlay-control-panel__selection-stat-row" data-selection-stat-row="speed">
-            <span class="tow-combat-overlay-control-panel__selection-stat-value" data-selection-stat="speed">-</span>
-            <img class="tow-combat-overlay-control-panel__selection-stat-icon tow-combat-overlay-control-panel__selection-stat-icon--speed" src="{{icons.speed}}" alt="" />
-          </button>
-          <button type="button" class="tow-combat-overlay-control-panel__selection-stat-row" data-selection-stat-row="miscastDice">
-            <span class="tow-combat-overlay-control-panel__selection-stat-value" data-selection-stat="miscastDice">-</span>
-            <img class="tow-combat-overlay-control-panel__selection-stat-icon tow-combat-overlay-control-panel__selection-stat-icon--dice" src="{{icons.dice}}" alt="" />
-          </button>
-          <div class="tow-combat-overlay-control-panel__selection-mini-controls">
-            <button
-              type="button"
-              class="tow-combat-overlay-control-panel__selection-text-control tow-combat-overlay-control-panel__modifier-icon"
-              data-action-control="rollState"
-              aria-label="Roll State"
-            >
-              <span class="tow-combat-overlay-control-panel__modifier-text" data-action-label="rollState">co</span>
-              <img class="tow-combat-overlay-control-panel__selection-stat-icon" src="{{icons.roll}}" alt="" />
-            </button>
-            <button
-              type="button"
-              class="tow-combat-overlay-control-panel__selection-text-control tow-combat-overlay-control-panel__modifier-icon"
-              data-action-control="diceModifier"
-              aria-label="Dice Modifier"
-            >
-              <span class="tow-combat-overlay-control-panel__modifier-text" data-action-label="diceModifier">+0d10</span>
-              <img class="tow-combat-overlay-control-panel__selection-stat-icon tow-combat-overlay-control-panel__selection-stat-icon--dice" src="{{icons.dice}}" alt="" />
-            </button>
+        {{#if showImage}}
+          <img class="tow-combat-overlay-control-panel__selection-image" src="" alt="Selected token" />
+        {{/if}}
+        {{#if showName}}
+          <span class="tow-combat-overlay-control-panel__selection-name">
+            <span class="tow-combat-overlay-control-panel__selection-name-main">-</span>
+          </span>
+        {{/if}}
+        {{#if showSelectionSideStack}}
+          <div class="tow-combat-overlay-control-panel__selection-side-stack">
+            {{#if showStats}}
+              <button type="button" class="tow-combat-overlay-control-panel__selection-stat-row" data-selection-stat-row="wounds">
+                <span class="tow-combat-overlay-control-panel__selection-stat-value" data-selection-stat="wounds">-</span>
+                <img class="tow-combat-overlay-control-panel__selection-stat-icon" src="{{icons.wound}}" alt="" />
+              </button>
+              <button type="button" class="tow-combat-overlay-control-panel__selection-stat-row" data-selection-stat-row="resilience">
+                <span class="tow-combat-overlay-control-panel__selection-stat-value" data-selection-stat="resilience">-</span>
+                <img class="tow-combat-overlay-control-panel__selection-stat-icon" src="{{icons.resilience}}" alt="" />
+              </button>
+              <button type="button" class="tow-combat-overlay-control-panel__selection-stat-row" data-selection-stat-row="speed">
+                <span class="tow-combat-overlay-control-panel__selection-stat-value" data-selection-stat="speed">-</span>
+                <img class="tow-combat-overlay-control-panel__selection-stat-icon tow-combat-overlay-control-panel__selection-stat-icon--speed" src="{{icons.speed}}" alt="" />
+              </button>
+              <button type="button" class="tow-combat-overlay-control-panel__selection-stat-row" data-selection-stat-row="miscastDice">
+                <span class="tow-combat-overlay-control-panel__selection-stat-value" data-selection-stat="miscastDice">-</span>
+                <img class="tow-combat-overlay-control-panel__selection-stat-icon tow-combat-overlay-control-panel__selection-stat-icon--dice" src="{{icons.dice}}" alt="" />
+              </button>
+            {{/if}}
+            {{#if showActionButtons}}
+              <div class="tow-combat-overlay-control-panel__selection-mini-controls">
+                <button
+                  type="button"
+                  class="tow-combat-overlay-control-panel__selection-text-control tow-combat-overlay-control-panel__modifier-icon"
+                  data-action-control="rollState"
+                  aria-label="Roll State"
+                >
+                  <span class="tow-combat-overlay-control-panel__modifier-text" data-action-label="rollState">co</span>
+                  <img class="tow-combat-overlay-control-panel__selection-stat-icon" src="{{icons.roll}}" alt="" />
+                </button>
+                <button
+                  type="button"
+                  class="tow-combat-overlay-control-panel__selection-text-control tow-combat-overlay-control-panel__modifier-icon"
+                  data-action-control="diceModifier"
+                  aria-label="Dice Modifier"
+                >
+                  <span class="tow-combat-overlay-control-panel__modifier-text" data-action-label="diceModifier">+0d10</span>
+                  <img class="tow-combat-overlay-control-panel__selection-stat-icon tow-combat-overlay-control-panel__selection-stat-icon--dice" src="{{icons.dice}}" alt="" />
+                </button>
+              </div>
+            {{/if}}
           </div>
-        </div>
+        {{/if}}
         <span class="tow-combat-overlay-control-panel__selection-placeholder">-</span>
         <span class="tow-combat-overlay-control-panel__selection-multi-count">x0</span>
       </div>

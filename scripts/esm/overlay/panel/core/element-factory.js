@@ -19,21 +19,32 @@ export function createPanelElementFactoryService({
     const statuses = getAllConditionEntries();
     return {
       statuses,
-      showStatuses: isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelShowStatuses, true),
-      showReorderControls: isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableButtonReorder, true)
+      showStatusIcons: isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStatuses, true)
     };
   }
 
-  async function createSelectionPanelElement() {
-    const html = await towCombatOverlayRenderTemplate(panelSelectionTemplatePath, {
+  function getSelectionPanelTemplateData() {
+    const { settings } = getTowCombatOverlayConstants();
+    const showStats = isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStats, true);
+    const showActionButtons = isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableActionButtons, true);
+    return {
       icons: {
         wound: iconSrcWound,
         resilience: panelResilienceIcon,
         speed: panelSpeedIcon,
         roll: panelRollIcon,
         dice: panelDiceIcon
-      }
-    });
+      },
+      showName: isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableName, true),
+      showStats,
+      showImage: isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableImage, true),
+      showActionButtons,
+      showSelectionSideStack: showStats || showActionButtons
+    };
+  }
+
+  async function createSelectionPanelElement() {
+    const html = await towCombatOverlayRenderTemplate(panelSelectionTemplatePath, getSelectionPanelTemplateData());
     const wrapper = document.createElement("div");
     wrapper.innerHTML = String(html ?? "").trim();
     const selectionPanel = wrapper.firstElementChild;
@@ -56,6 +67,7 @@ export function createPanelElementFactoryService({
 
   return {
     getPanelTemplateData,
+    getSelectionPanelTemplateData,
     createSelectionPanelElement,
     createControlPanelElement
   };

@@ -1,3 +1,8 @@
+import { getTowCombatOverlayConstants } from "../../../runtime/module-constants.js";
+import { isTowCombatOverlayDisplaySettingEnabled } from "../../../bootstrap/register-settings.js";
+
+const { settings: MODULE_SETTINGS } = getTowCombatOverlayConstants();
+
 export function createPanelSelectionSyncDisplayService({
   getControlPanelState,
   clearPanelAttackPickMode,
@@ -73,15 +78,8 @@ export function createPanelSelectionSyncDisplayService({
     const selectionMiscastRow = selectionPanelElement?.querySelector?.("[data-selection-stat-row='miscastDice']");
     const placeholderElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-placeholder");
     const multiCountElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-multi-count");
-    if (!(imageElement instanceof HTMLImageElement)) return;
-    if (!(selectionNameMainElement instanceof HTMLElement)) return;
     if (!(placeholderElement instanceof HTMLElement)) return;
     if (!(multiCountElement instanceof HTMLElement)) return;
-    if (!(selectionSpeedElement instanceof HTMLElement)) return;
-    if (!(selectionResilienceElement instanceof HTMLElement)) return;
-    if (!(selectionWoundsElement instanceof HTMLElement)) return;
-    if (!(selectionMiscastElement instanceof HTMLElement)) return;
-    if (!(selectionMiscastRow instanceof HTMLElement)) return;
 
     const controlledTokens = Array.isArray(canvas?.tokens?.controlled)
       ? canvas.tokens.controlled.filter((token) => token && !token.destroyed)
@@ -107,19 +105,35 @@ export function createPanelSelectionSyncDisplayService({
     const actor = token?.actor ?? token?.document?.actor ?? null;
     const hasMagic = actorHasMagicCasting(actor);
     const isDead = !!actor?.hasCondition?.("dead");
+    const showDeadPortraitStatus = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelShowDeadPortraitStatus, true);
     selectionElement.dataset.selection = "single";
-    selectionElement.classList.toggle("is-dead", isDead);
+    selectionElement.classList.toggle("is-dead", showDeadPortraitStatus && isDead);
     selectionElement.classList.toggle("is-magic", hasMagic);
-    imageElement.src = iconSrc;
-    imageElement.alt = tokenName;
-    selectionNameMainElement.textContent = tokenName || "-";
-    fitSelectionNameFont(selectionNameMainElement);
-    selectionSpeedElement.textContent = speed;
-    selectionResilienceElement.textContent = formatStatNumber(resilience);
-    selectionWoundsElement.textContent = formatWoundsWithMax(token, wounds);
-    selectionMiscastElement.textContent = hasMagic ? formatMiscastDiceValue(token) : "-";
-    selectionMiscastRow.style.display = hasMagic ? "" : "none";
+    if (imageElement instanceof HTMLImageElement) {
+      imageElement.src = iconSrc;
+      imageElement.alt = tokenName;
+    }
+    if (selectionNameMainElement instanceof HTMLElement) {
+      selectionNameMainElement.textContent = tokenName || "-";
+      fitSelectionNameFont(selectionNameMainElement);
+    }
+    if (selectionSpeedElement instanceof HTMLElement) {
+      selectionSpeedElement.textContent = speed;
+    }
+    if (selectionResilienceElement instanceof HTMLElement) {
+      selectionResilienceElement.textContent = formatStatNumber(resilience);
+    }
+    if (selectionWoundsElement instanceof HTMLElement) {
+      selectionWoundsElement.textContent = formatWoundsWithMax(token, wounds);
+    }
+    if (selectionMiscastElement instanceof HTMLElement) {
+      selectionMiscastElement.textContent = hasMagic ? formatMiscastDiceValue(token) : "-";
+    }
+    if (selectionMiscastRow instanceof HTMLElement) {
+      selectionMiscastRow.style.display = hasMagic ? "" : "none";
+    }
     placeholderElement.textContent = iconSrc ? "-" : "?";
+    placeholderElement.style.display = (imageElement instanceof HTMLImageElement) ? "" : "inline-flex";
     multiCountElement.textContent = "x1";
     updatePanelSlots(panelElement, token);
     updateStatusDisplay(panelElement, token);

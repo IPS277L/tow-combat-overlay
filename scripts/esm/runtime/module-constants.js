@@ -29,8 +29,16 @@ const MODULE_CONSTANTS_BASE = Object.freeze({
     tokenLayoutEnableTemporaryEffects: "tokenLayoutEnableTemporaryEffects",
     tokenLayoutShowCustomName: "tokenLayoutShowCustomName",
     tokenLayoutShowDeadVisuals: "tokenLayoutShowDeadVisuals",
-    controlPanelShowStatuses: "controlPanelShowStatuses",
-    controlPanelEnableButtonReorder: "controlPanelEnableButtonReorder"
+    controlPanelEnableStatuses: "controlPanelEnableStatuses",
+    controlPanelEnableWounds: "controlPanelEnableWounds",
+    controlPanelEnableTemporaryEffects: "controlPanelEnableTemporaryEffects",
+    controlPanelEnableName: "controlPanelEnableName",
+    controlPanelEnableStats: "controlPanelEnableStats",
+    controlPanelEnableImage: "controlPanelEnableImage",
+    controlPanelEnableActionButtons: "controlPanelEnableActionButtons",
+    controlPanelEnableWeaponsButtons: "controlPanelEnableWeaponsButtons",
+    controlPanelEnableMagicButtons: "controlPanelEnableMagicButtons",
+    controlPanelShowDeadPortraitStatus: "controlPanelShowDeadPortraitStatus"
   })
 });
 
