@@ -1,4 +1,25 @@
 import { clampPanelCoordinate } from "./state.js";
+import { getTowCombatOverlayConstants } from "../../../runtime/module-constants.js";
+import { isTowCombatOverlayDisplaySettingEnabled } from "../../../bootstrap/register-settings.js";
+
+const { settings: MODULE_SETTINGS } = getTowCombatOverlayConstants();
+
+export function isControlPanelAlwaysCenteredEnabled() {
+  return isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelAlwaysCentered, false);
+}
+
+function applyCenteredPanelPosition(panelElement, viewportMarginPx = 8) {
+  const rect = panelElement.getBoundingClientRect();
+  const panelWidth = Math.max(1, Math.round(rect.width || panelElement.offsetWidth || 1));
+  const panelHeight = Math.max(1, Math.round(rect.height || panelElement.offsetHeight || 1));
+  const bounds = getPanelBounds(panelElement, viewportMarginPx);
+  const centeredLeft = Math.round((window.innerWidth / 2) - (panelWidth / 2));
+  const centeredTop = Math.round(window.innerHeight - panelHeight - viewportMarginPx);
+  const left = clampPanelCoordinate(centeredLeft, bounds.minLeft, bounds.maxLeft);
+  const top = clampPanelCoordinate(centeredTop, bounds.minTop, bounds.maxTop);
+  panelElement.style.left = `${Math.round(left)}px`;
+  panelElement.style.top = `${Math.round(top)}px`;
+}
 
 export function getPanelBounds(panelElement, viewportMarginPx = 8) {
   const rect = panelElement.getBoundingClientRect();
@@ -15,6 +36,10 @@ export function getPanelBounds(panelElement, viewportMarginPx = 8) {
 }
 
 export function applyPanelPosition(panelElement, left, top, viewportMarginPx = 8) {
+  if (isControlPanelAlwaysCenteredEnabled()) {
+    applyCenteredPanelPosition(panelElement, viewportMarginPx);
+    return;
+  }
   const bounds = getPanelBounds(panelElement, viewportMarginPx);
   const safeLeft = clampPanelCoordinate(left, bounds.minLeft, bounds.maxLeft);
   const safeTop = clampPanelCoordinate(top, bounds.minTop, bounds.maxTop);
@@ -23,6 +48,10 @@ export function applyPanelPosition(panelElement, left, top, viewportMarginPx = 8
 }
 
 export function applyPanelPositionWithSelectionClamp(controlPanelState, panelElement, left, top, viewportMarginPx = 8) {
+  if (isControlPanelAlwaysCenteredEnabled()) {
+    applyCenteredPanelPosition(panelElement, viewportMarginPx);
+    return;
+  }
   const bounds = getPanelBounds(panelElement, viewportMarginPx);
   let minLeft = bounds.minLeft;
   let maxLeft = bounds.maxLeft;
@@ -53,6 +82,10 @@ export function applyPanelPositionWithSelectionClamp(controlPanelState, panelEle
 }
 
 export function applyInitialPanelPosition(panelElement, viewportMarginPx = 8) {
+  if (isControlPanelAlwaysCenteredEnabled()) {
+    applyCenteredPanelPosition(panelElement, viewportMarginPx);
+    return;
+  }
   const rect = panelElement.getBoundingClientRect();
   const panelWidth = Math.max(1, Math.round(rect.width || panelElement.offsetWidth || 1));
   const panelHeight = Math.max(1, Math.round(rect.height || panelElement.offsetHeight || 1));

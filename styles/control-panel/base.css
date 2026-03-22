@@ -66,6 +66,14 @@
   pointer-events: none;
 }
 
+.tow-combat-overlay-control-panel.tow-combat-overlay-control-panel--rounded-left {
+  border-radius: 8px;
+}
+
+.tow-combat-overlay-control-panel.tow-combat-overlay-control-panel--rounded-left::before {
+  border-radius: 8px;
+}
+
 .tow-combat-overlay-selection-panel {
   --tow-control-panel-status-size: 27px;
   --tow-control-panel-status-gap: 4px;

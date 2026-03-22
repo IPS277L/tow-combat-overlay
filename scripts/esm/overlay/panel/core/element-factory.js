@@ -17,16 +17,17 @@ export function createPanelElementFactoryService({
   function getPanelTemplateData() {
     const { settings } = getTowCombatOverlayConstants();
     const statuses = getAllConditionEntries();
+    const showStats = isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStats, true);
     return {
       statuses,
-      showStatusIcons: isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStatuses, true)
+      showStatusIcons: isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStatuses, true),
+      roundLeftWhenStatsDisabled: !showStats
     };
   }
 
   function getSelectionPanelTemplateData() {
     const { settings } = getTowCombatOverlayConstants();
     const showStats = isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStats, true);
-    const showActionButtons = isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableActionButtons, true);
     return {
       icons: {
         wound: iconSrcWound,
@@ -38,8 +39,8 @@ export function createPanelElementFactoryService({
       showName: isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableName, true),
       showStats,
       showImage: isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableImage, true),
-      showActionButtons,
-      showSelectionSideStack: showStats || showActionButtons
+      showActionButtons: true,
+      showSelectionSideStack: showStats
     };
   }
 

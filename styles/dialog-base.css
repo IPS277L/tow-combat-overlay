@@ -27,6 +27,77 @@
   text-shadow: 0 0 4px rgba(242, 232, 204, 0.28);
 }
 
+.tow-combat-overlay-settings-window .window-header {
+  background: #2e2e2e;
+  border-bottom: 1px solid #1f1f1f;
+  border-radius: 8px 8px 0 0;
+  color: #f0f0f0;
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+}
+
+.tow-combat-overlay-settings-window .window-header .window-title {
+  color: #f0f0f0;
+  font-family: "Signika", "Trebuchet MS", sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0;
+  text-transform: none;
+  text-shadow: none;
+}
+
+.tow-combat-overlay-settings-window .window-header .header-control {
+  color: transparent;
+  font-size: 0;
+  font-family: "Signika", "Trebuchet MS", sans-serif;
+  line-height: 1;
+  margin: 0;
+  padding: 0 2px;
+  width: 18px;
+  min-width: 18px;
+  overflow: hidden;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-indent: -9999px;
+}
+
+.tow-combat-overlay-settings-window .window-header .header-control i {
+  color: #f0f0f0;
+  font-size: 14px;
+  line-height: 1;
+  text-indent: 0;
+}
+
+.tow-combat-overlay-settings-window .window-header .header-control .control-label {
+  display: none;
+}
+
+.tow-combat-overlay-settings-window .window-header .header-control .label,
+.tow-combat-overlay-settings-window .window-header .header-control .title {
+  display: none;
+}
+
+.tow-combat-overlay-settings-window .window-header .header-control::after {
+  content: none;
+}
+
+.tow-combat-overlay-settings-window .window-content {
+  border-radius: 0 0 8px 8px;
+  font-size: 14px;
+}
+
+.tow-combat-overlay-settings-window {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
 .tow-combat-overlay-dialog .dialog-content {
   margin: 0 0 8px 0;
 }

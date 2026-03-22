@@ -1,15 +1,34 @@
 <form class="tow-combat-overlay-settings-group-form" autocomplete="off">
-  {{#each fields}}
-    <div class="form-group">
-      <label for="{{this.id}}">{{this.name}}</label>
-      <div class="form-fields">
-        <input id="{{this.id}}" type="checkbox" name="{{this.key}}" {{#if this.value}}checked{{/if}} />
-      </div>
-      <p class="hint">{{this.hint}}</p>
-    </div>
-  {{/each}}
+  <div style="max-height: 620px; overflow-y: auto; padding-right: 4px;">
+    {{#if sections.length}}
+      {{#each sections}}
+        <section class="tow-combat-overlay-settings-group-form__section" style="margin: 0 0 10px 0; padding: 8px 10px; border: 1px solid rgba(0, 0, 0, 0.28); border-radius: 6px; background: rgba(255, 255, 255, 0.18);">
+          <h3 class="tow-combat-overlay-settings-group-form__section-title" style="margin: 0 0 8px 0; padding-bottom: 4px; border-bottom: 1px solid rgba(0, 0, 0, 0.28); font-family: inherit; font-size: inherit; letter-spacing: normal; font-weight: 400; ">{{this.title}}</h3>
+          {{#each this.fields}}
+            <div class="form-group" style="margin: 0 0 8px 0;">
+              <label for="{{this.id}}" style="font-weight: 700;">{{this.name}}</label>
+              <div class="form-fields">
+                <input id="{{this.id}}" type="checkbox" name="{{this.key}}" {{#if this.value}}checked{{/if}} />
+              </div>
+              <p class="hint">{{this.hint}}</p>
+            </div>
+          {{/each}}
+        </section>
+      {{/each}}
+    {{else}}
+      {{#each fields}}
+        <div class="form-group" style="margin: 0 0 8px 0;">
+          <label for="{{this.id}}" style="font-weight: 700;">{{this.name}}</label>
+          <div class="form-fields">
+            <input id="{{this.id}}" type="checkbox" name="{{this.key}}" {{#if this.value}}checked{{/if}} />
+          </div>
+          <p class="hint">{{this.hint}}</p>
+        </div>
+      {{/each}}
+    {{/if}}
+  </div>
 
-  <footer class="sheet-footer flexrow">
+  <footer class="sheet-footer flexrow" style="margin-top: 2px;">
     <button type="submit" name="submit">
       <i class="fas fa-save"></i>
       <span>{{saveLabel}}</span>

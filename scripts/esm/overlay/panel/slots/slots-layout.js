@@ -38,9 +38,12 @@ export function createPanelSlotsLayoutService({
   }
 
   function buildTopChips(groups, actor) {
+    const enableAbilities = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableAbilities, true);
     const enableWounds = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableWounds, true);
     const enableTemporaryEffects = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableTemporaryEffects, true);
-    const abilities = Array.isArray(groups?.abilities) ? groups.abilities : [];
+    const abilities = enableAbilities
+      ? (Array.isArray(groups?.abilities) ? groups.abilities : [])
+      : [];
     const temporaryEffects = enableTemporaryEffects
       ? (Array.isArray(groups?.temporaryEffects) ? groups.temporaryEffects : [])
       : [];
@@ -80,6 +83,7 @@ export function createPanelSlotsLayoutService({
   }
 
   function updatePanelSlots(panelElement, token = null) {
+    const enableActionButtons = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableActionButtons, true);
     const enableWeaponsButtons = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableWeaponsButtons, true);
     const enableMagicButtons = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableMagicButtons, true);
     const actor = token?.actor ?? token?.document?.actor ?? null;
@@ -108,12 +112,25 @@ export function createPanelSlotsLayoutService({
       const items = Array.isArray(groups[key]) ? groups[key] : [];
       const groupEnabled = (
         ((key === "actions" || key === "manoeuvre" || key === "recover"))
-        || (key === "attacks" && enableWeaponsButtons)
+        || (key === "attacks")
         || (key === "magic" && enableMagicButtons)
       );
       const normalizedItems = items
         .filter(Boolean)
         .filter(() => groupEnabled)
+        .filter((item) => {
+          if (key === "manoeuvre" || key === "recover") return enableActionButtons;
+          if (key === "attacks") {
+            const itemId = String(item?.id ?? "").trim().toLowerCase();
+            const unarmedId = String(panelUnarmedActionId ?? "").trim().toLowerCase();
+            if (itemId && unarmedId && itemId === unarmedId) return enableActionButtons;
+            return enableWeaponsButtons;
+          }
+          if (key !== "actions") return true;
+          const itemId = String(item?.id ?? "").trim().toLowerCase();
+          if (itemId === "accumulatepower") return enableMagicButtons;
+          return enableActionButtons;
+        })
         .map((item, index) => {
           const stableId = String(item?.id ?? item?.key ?? item?.name ?? `${key}-${index}`).trim();
           const panelButtonKey = toPanelButtonKey(key, stableId);

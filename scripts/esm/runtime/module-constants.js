@@ -30,6 +30,7 @@ const MODULE_CONSTANTS_BASE = Object.freeze({
     tokenLayoutShowCustomName: "tokenLayoutShowCustomName",
     tokenLayoutShowDeadVisuals: "tokenLayoutShowDeadVisuals",
     controlPanelEnableStatuses: "controlPanelEnableStatuses",
+    controlPanelEnableAbilities: "controlPanelEnableAbilities",
     controlPanelEnableWounds: "controlPanelEnableWounds",
     controlPanelEnableTemporaryEffects: "controlPanelEnableTemporaryEffects",
     controlPanelEnableName: "controlPanelEnableName",
@@ -38,7 +39,8 @@ const MODULE_CONSTANTS_BASE = Object.freeze({
     controlPanelEnableActionButtons: "controlPanelEnableActionButtons",
     controlPanelEnableWeaponsButtons: "controlPanelEnableWeaponsButtons",
     controlPanelEnableMagicButtons: "controlPanelEnableMagicButtons",
-    controlPanelShowDeadPortraitStatus: "controlPanelShowDeadPortraitStatus"
+    controlPanelShowDeadPortraitStatus: "controlPanelShowDeadPortraitStatus",
+    controlPanelAlwaysCentered: "controlPanelAlwaysCentered"
   })
 });
 

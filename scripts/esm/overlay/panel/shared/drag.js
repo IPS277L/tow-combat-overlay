@@ -26,7 +26,8 @@ export function bindControlPanelDrag(controlPanelState, panelElement, {
   applyPosition,
   persistPosition,
   onMoved = null,
-  dragSources = []
+  dragSources = [],
+  canDrag = null
 } = {}) {
   let dragData = null;
 
@@ -50,6 +51,7 @@ export function bindControlPanelDrag(controlPanelState, panelElement, {
 
   const onPointerDown = (event) => {
     if (event.button !== 0) return;
+    if (typeof canDrag === "function" && !canDrag()) return;
     if (isDragBlockedTarget(event.target)) return;
     event.preventDefault();
 

@@ -51,6 +51,7 @@ export function syncTowCombatOverlayDisplaySettings(changedSettingKey = "") {
   let didChange = false;
   const normalizedChangedSettingKey = String(changedSettingKey ?? "").trim();
   const shouldRebuildControlPanel = normalizedChangedSettingKey === settings.controlPanelEnableStatuses
+    || normalizedChangedSettingKey === settings.controlPanelEnableAbilities
     || normalizedChangedSettingKey === settings.controlPanelEnableWounds
     || normalizedChangedSettingKey === settings.controlPanelEnableTemporaryEffects
     || normalizedChangedSettingKey === settings.controlPanelEnableName
@@ -59,7 +60,8 @@ export function syncTowCombatOverlayDisplaySettings(changedSettingKey = "") {
     || normalizedChangedSettingKey === settings.controlPanelEnableActionButtons
     || normalizedChangedSettingKey === settings.controlPanelEnableWeaponsButtons
     || normalizedChangedSettingKey === settings.controlPanelEnableMagicButtons
-    || normalizedChangedSettingKey === settings.controlPanelShowDeadPortraitStatus;
+    || normalizedChangedSettingKey === settings.controlPanelShowDeadPortraitStatus
+    || normalizedChangedSettingKey === settings.controlPanelAlwaysCentered;
 
   const wantsEnabled = isTowCombatOverlayDisplaySettingEnabled(settings.enableOverlay, true);
   const wantsControlPanel = isTowCombatOverlayDisplaySettingEnabled(settings.enableControlPanel, true);

@@ -17,6 +17,7 @@ export function createPanelDomLifecycleService({
   bindSelectionNameTooltipEvent,
   bindPanelStatusesTooltipEvents,
   bindControlPanelDrag,
+  isPanelDragEnabled,
   applyPanelPositionWithSelectionClamp,
   writeSavedPanelPosition,
   bindPanelSelectionSync,
@@ -64,6 +65,7 @@ export function createPanelDomLifecycleService({
       ),
       persistPosition: writeSavedPanelPosition,
       dragSources: [selectionPanelElement],
+      canDrag: () => (typeof isPanelDragEnabled === "function" ? !!isPanelDragEnabled() : true),
       onMoved: () => syncSelectionPanelPosition(controlPanelState, panelSelectionGapPx)
     });
     bindPanelSelectionSync(controlPanelState, panelElement);

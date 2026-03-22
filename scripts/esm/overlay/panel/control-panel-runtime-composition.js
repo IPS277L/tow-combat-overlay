@@ -71,6 +71,7 @@ import {
   applyInitialPanelPosition,
   applyPanelPosition,
   applyPanelPositionWithSelectionClamp,
+  isControlPanelAlwaysCenteredEnabled,
   syncSelectionPanelPosition
 } from "./shared/position.js";
 import { bindPanelTooltipEvent } from "./shared/tooltip.js";
@@ -480,6 +481,7 @@ const panelDomLifecycleService = createPanelDomLifecycleService({
   bindSelectionNameTooltipEvent: (selectionPanelElement) => bindSelectionNameTooltipEvent(selectionPanelElement),
   bindPanelStatusesTooltipEvents: (panelElement) => bindPanelStatusesTooltipEvents(panelElement),
   bindControlPanelDrag,
+  isPanelDragEnabled: () => !isControlPanelAlwaysCenteredEnabled(),
   applyPanelPositionWithSelectionClamp,
   writeSavedPanelPosition,
   bindPanelSelectionSync: (controlPanelState, panelElement) => bindPanelSelectionSync(controlPanelState, panelElement),
