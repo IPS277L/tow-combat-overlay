@@ -26,7 +26,6 @@
   overflow-y: auto;
   overflow-x: hidden;
   max-height: 430px;
-  scrollbar-gutter: stable;
 }
 
 .tow-combat-overlay-dialog .dialog-content .tow-combat-overlay-panel__empty,
@@ -152,4 +151,118 @@
   opacity: 0.85;
   flex: 0 0 auto;
   color: #2f2a1f;
+}
+
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .dialog-content .tow-combat-overlay-panel,
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .tow-combat-overlay-panel {
+  border: 1px solid rgba(0, 0, 0, 0.28);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .dialog-content .tow-combat-overlay-panel__header,
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .tow-combat-overlay-panel__header {
+  padding: 8px 10px 6px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: normal;
+  background: transparent;
+  color: #202020;
+  border-bottom: none;
+  background-image: linear-gradient(
+    to right,
+    transparent 0,
+    transparent 10px,
+    rgba(0, 0, 0, 0.28) 10px,
+    rgba(0, 0, 0, 0.28) calc(100% - 10px),
+    transparent calc(100% - 10px),
+    transparent 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 100% 1px;
+  background-position: 0 calc(100% - 1px);
+}
+
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .dialog-content .tow-combat-overlay-panel__body,
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .tow-combat-overlay-panel__body {
+  gap: 6px;
+  padding: 8px 10px;
+}
+
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .dialog-content .tow-combat-overlay-defence-grid,
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .tow-combat-overlay-defence-grid {
+  height: 100%;
+  min-height: 0;
+  align-items: stretch;
+  padding-bottom: 6px;
+  box-sizing: border-box;
+}
+
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .dialog-content .tow-combat-overlay-defence-grid > .tow-combat-overlay-panel:last-child,
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .tow-combat-overlay-defence-grid > .tow-combat-overlay-panel:last-child {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .dialog-content .tow-combat-overlay-defence-grid > .tow-combat-overlay-panel:first-child,
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .tow-combat-overlay-defence-grid > .tow-combat-overlay-panel:first-child {
+  align-self: start;
+  height: auto;
+}
+
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .dialog-content .tow-combat-overlay-defence-grid > .tow-combat-overlay-panel:last-child .tow-combat-overlay-panel__body,
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .tow-combat-overlay-defence-grid > .tow-combat-overlay-panel:last-child .tow-combat-overlay-panel__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .dialog-content button.tow-combat-overlay-selector__row,
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window button.tow-combat-overlay-selector__row {
+  border: 1px solid rgba(0, 0, 0, 0.28);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.18);
+  min-height: 36px;
+  padding: 5px 8px;
+}
+
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .dialog-content button.tow-combat-overlay-selector__row.is-compact,
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window button.tow-combat-overlay-selector__row.is-compact {
+  min-height: 34px;
+  height: 34px;
+  padding: 4px 8px;
+}
+
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .dialog-content button.tow-combat-overlay-selector__row.is-highlighted,
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window button.tow-combat-overlay-selector__row.is-highlighted {
+  border-color: rgba(112, 88, 24, 0.65);
+  background: rgba(231, 217, 160, 0.45);
+  box-shadow: none;
+}
+
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .dialog-content .tow-combat-overlay-selector__row-main,
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .tow-combat-overlay-selector__row-main {
+  gap: 8px;
+}
+
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .dialog-content .tow-combat-overlay-selector__accent,
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .tow-combat-overlay-selector__accent {
+  width: 3px;
+  border-radius: 2px;
+}
+
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .dialog-content .tow-combat-overlay-selector__label,
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .tow-combat-overlay-selector__label,
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .dialog-content .tow-combat-overlay-selector__value,
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .tow-combat-overlay-selector__value {
+  font-size: 14px;
+  color: #202020;
+}
+
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .dialog-content .tow-combat-overlay-selector__sub-label,
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .tow-combat-overlay-selector__sub-label {
+  font-size: 12px;
 }

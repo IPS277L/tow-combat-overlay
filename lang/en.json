@@ -87,7 +87,6 @@
   "TOWCOMBATOVERLAY.Notification.Defence.NoManualEntries": "{actorName}: no rollable skills or characteristics found.",
   "TOWCOMBATOVERLAY.Notification.Defence.NoDefaultSkills": "{actorName}: no rollable skills found for default defence roll.",
   "TOWCOMBATOVERLAY.Notification.Defence.FallbackSkill": "{actorName}: '{defaultSkill}' not found, rolled '{rolledSkill}' instead.",
-  "TOWCOMBATOVERLAY.Dialog.CloseLabel": "Close",
   "TOWCOMBATOVERLAY.Dialog.AttackListHeader": "Attacks",
   "TOWCOMBATOVERLAY.Dialog.NoAttacks": "No attacks",
   "TOWCOMBATOVERLAY.Dialog.AttackSelectorTitle": "{actorName} - Weapon Attacks",

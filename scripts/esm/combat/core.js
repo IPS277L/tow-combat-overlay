@@ -94,10 +94,8 @@ export function towCombatOverlayOpenSelectorDialog({
   content,
   width = 560,
   height = null,
-  closeLabel = null,
   onRender
 } = {}) {
-  const closeLabelResolved = closeLabel ?? towCombatOverlayLocalize("TOWCOMBATOVERLAY.Dialog.CloseLabel", "Close");
   const markerId = foundry?.utils?.randomID?.() ?? `tow-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
   const wrappedContent = `<div data-tow-selector-dialog-id="${towCombatOverlayEscapeHtml(markerId)}">${String(content ?? "")}</div>`;
   const DialogV2Class = foundry?.applications?.api?.DialogV2;
@@ -110,13 +108,7 @@ export function towCombatOverlayOpenSelectorDialog({
         },
         content: wrappedContent,
         width,
-        position: { width },
-        buttons: [
-          {
-            action: "close",
-            label: closeLabelResolved
-          }
-        ]
+        position: { width }
       };
       if (Number.isFinite(Number(height)) && Number(height) > 0) {
         dialogV2Config.height = Number(height);
@@ -145,16 +137,19 @@ export function towCombatOverlayOpenSelectorDialog({
     }
   }
 
-  const dialogV1 = new Dialog({
+  const dialogV1Data = {
     title,
     content: wrappedContent,
-    width,
-    ...(Number.isFinite(Number(height)) && Number(height) > 0 ? { height: Number(height) } : {}),
-    buttons: { close: { label: closeLabelResolved } },
+    buttons: {},
     render: (html) => {
       if (typeof onRender === "function") onRender(html, dialogV1);
     }
-  });
+  };
+  const dialogV1Options = {
+    width,
+    ...(Number.isFinite(Number(height)) && Number(height) > 0 ? { height: Number(height) } : {})
+  };
+  const dialogV1 = new Dialog(dialogV1Data, dialogV1Options);
   dialogV1.render(true);
   return dialogV1;
 }

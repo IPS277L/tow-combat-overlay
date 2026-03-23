@@ -71,7 +71,6 @@ export function getTowCombatOverlayConstants() {
       })
     }),
     dialogs: Object.freeze({
-      closeLabel: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Dialog.CloseLabel", "Close"),
       attackListHeader: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Dialog.AttackListHeader", "Attacks"),
       noAttacks: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Dialog.NoAttacks", "No attacks"),
       attackSelectorTitle: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Dialog.AttackSelectorTitle", "{actorName} - Weapon Attacks"),

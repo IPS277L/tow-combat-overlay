@@ -182,9 +182,9 @@ export async function towCombatOverlayRenderAttackSelector(actor, attacks, { onF
     title,
     content,
     width: 560,
-    closeLabel: MODULE_DIALOGS.closeLabel,
     onRender: (html, dialogApp) => {
       towCombatOverlayApplyDialogClass(html, "tow-combat-overlay-dialog");
+      towCombatOverlayApplyDialogClass(html, "tow-combat-overlay-settings-window");
       towCombatOverlayBindClick(html, ".attack-btn", async (event) => {
         const chosen = actor.items.get(event.currentTarget.dataset.id);
         if (!chosen) return;
