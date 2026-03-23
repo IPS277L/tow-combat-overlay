@@ -12,6 +12,8 @@
   --tow-top-panel-padding: 0px;
   --tow-top-panel-gap: 4px;
   --tow-top-panel-portrait-size: 122px;
+  --tow-top-panel-control-width: 24px;
+  --tow-top-panel-control-gap: 4px;
   --tow-top-panel-chip-size: 16px;
   --tow-top-panel-chip-gap: 4px;
   --tow-top-panel-chip-rows: 2;
@@ -35,7 +37,7 @@
   pointer-events: auto;
   display: flex;
   align-items: flex-start;
-  gap: 4px;
+  gap: var(--tow-top-panel-control-gap);
 }
 
 .tow-combat-overlay-top-panel[data-has-tokens="false"] {
@@ -46,7 +48,7 @@
   display: flex;
   align-items: center;
   gap: var(--tow-top-panel-gap);
-  max-width: calc(100% - 26px);
+  max-width: calc(100% - (var(--tow-top-panel-control-width) + var(--tow-top-panel-control-gap)));
   padding-bottom: var(--tow-top-panel-chip-stack-height);
   background: transparent;
   overflow-x: auto;

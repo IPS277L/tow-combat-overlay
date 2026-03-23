@@ -1,6 +1,5 @@
 const TOP_PANEL_ORDER_STORAGE_KEY = "tow-combat-overlay.top-panel-order.v1";
 const TOP_PANEL_POSITION_STORAGE_KEY = "tow-combat-overlay.top-panel-position.v1";
-const TOP_PANEL_DRAG_UNLOCKED_STORAGE_KEY = "tow-combat-overlay.top-panel-drag-unlocked.v1";
 
 function getTopPanelOrderStorageKey(sceneId) {
   const safeSceneId = String(sceneId ?? "").trim();
@@ -85,20 +84,3 @@ export function writeSavedTopPanelPosition(panelElement) {
   }
 }
 
-export function readSavedTopPanelDragUnlocked() {
-  try {
-    const raw = window.localStorage.getItem(TOP_PANEL_DRAG_UNLOCKED_STORAGE_KEY);
-    if (raw == null) return true;
-    return raw !== "false";
-  } catch (_error) {
-    return true;
-  }
-}
-
-export function writeSavedTopPanelDragUnlocked(unlocked) {
-  try {
-    window.localStorage.setItem(TOP_PANEL_DRAG_UNLOCKED_STORAGE_KEY, unlocked ? "true" : "false");
-  } catch (_error) {
-    // Ignore storage errors.
-  }
-}

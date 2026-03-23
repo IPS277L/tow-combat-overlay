@@ -18,35 +18,14 @@ export function formatMaybe(key, data = {}, fallback = "") {
   return String(fallback ?? key ?? "");
 }
 
-export function getTopPanelDragToggleTooltipData(unlocked) {
-  if (unlocked) {
-    return {
-      title: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.TopPanel.DragToggle.Unlocked.Title", "Top Panel: Unlocked"),
-      description: localizeMaybe(
-        "TOWCOMBATOVERLAY.Tooltip.TopPanel.DragToggle.Unlocked.Description",
-        "<em>Click to lock the top panel in place.</em><br><br>Drag and drop is enabled."
-      ),
-      ariaLabel: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.TopPanel.DragToggle.AriaLock", "Lock panel movement")
-    };
-  }
+export function getTopPanelDragHandleTooltipData() {
   return {
-    title: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.TopPanel.DragToggle.Locked.Title", "Top Panel: Locked"),
+    title: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.TopPanel.DragHandle.Title", "Move Top Panel"),
     description: localizeMaybe(
-      "TOWCOMBATOVERLAY.Tooltip.TopPanel.DragToggle.Locked.Description",
-      "<em>Click to unlock the top panel for dragging.</em><br><br>Drag and drop is disabled."
+      "TOWCOMBATOVERLAY.Tooltip.TopPanel.DragHandle.Description",
+      "<em>Drag and drop to move the top panel.</em>"
     ),
-    ariaLabel: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.TopPanel.DragToggle.AriaUnlock", "Unlock panel movement")
-  };
-}
-
-export function getTopPanelResetTooltipData() {
-  return {
-    title: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.TopPanel.Reset.Title", "Reset Top Panel Position"),
-    description: localizeMaybe(
-      "TOWCOMBATOVERLAY.Tooltip.TopPanel.Reset.Description",
-      "<em>Click to move the top panel back to its default position.</em>"
-    ),
-    ariaLabel: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.TopPanel.Reset.Aria", "Reset top panel position")
+    ariaLabel: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.TopPanel.DragHandle.Aria", "Drag top panel")
   };
 }
 

@@ -1,14 +1,11 @@
 import { hideStatusTooltip, showOverlayTooltip } from "../shared/shared.js";
 import {
-  readSavedTopPanelDragUnlocked,
-  writeSavedTopPanelDragUnlocked,
   writeSavedTopPanelPosition,
   writeSavedTopPanelTokenOrder
 } from "./top-panel-state.js";
 import { TOP_PANEL_HOOKS, TOP_PANEL_STATE_KEY } from "./top-panel-constants.js";
 import {
-  getTopPanelDragToggleTooltipData,
-  getTopPanelResetTooltipData,
+  getTopPanelDragHandleTooltipData,
   getTopPanelState,
   removeStaleTopPanels
 } from "./top-panel-shared.js";
@@ -41,42 +38,21 @@ import {
 function bindTopPanelElementEvents(topPanelElement) {
   const state = getTopPanelState();
   if (!state) return;
-  if (typeof state.panelDragUnlocked !== "boolean") {
-    state.panelDragUnlocked = readSavedTopPanelDragUnlocked();
-  }
-
-  const lockButton = topPanelElement.querySelector("[data-action='toggle-panel-drag-lock']");
-  const resetButton = topPanelElement.querySelector("[data-action='reset-panel-position']");
+  const dragHandleButton = topPanelElement.querySelector("[data-action='drag-panel-handle']");
   const controlsElement = topPanelElement.querySelector(".tow-combat-overlay-top-panel__controls");
 
   const syncDragControls = () => {
     const alwaysCentered = isTopPanelAlwaysCenteredEnabled();
     if (controlsElement instanceof HTMLElement) controlsElement.hidden = alwaysCentered;
     if (alwaysCentered) applyDefaultTopPanelPosition(topPanelElement);
-    const unlocked = state.panelDragUnlocked !== false;
-    const dragTooltipData = getTopPanelDragToggleTooltipData(unlocked);
-    topPanelElement.classList.toggle("is-drag-locked", alwaysCentered || !unlocked);
+    const dragTooltipData = getTopPanelDragHandleTooltipData();
+    topPanelElement.classList.toggle("is-drag-locked", alwaysCentered);
 
-    if (lockButton instanceof HTMLButtonElement) {
-      lockButton.dataset.state = unlocked ? "unlocked" : "locked";
-      lockButton.setAttribute("aria-pressed", unlocked ? "true" : "false");
-      lockButton.setAttribute("aria-label", dragTooltipData.ariaLabel);
-      lockButton.dataset.tooltipTitle = dragTooltipData.title;
-      lockButton.dataset.tooltipDescription = dragTooltipData.description;
-      lockButton.removeAttribute("title");
-      const icon = lockButton.querySelector(".tow-combat-overlay-top-panel__control-toggle-icon");
-      if (icon instanceof HTMLElement) {
-        icon.classList.remove("fa-lock", "fa-lock-open");
-        icon.classList.add(unlocked ? "fa-lock-open" : "fa-lock");
-      }
-    }
-
-    if (resetButton instanceof HTMLButtonElement) {
-      const resetTooltipData = getTopPanelResetTooltipData();
-      resetButton.setAttribute("aria-label", resetTooltipData.ariaLabel);
-      resetButton.dataset.tooltipTitle = resetTooltipData.title;
-      resetButton.dataset.tooltipDescription = resetTooltipData.description;
-      resetButton.removeAttribute("title");
+    if (dragHandleButton instanceof HTMLButtonElement) {
+      dragHandleButton.setAttribute("aria-label", dragTooltipData.ariaLabel);
+      dragHandleButton.dataset.tooltipTitle = dragTooltipData.title;
+      dragHandleButton.dataset.tooltipDescription = dragTooltipData.description;
+      dragHandleButton.removeAttribute("title");
     }
   };
 
@@ -102,10 +78,10 @@ function bindTopPanelElementEvents(topPanelElement) {
   const onPanelPointerDown = (event) => {
     if (event.button !== 0) return;
     if (isTopPanelAlwaysCenteredEnabled()) return;
-    if (state.panelDragUnlocked === false) return;
     const target = event.target;
     if (!(target instanceof Element)) return;
-    if (target.closest(".tow-combat-overlay-top-panel__control-button")) return;
+    const dragHandleElement = target.closest("[data-action='drag-panel-handle']");
+    if (!(dragHandleElement instanceof HTMLButtonElement)) return;
     const portraitTarget = target.closest(".tow-combat-overlay-top-panel__portrait");
     if (portraitTarget && event.shiftKey !== true) return;
 
@@ -142,25 +118,6 @@ function bindTopPanelElementEvents(topPanelElement) {
   topPanelElement.addEventListener("pointerdown", onPanelPointerDown);
   window.addEventListener("resize", onResize);
   syncDragControls();
-
-  if (lockButton instanceof HTMLButtonElement) {
-    lockButton.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      state.panelDragUnlocked = !state.panelDragUnlocked;
-      writeSavedTopPanelDragUnlocked(state.panelDragUnlocked);
-      syncDragControls();
-    });
-  }
-
-  if (resetButton instanceof HTMLButtonElement) {
-    resetButton.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      applyDefaultTopPanelPosition(topPanelElement);
-      writeSavedTopPanelPosition(topPanelElement);
-    });
-  }
 
   topPanelElement.addEventListener("click", async (event) => {
     const liveState = getTopPanelState();

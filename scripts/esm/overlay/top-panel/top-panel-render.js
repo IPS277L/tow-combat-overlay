@@ -123,10 +123,9 @@ export async function renderTopPanelContent() {
   const enableTemporaryEffects = isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableTemporaryEffects, true);
   const showDeadVisual = isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelShowDeadVisual, true);
   const alwaysCentered = isTopPanelAlwaysCenteredEnabled();
-  const isDragLocked = alwaysCentered || state?.panelDragUnlocked === false;
   const controlsElement = panelElement.querySelector(".tow-combat-overlay-top-panel__controls");
   if (controlsElement instanceof HTMLElement) controlsElement.hidden = alwaysCentered;
-  panelElement.classList.toggle("is-drag-locked", isDragLocked);
+  panelElement.classList.toggle("is-drag-locked", alwaysCentered);
   panelElement.dataset.alwaysCentered = alwaysCentered ? "true" : "false";
   if (alwaysCentered) applyDefaultTopPanelPosition(panelElement);
 
