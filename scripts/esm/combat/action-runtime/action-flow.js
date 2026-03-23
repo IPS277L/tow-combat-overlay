@@ -4,8 +4,10 @@ export function createPanelActionFlowService({
   towCombatOverlayArmAutoSubmitDialog,
   towCombatOverlayDefenceActor,
   getTowCombatOverlaySystemAdapter,
-  createTowCombatOverlayRollContext
+  createTowCombatOverlayRollContext,
+  moduleNotifications
 } = {}) {
+  const notifications = moduleNotifications ?? {};
   async function runDefaultPanelActorAction(actor, actionKey) {
     const key = String(actionKey ?? "").trim();
     if (!actor || !key) return;
@@ -335,7 +337,7 @@ export function createPanelActionFlowService({
     if (!actor || typeof actor.setupCastingTest !== "function") return;
     const lore = resolvePanelCastingLore(actor);
     if (!lore) {
-      ui.notifications?.error?.("No spell lore available to accumulate power.");
+      ui.notifications?.error?.(notifications.noSpellLoreForAccumulatePower ?? "Cannot accumulate power: no spell lore is available for this actor.");
       return;
     }
 

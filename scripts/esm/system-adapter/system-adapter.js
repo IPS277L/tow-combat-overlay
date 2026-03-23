@@ -14,7 +14,7 @@ function createTowCombatOverlaySystemAdapter() {
 
     setupWeaponTest(actor, weapon, context = {}, options = {}) {
       if (!actor || typeof actor.setupWeaponTest !== "function") {
-        ui.notifications.error(MODULE_NOTIFICATIONS.apiUnavailable.abilityTest);
+        ui.notifications.error(MODULE_NOTIFICATIONS.apiUnavailable.weaponTest);
         return null;
       }
       return actor.setupWeaponTest(weapon, context, options);

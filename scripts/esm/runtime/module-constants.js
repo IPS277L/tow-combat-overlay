@@ -49,25 +49,27 @@ export function getTowCombatOverlayConstants() {
     ...MODULE_CONSTANTS_BASE,
     notifications: Object.freeze({
       selectAtLeastOneToken: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.SelectAtLeastOneToken", "Select at least one token."),
-      noPermissionToEditActor: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.NoPermissionToEditActor", "No permission to edit {actorName}."),
-      overlayEnabled: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.OverlayEnabled", "Overlay enabled: name labels and status highlights."),
-      overlayDisabled: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.OverlayDisabled", "Overlay disabled."),
-      moduleApiUnavailable: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.ModuleApiUnavailable", "The Old World Combat Overlay module API is unavailable."),
-      oldWorldTestClassUnavailable: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.OldWorldTestClassUnavailable", "OldWorldTest roll class is unavailable."),
+      noPermissionToEditActor: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.NoPermissionToEditActor", "You do not have permission to edit {actorName}."),
+      overlayEnabled: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.OverlayEnabled", "Combat overlay visuals enabled."),
+      overlayDisabled: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.OverlayDisabled", "Combat overlay visuals disabled. Other module features remain available."),
+      moduleApiUnavailable: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.ModuleApiUnavailable", "The Old World Combat Overlay API is unavailable."),
+      oldWorldTestClassUnavailable: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.OldWorldTestClassUnavailable", "Cannot roll a characteristic test: OldWorldTest is unavailable."),
+      noSpellLoreForAccumulatePower: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.NoSpellLoreForAccumulatePower", "Cannot accumulate power: no spell lore is available for this actor."),
       apiUnavailable: Object.freeze({
-        abilityTest: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.ApiUnavailable.AbilityTest", "Ability test API is unavailable for this actor."),
-        skillTest: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.ApiUnavailable.SkillTest", "Skill test API is unavailable for this actor."),
-        addCondition: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.ApiUnavailable.AddCondition", "Condition add API is unavailable for this actor."),
-        removeCondition: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.ApiUnavailable.RemoveCondition", "Condition remove API is unavailable for this actor."),
-        applyDamage: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.ApiUnavailable.ApplyDamage", "Damage application API is unavailable for this actor."),
-        wound: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.ApiUnavailable.Wound", "Wound API is unavailable for this actor."),
-        staggerChoice: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.ApiUnavailable.StaggerChoice", "Stagger choice API is unavailable for this actor.")
+        abilityTest: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.ApiUnavailable.AbilityTest", "Cannot run an ability test: the system API is unavailable for this actor."),
+        weaponTest: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.ApiUnavailable.WeaponTest", "Cannot run a weapon test: the system API is unavailable for this actor."),
+        skillTest: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.ApiUnavailable.SkillTest", "Cannot run a skill test: the system API is unavailable for this actor."),
+        addCondition: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.ApiUnavailable.AddCondition", "Cannot add a condition: the system API is unavailable for this actor."),
+        removeCondition: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.ApiUnavailable.RemoveCondition", "Cannot remove a condition: the system API is unavailable for this actor."),
+        applyDamage: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.ApiUnavailable.ApplyDamage", "Cannot apply damage: the system API is unavailable for this actor."),
+        wound: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.ApiUnavailable.Wound", "Cannot add a wound: the system API is unavailable for this actor."),
+        staggerChoice: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.ApiUnavailable.StaggerChoice", "Cannot prompt a staggered choice: the system API is unavailable for this actor.")
       }),
       defence: Object.freeze({
-        noCharacteristicValue: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.Defence.NoCharacteristicValue", "{actorName}: characteristic '{characteristic}' has no valid value."),
-        noManualEntries: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.Defence.NoManualEntries", "{actorName}: no rollable skills or characteristics found."),
-        noDefaultSkills: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.Defence.NoDefaultSkills", "{actorName}: no rollable skills found for default defence roll."),
-        fallbackSkill: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.Defence.FallbackSkill", "{actorName}: '{defaultSkill}' not found, rolled '{rolledSkill}' instead.")
+        noCharacteristicValue: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.Defence.NoCharacteristicValue", "{actorName}: characteristic '{characteristic}' does not have a valid value."),
+        noManualEntries: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.Defence.NoManualEntries", "{actorName}: no rollable skills or characteristics were found."),
+        noDefaultSkills: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.Defence.NoDefaultSkills", "{actorName}: no rollable skills were found for the default defence roll."),
+        fallbackSkill: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Notification.Defence.FallbackSkill", "{actorName}: '{defaultSkill}' was not found, so '{rolledSkill}' was rolled instead.")
       })
     }),
     dialogs: Object.freeze({

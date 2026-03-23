@@ -161,6 +161,7 @@ const PANEL_STAGGER_PATCH_DURATION_MS = AUTO_STAGGER_PATCH_MS + AUTO_APPLY_WAIT_
 const {
   moduleId: MODULE_ID,
   settings: MODULE_SETTINGS,
+  notifications: MODULE_NOTIFICATIONS,
   tooltips: MODULE_TOOLTIPS
 } = getTowCombatOverlayConstants();
 const {
@@ -347,7 +348,8 @@ const panelActionFlowService = createPanelActionFlowService({
   towCombatOverlayArmAutoSubmitDialog,
   towCombatOverlayDefenceActor,
   getTowCombatOverlaySystemAdapter: () => getTowCombatOverlaySystemAdapter(),
-  createTowCombatOverlayRollContext
+  createTowCombatOverlayRollContext,
+  moduleNotifications: MODULE_NOTIFICATIONS
 });
 const panelActionEntriesService = createPanelActionEntriesService({
   panelActionsOrder: PANEL_ACTIONS_ORDER,
