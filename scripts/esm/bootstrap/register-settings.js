@@ -24,6 +24,17 @@ function humanizeSettingKey(settingKey) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function normalizeSelectSettingValue(settingDefinition, value) {
+  const choices = (settingDefinition && typeof settingDefinition.choices === "object" && settingDefinition.choices !== null)
+    ? settingDefinition.choices
+    : {};
+  const allowedValues = Object.keys(choices);
+  if (!allowedValues.length) return String(settingDefinition?.defaultValue ?? "");
+  const normalized = String(value ?? "").trim();
+  if (allowedValues.includes(normalized)) return normalized;
+  return String(settingDefinition?.defaultValue ?? allowedValues[0] ?? "").trim();
+}
+
 function buildDisplaySettingsGroups(settingKeys) {
   const tokensPanelSettings = Object.freeze([
     {
@@ -61,6 +72,17 @@ function buildDisplaySettingsGroups(settingKeys) {
       defaultValue: false,
       nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelAlwaysCentered.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelAlwaysCentered.Hint"
+    },
+    {
+      key: settingKeys.tokensPanelHoverButtonPosition,
+      type: "select",
+      defaultValue: "right",
+      choices: Object.freeze({
+        left: "TOWCOMBATOVERLAY.Setting.TokensPanelHoverButtonPosition.OptionLeft",
+        right: "TOWCOMBATOVERLAY.Setting.TokensPanelHoverButtonPosition.OptionRight"
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelHoverButtonPosition.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelHoverButtonPosition.Hint"
     }
   ]);
 
@@ -199,7 +221,8 @@ function buildDisplaySettingsGroups(settingKeys) {
           titleKey: "TOWCOMBATOVERLAY.SettingsSection.TokensPanel.General",
           settingKeys: Object.freeze([
             settingKeys.enableTopPanel,
-            settingKeys.tokensPanelAlwaysCentered
+            settingKeys.tokensPanelAlwaysCentered,
+            settingKeys.tokensPanelHoverButtonPosition
           ])
         },
         {
@@ -324,13 +347,30 @@ function createGroupFormClass(group) {
 
     getData() {
       const { moduleId } = getTowCombatOverlayConstants();
-      const fields = group.settings.map((entry) => ({
-        key: entry.key,
-        id: `tow-combat-overlay-setting-${entry.key}`,
-        name: localizeMaybe(entry.nameKey, humanizeSettingKey(entry.key)),
-        hint: localizeMaybe(entry.hintKey, ""),
-        value: !!getTowCombatOverlayDisplaySetting(entry.key, entry.defaultValue)
-      }));
+      const fields = group.settings.map((entry) => {
+        const isSelect = String(entry?.type ?? "boolean").trim() === "select";
+        const rawValue = getTowCombatOverlayDisplaySetting(entry.key, entry.defaultValue);
+        const normalizedValue = isSelect
+          ? normalizeSelectSettingValue(entry, rawValue)
+          : !!rawValue;
+        const choices = isSelect
+          ? Object.entries(entry?.choices ?? {}).map(([value, labelKey]) => ({
+            value: String(value ?? ""),
+            label: localizeMaybe(labelKey, humanizeSettingKey(value)),
+            selected: String(value ?? "") === normalizedValue
+          }))
+          : [];
+        return {
+          key: entry.key,
+          id: `tow-combat-overlay-setting-${entry.key}`,
+          name: localizeMaybe(entry.nameKey, humanizeSettingKey(entry.key)),
+          hint: localizeMaybe(entry.hintKey, ""),
+          value: normalizedValue,
+          isSelect,
+          isBoolean: !isSelect,
+          choices
+        };
+      });
       const fieldByKey = new Map(fields.map((field) => [field.key, field]));
       const sections = Array.isArray(group.sections)
         ? group.sections.map((section) => ({
@@ -353,7 +393,10 @@ function createGroupFormClass(group) {
       const { moduleId } = getTowCombatOverlayConstants();
       for (const entry of group.settings) {
         const rawValue = expanded?.[entry.key];
-        const nextValue = rawValue === true || rawValue === "true" || rawValue === "on";
+        const isSelect = String(entry?.type ?? "boolean").trim() === "select";
+        const nextValue = isSelect
+          ? normalizeSelectSettingValue(entry, rawValue)
+          : (rawValue === true || rawValue === "true" || rawValue === "on");
         await game.settings.set(moduleId, entry.key, nextValue);
       }
     }
@@ -384,7 +427,27 @@ function registerDisplaySettingsGroupMenu(moduleId, group) {
   });
 }
 
-function registerBooleanDisplaySetting(moduleId, settingDefinition, onChange) {
+function registerDisplaySetting(moduleId, settingDefinition, onChange) {
+  const isSelect = String(settingDefinition?.type ?? "boolean").trim() === "select";
+  if (isSelect) {
+    const defaultValue = normalizeSelectSettingValue(settingDefinition, settingDefinition.defaultValue);
+    const choices = {};
+    for (const [value, labelKey] of Object.entries(settingDefinition?.choices ?? {})) {
+      choices[String(value ?? "")] = localizeMaybe(labelKey, humanizeSettingKey(value));
+    }
+    game.settings.register(moduleId, settingDefinition.key, {
+      scope: "world",
+      config: false,
+      type: String,
+      choices,
+      default: defaultValue,
+      name: settingDefinition.nameKey,
+      hint: settingDefinition.hintKey,
+      onChange: () => onChange(settingDefinition.key)
+    });
+    return;
+  }
+
   game.settings.register(moduleId, settingDefinition.key, {
     scope: "world",
     config: false,
@@ -419,7 +482,7 @@ export function registerTowCombatOverlayDisplaySettings({ onDisplaySettingsChang
   for (const group of Object.values(groups)) {
     registerDisplaySettingsGroupMenu(moduleId, group);
     for (const settingDefinition of group.settings) {
-      registerBooleanDisplaySetting(moduleId, settingDefinition, handleDisplaySettingChange);
+      registerDisplaySetting(moduleId, settingDefinition, handleDisplaySettingChange);
     }
   }
 }

@@ -40,6 +40,10 @@
   gap: var(--tow-top-panel-control-gap);
 }
 
+.tow-combat-overlay-top-panel[data-handle-position="right"] {
+  flex-direction: row-reverse;
+}
+
 .tow-combat-overlay-top-panel[data-has-tokens="false"] {
   display: none;
 }

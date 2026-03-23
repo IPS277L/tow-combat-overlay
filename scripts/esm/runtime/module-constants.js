@@ -23,6 +23,7 @@ const MODULE_CONSTANTS_BASE = Object.freeze({
     tokensPanelEnableTemporaryEffects: "tokensPanelEnableTemporaryEffects",
     tokensPanelShowDeadVisual: "tokensPanelShowDeadVisual",
     tokensPanelAlwaysCentered: "tokensPanelAlwaysCentered",
+    tokensPanelHoverButtonPosition: "tokensPanelHoverButtonPosition",
     tokenLayoutShowBorder: "tokenLayoutShowBorder",
     tokenLayoutEnableStatuses: "tokenLayoutEnableStatuses",
     tokenLayoutEnableWounds: "tokenLayoutEnableWounds",

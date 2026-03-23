@@ -2,6 +2,21 @@
   display: flex;
   flex: 0 0 auto;
   align-self: flex-start;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.tow-combat-overlay-top-panel__controls:hover,
+.tow-combat-overlay-top-panel__controls:focus-within,
+.tow-combat-overlay-top-panel.is-dragging .tow-combat-overlay-top-panel__controls {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .tow-combat-overlay-top-panel__controls {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .tow-combat-overlay-top-panel__control-button {
