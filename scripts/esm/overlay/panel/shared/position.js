@@ -1,6 +1,7 @@
 import { clampPanelCoordinate } from "./state.js";
 import { getTowCombatOverlayConstants } from "../../../runtime/module-constants.js";
 import { isTowCombatOverlayDisplaySettingEnabled } from "../../../bootstrap/register-settings.js";
+import { getCanvasClientBounds } from "../../top-panel/top-panel-layout.js";
 
 const { settings: MODULE_SETTINGS } = getTowCombatOverlayConstants();
 
@@ -10,11 +11,12 @@ export function isControlPanelAlwaysCenteredEnabled() {
 
 function applyCenteredPanelPosition(panelElement, viewportMarginPx = 8) {
   const rect = panelElement.getBoundingClientRect();
+  const canvasBounds = getCanvasClientBounds(viewportMarginPx);
   const panelWidth = Math.max(1, Math.round(rect.width || panelElement.offsetWidth || 1));
   const panelHeight = Math.max(1, Math.round(rect.height || panelElement.offsetHeight || 1));
   const bounds = getPanelBounds(panelElement, viewportMarginPx);
-  const centeredLeft = Math.round((window.innerWidth / 2) - (panelWidth / 2));
-  const centeredTop = Math.round(window.innerHeight - panelHeight - viewportMarginPx);
+  const centeredLeft = Math.round(canvasBounds.left + ((canvasBounds.width - panelWidth) / 2));
+  const centeredTop = Math.round(canvasBounds.bottom - panelHeight);
   const left = clampPanelCoordinate(centeredLeft, bounds.minLeft, bounds.maxLeft);
   const top = clampPanelCoordinate(centeredTop, bounds.minTop, bounds.maxTop);
   panelElement.style.left = `${Math.round(left)}px`;
@@ -25,11 +27,12 @@ export function getPanelBounds(panelElement, viewportMarginPx = 8) {
   const rect = panelElement.getBoundingClientRect();
   const panelWidth = Math.max(1, Math.round(rect.width || panelElement.offsetWidth || 1));
   const panelHeight = Math.max(1, Math.round(rect.height || panelElement.offsetHeight || 1));
-  const maxLeft = window.innerWidth - panelWidth - viewportMarginPx;
-  const maxTop = window.innerHeight - panelHeight - viewportMarginPx;
+  const canvasBounds = getCanvasClientBounds(viewportMarginPx);
+  const maxLeft = canvasBounds.right - panelWidth;
+  const maxTop = canvasBounds.bottom - panelHeight;
   return {
-    minLeft: viewportMarginPx,
-    minTop: viewportMarginPx,
+    minLeft: canvasBounds.left,
+    minTop: canvasBounds.top,
     maxLeft,
     maxTop
   };
@@ -87,10 +90,11 @@ export function applyInitialPanelPosition(panelElement, viewportMarginPx = 8) {
     return;
   }
   const rect = panelElement.getBoundingClientRect();
+  const canvasBounds = getCanvasClientBounds(viewportMarginPx);
   const panelWidth = Math.max(1, Math.round(rect.width || panelElement.offsetWidth || 1));
   const panelHeight = Math.max(1, Math.round(rect.height || panelElement.offsetHeight || 1));
-  const defaultLeft = Math.round((window.innerWidth / 2) - (panelWidth / 2));
-  const defaultTop = Math.round(window.innerHeight - panelHeight - viewportMarginPx);
+  const defaultLeft = Math.round(canvasBounds.left + ((canvasBounds.width - panelWidth) / 2));
+  const defaultTop = Math.round(canvasBounds.bottom - panelHeight);
   applyPanelPosition(panelElement, defaultLeft, defaultTop, viewportMarginPx);
 }
 
