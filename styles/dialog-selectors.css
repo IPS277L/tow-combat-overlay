@@ -266,3 +266,11 @@
 .tow-combat-overlay-dialog.tow-combat-overlay-settings-window .tow-combat-overlay-selector__sub-label {
   font-size: 12px;
 }
+
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .dialog-content .form-group .form-fields select,
+.tow-combat-overlay-dialog.tow-combat-overlay-settings-window .form-group .form-fields select {
+  flex: 0 0 auto;
+  width: fit-content;
+  min-width: 116px;
+  max-width: 100%;
+}

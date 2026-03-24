@@ -41,7 +41,12 @@ export function createPanelDomLifecycleService({
     selectionPanelElement.style.visibility = "hidden";
     document.body.appendChild(panelElement);
     document.body.appendChild(selectionPanelElement);
-    applyInitialPanelPosition(panelElement, panelViewportMarginPx);
+    applyInitialPanelPosition(
+      panelElement,
+      panelViewportMarginPx,
+      { selectionElement: selectionPanelElement },
+      panelSelectionGapPx
+    );
     syncSelectionPanelPosition({ element: panelElement, selectionElement: selectionPanelElement }, panelSelectionGapPx);
     panelElement.style.visibility = "";
     selectionPanelElement.style.visibility = "";
@@ -61,7 +66,8 @@ export function createPanelDomLifecycleService({
         element,
         left,
         top,
-        panelViewportMarginPx
+        panelViewportMarginPx,
+        panelSelectionGapPx
       ),
       persistPosition: writeSavedPanelPosition,
       dragSources: [selectionPanelElement],
@@ -109,4 +115,3 @@ export function createPanelDomLifecycleService({
     removeControlPanel
   };
 }
-

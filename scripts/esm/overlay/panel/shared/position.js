@@ -2,6 +2,7 @@ import { clampPanelCoordinate } from "./state.js";
 import { getTowCombatOverlayConstants } from "../../../runtime/module-constants.js";
 import { isTowCombatOverlayDisplaySettingEnabled } from "../../../bootstrap/register-settings.js";
 import { getCanvasClientBounds } from "../../top-panel/top-panel-layout.js";
+import { PANEL_SELECTION_GAP_PX, PANEL_SELECTION_ID } from "./panel-constants.js";
 
 const { settings: MODULE_SETTINGS } = getTowCombatOverlayConstants();
 
@@ -9,14 +10,69 @@ export function isControlPanelAlwaysCenteredEnabled() {
   return isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelAlwaysCentered, false);
 }
 
-function applyCenteredPanelPosition(panelElement, viewportMarginPx = 8) {
+function resolveSelectionElement(controlPanelState = null) {
+  const stateSelectionElement = controlPanelState?.selectionElement;
+  if (stateSelectionElement instanceof HTMLElement) return stateSelectionElement;
+  const selectionById = document.getElementById(PANEL_SELECTION_ID);
+  return selectionById instanceof HTMLElement ? selectionById : null;
+}
+
+function getCenteredCompositeMetrics(panelElement, controlPanelState = null, selectionGapPx = PANEL_SELECTION_GAP_PX) {
   const rect = panelElement.getBoundingClientRect();
-  const canvasBounds = getCanvasClientBounds(viewportMarginPx);
   const panelWidth = Math.max(1, Math.round(rect.width || panelElement.offsetWidth || 1));
   const panelHeight = Math.max(1, Math.round(rect.height || panelElement.offsetHeight || 1));
+  const selectionElement = resolveSelectionElement(controlPanelState);
+  if (!(selectionElement instanceof HTMLElement) || !selectionElement.isConnected) {
+    return {
+      compositeWidth: panelWidth,
+      compositeHeight: panelHeight,
+      panelOffsetX: 0,
+      panelOffsetY: 0
+    };
+  }
+
+  const selectionRect = selectionElement.getBoundingClientRect();
+  const selectionVisible = selectionRect.width > 0 && selectionRect.height > 0 && selectionElement.style.display !== "none";
+  if (!selectionVisible) {
+    return {
+      compositeWidth: panelWidth,
+      compositeHeight: panelHeight,
+      panelOffsetX: 0,
+      panelOffsetY: 0
+    };
+  }
+
+  const selectionWidth = Math.max(1, Math.round(selectionRect.width || selectionElement.offsetWidth || 1));
+  const selectionImageBlock = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection");
+  const imageBottomOffset = (selectionImageBlock instanceof HTMLElement)
+    ? (selectionImageBlock.offsetTop + selectionImageBlock.offsetHeight)
+    : selectionElement.offsetHeight;
+  const compositeHeight = Math.max(panelHeight, Math.round(imageBottomOffset || panelHeight));
+
+  return {
+    compositeWidth: panelWidth + selectionWidth + selectionGapPx,
+    compositeHeight,
+    panelOffsetX: selectionWidth + selectionGapPx,
+    panelOffsetY: Math.max(0, compositeHeight - panelHeight)
+  };
+}
+
+function applyCenteredPanelPosition(
+  panelElement,
+  viewportMarginPx = 8,
+  controlPanelState = null,
+  selectionGapPx = PANEL_SELECTION_GAP_PX
+) {
+  const canvasBounds = getCanvasClientBounds(viewportMarginPx);
   const bounds = getPanelBounds(panelElement, viewportMarginPx);
-  const centeredLeft = Math.round(canvasBounds.left + ((canvasBounds.width - panelWidth) / 2));
-  const centeredTop = Math.round(canvasBounds.bottom - panelHeight);
+  const {
+    compositeWidth,
+    compositeHeight,
+    panelOffsetX,
+    panelOffsetY
+  } = getCenteredCompositeMetrics(panelElement, controlPanelState, selectionGapPx);
+  const centeredLeft = Math.round(canvasBounds.left + ((canvasBounds.width - compositeWidth) / 2) + panelOffsetX);
+  const centeredTop = Math.round(canvasBounds.bottom - compositeHeight + panelOffsetY);
   const left = clampPanelCoordinate(centeredLeft, bounds.minLeft, bounds.maxLeft);
   const top = clampPanelCoordinate(centeredTop, bounds.minTop, bounds.maxTop);
   panelElement.style.left = `${Math.round(left)}px`;
@@ -38,9 +94,16 @@ export function getPanelBounds(panelElement, viewportMarginPx = 8) {
   };
 }
 
-export function applyPanelPosition(panelElement, left, top, viewportMarginPx = 8) {
+export function applyPanelPosition(
+  panelElement,
+  left,
+  top,
+  viewportMarginPx = 8,
+  controlPanelState = null,
+  selectionGapPx = PANEL_SELECTION_GAP_PX
+) {
   if (isControlPanelAlwaysCenteredEnabled()) {
-    applyCenteredPanelPosition(panelElement, viewportMarginPx);
+    applyCenteredPanelPosition(panelElement, viewportMarginPx, controlPanelState, selectionGapPx);
     return;
   }
   const bounds = getPanelBounds(panelElement, viewportMarginPx);
@@ -50,9 +113,16 @@ export function applyPanelPosition(panelElement, left, top, viewportMarginPx = 8
   panelElement.style.top = `${Math.round(safeTop)}px`;
 }
 
-export function applyPanelPositionWithSelectionClamp(controlPanelState, panelElement, left, top, viewportMarginPx = 8) {
+export function applyPanelPositionWithSelectionClamp(
+  controlPanelState,
+  panelElement,
+  left,
+  top,
+  viewportMarginPx = 8,
+  selectionGapPx = PANEL_SELECTION_GAP_PX
+) {
   if (isControlPanelAlwaysCenteredEnabled()) {
-    applyCenteredPanelPosition(panelElement, viewportMarginPx);
+    applyCenteredPanelPosition(panelElement, viewportMarginPx, controlPanelState, selectionGapPx);
     return;
   }
   const bounds = getPanelBounds(panelElement, viewportMarginPx);
@@ -84,9 +154,14 @@ export function applyPanelPositionWithSelectionClamp(controlPanelState, panelEle
   panelElement.style.top = `${Math.round(safeTop)}px`;
 }
 
-export function applyInitialPanelPosition(panelElement, viewportMarginPx = 8) {
+export function applyInitialPanelPosition(
+  panelElement,
+  viewportMarginPx = 8,
+  controlPanelState = null,
+  selectionGapPx = PANEL_SELECTION_GAP_PX
+) {
   if (isControlPanelAlwaysCenteredEnabled()) {
-    applyCenteredPanelPosition(panelElement, viewportMarginPx);
+    applyCenteredPanelPosition(panelElement, viewportMarginPx, controlPanelState, selectionGapPx);
     return;
   }
   const rect = panelElement.getBoundingClientRect();
@@ -95,7 +170,7 @@ export function applyInitialPanelPosition(panelElement, viewportMarginPx = 8) {
   const panelHeight = Math.max(1, Math.round(rect.height || panelElement.offsetHeight || 1));
   const defaultLeft = Math.round(canvasBounds.left + ((canvasBounds.width - panelWidth) / 2));
   const defaultTop = Math.round(canvasBounds.bottom - panelHeight);
-  applyPanelPosition(panelElement, defaultLeft, defaultTop, viewportMarginPx);
+  applyPanelPosition(panelElement, defaultLeft, defaultTop, viewportMarginPx, controlPanelState, selectionGapPx);
 }
 
 export function syncSelectionPanelPosition(controlPanelState, selectionGapPx = 0) {
@@ -118,5 +193,3 @@ export function syncSelectionPanelPosition(controlPanelState, selectionGapPx = 0
   selectionPanelElement.style.left = `${Math.round(left)}px`;
   selectionPanelElement.style.top = `${Math.round(top)}px`;
 }
-
-

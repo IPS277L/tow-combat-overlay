@@ -141,11 +141,11 @@ export function createPanelSelectionSyncDisplayService({
     updateActionControlsDisplay(panelElement, token);
     updateActionControlsDisplay(selectionPanelElement, token);
     if (!controlPanelState.hasInitialAutoCenter) {
-      applyInitialPanelPosition(panelElement, panelViewportMarginPx);
+      applyInitialPanelPosition(panelElement, panelViewportMarginPx, controlPanelState, panelSelectionGapPx);
       controlPanelState.hasInitialAutoCenter = true;
     }
     const rect = panelElement.getBoundingClientRect();
-    applyPanelPosition(panelElement, rect.left, rect.top, panelViewportMarginPx);
+    applyPanelPosition(panelElement, rect.left, rect.top, panelViewportMarginPx, controlPanelState, panelSelectionGapPx);
     syncSelectionPanelPosition(controlPanelState, panelSelectionGapPx);
   }
 
@@ -155,4 +155,3 @@ export function createPanelSelectionSyncDisplayService({
     updateSelectionDisplay
   };
 }
-
