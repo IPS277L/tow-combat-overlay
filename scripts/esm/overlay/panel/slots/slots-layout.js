@@ -27,16 +27,6 @@ export function createPanelSlotsLayoutService({
   readSavedPanelButtonKeyOrder,
   updateGroupSlots
 } = {}) {
-  function localizeMaybe(key, fallback = "") {
-    const localized = game?.i18n?.localize?.(String(key ?? ""));
-    if (typeof localized === "string" && localized !== key) return localized;
-    return String(fallback ?? key ?? "");
-  }
-
-  function supportsWoundActionChip(actor) {
-    return !!actor && actor.type === "npc" && actor.system?.hasThresholds === true;
-  }
-
   function buildTopChips(groups, actor) {
     const enableAbilities = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableAbilities, true);
     const enableWounds = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableWounds, true);
@@ -53,14 +43,7 @@ export function createPanelSlotsLayoutService({
         escapeHtml: escapePanelHtml
       })
       : null;
-    const woundChipData = enableWounds ? (woundIndicator ?? (supportsWoundActionChip(actor)
-      ? {
-        title: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.Panel.WoundActions.Title", "Wound Actions"),
-        description: localizeMaybe("TOWCOMBATOVERLAY.Tooltip.Panel.WoundActions.Fallback", "Use wounds controls below."),
-        image: iconSrcWound,
-        isActive: false
-      }
-      : null)) : null;
+    const woundChipData = enableWounds ? woundIndicator : null;
     const woundChip = woundChipData
       ? [{
         id: "__wound_actions__",
@@ -238,4 +221,3 @@ export function createPanelSlotsLayoutService({
     updatePanelSlots
   };
 }
-
