@@ -244,14 +244,38 @@ export function createPanelSpellAutoApplyService({
     try {
       const dataset = targetElement?.dataset ?? { action: actionName };
       const affectedActors = collectPotentialApplyActors(message, dataset);
+      const affectedActorRefs = new Set();
       for (const actor of affectedActors) {
-        armApplyRollModifiersToNextTestDialog(actor);
+        const actorId = String(actor?.id ?? "").trim();
+        const actorUuid = String(actor?.uuid ?? "").trim();
+        if (actorId) affectedActorRefs.add(actorId);
+        if (actorUuid) affectedActorRefs.add(actorUuid);
       }
-      await withPatchedDirectTests(affectedActors, async () => (
-        withPatchedSkillTests(affectedActors, async () => {
-          await handler.call(system, syntheticEvent, targetElement ?? { dataset });
-        })
-      ));
+
+      // Some spell Apply handlers open test dialogs on target actors (not caster).
+      // Keep this fallback narrowly scoped to the current apply action execution window.
+      const restoreApplyActionAutoResolve = armAutoResolveSpellTriggeredTestDialogs(null, {
+        timeoutMs: 2500,
+        matches: (app) => {
+          const appActorId = String(app?.actor?.id ?? "").trim();
+          const appActorUuid = String(app?.actor?.uuid ?? app?.context?.actor ?? "").trim();
+          return (appActorId && affectedActorRefs.has(appActorId))
+            || (appActorUuid && affectedActorRefs.has(appActorUuid));
+        }
+      });
+
+      try {
+        for (const actor of affectedActors) {
+          armApplyRollModifiersToNextTestDialog(actor);
+        }
+        await withPatchedDirectTests(affectedActors, async () => (
+          withPatchedSkillTests(affectedActors, async () => {
+            await handler.call(system, syntheticEvent, targetElement ?? { dataset });
+          })
+        ));
+      } finally {
+        restoreApplyActionAutoResolve();
+      }
       return true;
     } catch (_error) {
       return false;
@@ -536,4 +560,3 @@ export function createPanelSpellAutoApplyService({
     resetPanelAccumulatePowerValues
   };
 }
-
