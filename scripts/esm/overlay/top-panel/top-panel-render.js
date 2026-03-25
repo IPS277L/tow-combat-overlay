@@ -19,6 +19,7 @@ import {
   applyDefaultTopPanelPosition,
   getOrderedSceneTokens,
   isTopPanelAlwaysCenteredEnabled,
+  isTopPanelLockedEnabled,
   syncTopPanelListBottomPadding,
   syncTopPanelWidth
 } from "./top-panel-layout.js";
@@ -126,13 +127,14 @@ export async function renderTopPanelContent() {
   const enableTemporaryEffects = isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableTemporaryEffects, true);
   const showDeadVisual = isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelShowDeadVisual, true);
   const alwaysCentered = isTopPanelAlwaysCenteredEnabled();
+  const locked = isTopPanelLockedEnabled();
   const handlePositionRaw = String(
-    getTowCombatOverlayDisplaySetting(settings.tokensPanelHoverButtonPosition, "right")
+    getTowCombatOverlayDisplaySetting(settings.tokensPanelDragButtonPosition, "right")
   ).trim().toLowerCase();
   const handlePosition = handlePositionRaw === "right" ? "right" : "left";
   const controlsElement = panelElement.querySelector(".tow-combat-overlay-top-panel__controls");
-  if (controlsElement instanceof HTMLElement) controlsElement.hidden = alwaysCentered;
-  panelElement.classList.toggle("is-drag-locked", alwaysCentered);
+  if (controlsElement instanceof HTMLElement) controlsElement.hidden = alwaysCentered || locked;
+  panelElement.classList.toggle("is-drag-locked", alwaysCentered || locked);
   panelElement.dataset.alwaysCentered = alwaysCentered ? "true" : "false";
   panelElement.dataset.handlePosition = handlePosition;
   if (alwaysCentered) applyDefaultTopPanelPosition(panelElement);

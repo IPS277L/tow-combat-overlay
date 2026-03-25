@@ -22,8 +22,8 @@ const MODULE_CONSTANTS_BASE = Object.freeze({
     tokensPanelEnableWounds: "tokensPanelEnableWounds",
     tokensPanelEnableTemporaryEffects: "tokensPanelEnableTemporaryEffects",
     tokensPanelShowDeadVisual: "tokensPanelShowDeadVisual",
-    tokensPanelAlwaysCentered: "tokensPanelAlwaysCentered",
-    tokensPanelHoverButtonPosition: "tokensPanelHoverButtonPosition",
+    tokensPanelPositionMode: "tokensPanelPositionMode",
+    tokensPanelDragButtonPosition: "tokensPanelDragButtonPosition",
     tokenLayoutShowBorder: "tokenLayoutShowBorder",
     tokenLayoutEnableStatuses: "tokenLayoutEnableStatuses",
     tokenLayoutEnableWounds: "tokenLayoutEnableWounds",
@@ -41,7 +41,8 @@ const MODULE_CONSTANTS_BASE = Object.freeze({
     controlPanelEnableWeaponsButtons: "controlPanelEnableWeaponsButtons",
     controlPanelEnableMagicButtons: "controlPanelEnableMagicButtons",
     controlPanelShowDeadPortraitStatus: "controlPanelShowDeadPortraitStatus",
-    controlPanelAlwaysCentered: "controlPanelAlwaysCentered"
+    controlPanelPositionMode: "controlPanelPositionMode",
+    controlPanelEnableButtonDragDrop: "controlPanelEnableButtonDragDrop"
   })
 });
 

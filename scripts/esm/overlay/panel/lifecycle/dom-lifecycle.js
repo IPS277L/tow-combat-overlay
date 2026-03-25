@@ -5,14 +5,11 @@ export function createPanelDomLifecycleService({
   panelViewportMarginPx,
   panelSelectionGapPx,
   getControlPanelState,
-  readSavedPanelReorderUnlocked,
   removeStaleControlPanels,
   createControlPanelElement,
   applyInitialPanelPosition,
   syncSelectionPanelPosition,
   bindPanelActionControls,
-  bindPanelReorderToggle,
-  bindPanelReorderReset,
   bindSelectionPanelStatEvents,
   bindSelectionNameTooltipEvent,
   bindPanelStatusesTooltipEvents,
@@ -27,9 +24,6 @@ export function createPanelDomLifecycleService({
   async function ensureControlPanel() {
     const controlPanelState = getControlPanelState();
     if (!controlPanelState) return;
-    if (typeof controlPanelState.buttonReorderUnlocked !== "boolean") {
-      controlPanelState.buttonReorderUnlocked = readSavedPanelReorderUnlocked();
-    }
 
     const hasMainPanel = controlPanelState.element instanceof HTMLElement && controlPanelState.element.isConnected;
     const hasSelectionPanel = controlPanelState.selectionElement instanceof HTMLElement && controlPanelState.selectionElement.isConnected;
@@ -52,8 +46,6 @@ export function createPanelDomLifecycleService({
     selectionPanelElement.style.visibility = "";
 
     bindPanelActionControls(panelElement);
-    bindPanelReorderToggle(panelElement);
-    bindPanelReorderReset(panelElement);
     bindPanelActionControls(selectionPanelElement);
     bindSelectionPanelStatEvents(selectionPanelElement);
     bindSelectionNameTooltipEvent(selectionPanelElement);

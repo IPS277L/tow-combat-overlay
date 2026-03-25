@@ -18,8 +18,6 @@ export function createPanelSlotsLayoutService({
   panelActionIconByKey,
   resolvePanelButtonOrderScope,
   getControlPanelState,
-  readSavedPanelReorderUnlocked,
-  syncPanelReorderToggleButton,
   toPanelButtonKey,
   getDefaultPanelButtonKeyOrder,
   parsePanelButtonKey,
@@ -86,9 +84,6 @@ export function createPanelSlotsLayoutService({
     const buttonOrderScope = resolvePanelButtonOrderScope(token);
     const controlPanelState = getControlPanelState();
     if (controlPanelState) controlPanelState.buttonOrderScope = buttonOrderScope;
-    const reorderUnlocked = readSavedPanelReorderUnlocked(buttonOrderScope);
-    if (controlPanelState) controlPanelState.buttonReorderUnlocked = reorderUnlocked;
-    syncPanelReorderToggleButton(panelElement);
 
     const groupKeys = ["manoeuvre", "recover", "actions", "attacks", "magic"];
     const groupedItems = Object.fromEntries(groupKeys.map((key) => {

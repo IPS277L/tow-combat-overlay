@@ -1,13 +1,17 @@
-import { clampPanelCoordinate } from "./state.js";
+import { clampPanelCoordinate, readSavedPanelPosition } from "./state.js";
 import { getTowCombatOverlayConstants } from "../../../runtime/module-constants.js";
-import { isTowCombatOverlayDisplaySettingEnabled } from "../../../bootstrap/register-settings.js";
+import { getTowCombatOverlayDisplaySetting } from "../../../bootstrap/register-settings.js";
 import { getCanvasClientBounds } from "../../top-panel/top-panel-layout.js";
 import { PANEL_SELECTION_GAP_PX, PANEL_SELECTION_ID } from "./panel-constants.js";
 
 const { settings: MODULE_SETTINGS } = getTowCombatOverlayConstants();
 
 export function isControlPanelAlwaysCenteredEnabled() {
-  return isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelAlwaysCentered, false);
+  return String(getTowCombatOverlayDisplaySetting(MODULE_SETTINGS.controlPanelPositionMode, "free")).trim() === "alwaysCentered";
+}
+
+export function isControlPanelLockedEnabled() {
+  return String(getTowCombatOverlayDisplaySetting(MODULE_SETTINGS.controlPanelPositionMode, "free")).trim() === "locked";
 }
 
 function resolveSelectionElement(controlPanelState = null) {
@@ -164,6 +168,20 @@ export function applyInitialPanelPosition(
     applyCenteredPanelPosition(panelElement, viewportMarginPx, controlPanelState, selectionGapPx);
     return;
   }
+
+  const savedPosition = readSavedPanelPosition();
+  if (savedPosition && Number.isFinite(savedPosition.left) && Number.isFinite(savedPosition.top)) {
+    applyPanelPosition(
+      panelElement,
+      savedPosition.left,
+      savedPosition.top,
+      viewportMarginPx,
+      controlPanelState,
+      selectionGapPx
+    );
+    return;
+  }
+
   const rect = panelElement.getBoundingClientRect();
   const canvasBounds = getCanvasClientBounds(viewportMarginPx);
   const panelWidth = Math.max(1, Math.round(rect.width || panelElement.offsetWidth || 1));

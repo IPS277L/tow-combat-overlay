@@ -8,3 +8,9 @@
     max-width: calc(100vw - 10px);
   }
 }
+
+.tow-combat-overlay-top-panel :is(button, [role="button"], a, input, select, textarea, [tabindex]):focus,
+.tow-combat-overlay-top-panel :is(button, [role="button"], a, input, select, textarea, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: none;
+}

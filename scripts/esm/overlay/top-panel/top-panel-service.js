@@ -16,6 +16,7 @@ import {
   getCurrentSceneId,
   getOrderedSceneTokens,
   isTopPanelAlwaysCenteredEnabled,
+  isTopPanelLockedEnabled,
   moveTokenRelativeToTarget,
   shouldDropAfterTarget,
   syncTopPanelListBottomPadding,
@@ -43,10 +44,11 @@ function bindTopPanelElementEvents(topPanelElement) {
 
   const syncDragControls = () => {
     const alwaysCentered = isTopPanelAlwaysCenteredEnabled();
-    if (controlsElement instanceof HTMLElement) controlsElement.hidden = alwaysCentered;
+    const locked = isTopPanelLockedEnabled();
+    if (controlsElement instanceof HTMLElement) controlsElement.hidden = alwaysCentered || locked;
     if (alwaysCentered) applyDefaultTopPanelPosition(topPanelElement);
     const dragTooltipData = getTopPanelDragHandleTooltipData();
-    topPanelElement.classList.toggle("is-drag-locked", alwaysCentered);
+    topPanelElement.classList.toggle("is-drag-locked", alwaysCentered || locked);
 
     if (dragHandleButton instanceof HTMLButtonElement) {
       dragHandleButton.setAttribute("aria-label", dragTooltipData.ariaLabel);
@@ -78,6 +80,7 @@ function bindTopPanelElementEvents(topPanelElement) {
   const onPanelPointerDown = (event) => {
     if (event.button !== 0) return;
     if (isTopPanelAlwaysCenteredEnabled()) return;
+    if (isTopPanelLockedEnabled()) return;
     const target = event.target;
     if (!(target instanceof Element)) return;
     const dragHandleElement = target.closest("[data-action='drag-panel-handle']");

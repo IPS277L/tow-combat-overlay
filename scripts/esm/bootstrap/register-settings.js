@@ -68,21 +68,27 @@ function buildDisplaySettingsGroups(settingKeys) {
       hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelShowDeadVisual.Hint"
     },
     {
-      key: settingKeys.tokensPanelAlwaysCentered,
-      defaultValue: false,
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelAlwaysCentered.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelAlwaysCentered.Hint"
+      key: settingKeys.tokensPanelPositionMode,
+      type: "select",
+      defaultValue: "free",
+      choices: Object.freeze({
+        free: "TOWCOMBATOVERLAY.Setting.TokensPanelPositionMode.OptionFree",
+        locked: "TOWCOMBATOVERLAY.Setting.TokensPanelPositionMode.OptionLocked",
+        alwaysCentered: "TOWCOMBATOVERLAY.Setting.TokensPanelPositionMode.OptionAlwaysCentered"
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelPositionMode.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelPositionMode.Hint"
     },
     {
-      key: settingKeys.tokensPanelHoverButtonPosition,
+      key: settingKeys.tokensPanelDragButtonPosition,
       type: "select",
       defaultValue: "right",
       choices: Object.freeze({
-        left: "TOWCOMBATOVERLAY.Setting.TokensPanelHoverButtonPosition.OptionLeft",
-        right: "TOWCOMBATOVERLAY.Setting.TokensPanelHoverButtonPosition.OptionRight"
+        left: "TOWCOMBATOVERLAY.Setting.TokensPanelDragButtonPosition.OptionLeft",
+        right: "TOWCOMBATOVERLAY.Setting.TokensPanelDragButtonPosition.OptionRight"
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelHoverButtonPosition.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelHoverButtonPosition.Hint"
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelDragButtonPosition.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelDragButtonPosition.Hint"
     }
   ]);
 
@@ -205,10 +211,22 @@ function buildDisplaySettingsGroups(settingKeys) {
       hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelShowDeadPortraitStatus.Hint"
     },
     {
-      key: settingKeys.controlPanelAlwaysCentered,
-      defaultValue: false,
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelAlwaysCentered.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelAlwaysCentered.Hint"
+      key: settingKeys.controlPanelPositionMode,
+      type: "select",
+      defaultValue: "free",
+      choices: Object.freeze({
+        free: "TOWCOMBATOVERLAY.Setting.ControlPanelPositionMode.OptionFree",
+        locked: "TOWCOMBATOVERLAY.Setting.ControlPanelPositionMode.OptionLocked",
+        alwaysCentered: "TOWCOMBATOVERLAY.Setting.ControlPanelPositionMode.OptionAlwaysCentered"
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelPositionMode.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelPositionMode.Hint"
+    },
+    {
+      key: settingKeys.controlPanelEnableButtonDragDrop,
+      defaultValue: true,
+      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonDragDrop.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonDragDrop.Hint"
     }
   ]);
 
@@ -221,8 +239,8 @@ function buildDisplaySettingsGroups(settingKeys) {
           titleKey: "TOWCOMBATOVERLAY.SettingsSection.TokensPanel.General",
           settingKeys: Object.freeze([
             settingKeys.enableTopPanel,
-            settingKeys.tokensPanelAlwaysCentered,
-            settingKeys.tokensPanelHoverButtonPosition
+            settingKeys.tokensPanelPositionMode,
+            settingKeys.tokensPanelDragButtonPosition
           ])
         },
         {
@@ -277,7 +295,8 @@ function buildDisplaySettingsGroups(settingKeys) {
           titleKey: "TOWCOMBATOVERLAY.SettingsSection.ControlPanel.General",
           settingKeys: Object.freeze([
             settingKeys.enableControlPanel,
-            settingKeys.controlPanelAlwaysCentered
+            settingKeys.controlPanelPositionMode,
+            settingKeys.controlPanelEnableButtonDragDrop
           ])
         },
         {

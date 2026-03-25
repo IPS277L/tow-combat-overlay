@@ -7,6 +7,7 @@ import {
 } from "../layout/wound-state.js";
 import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
 import { MODULE_KEY } from "../../runtime/overlay-constants.js";
+import { isTowCombatOverlayDisplaySettingEnabled } from "../../bootstrap/register-settings.js";
 import {
   AUTO_DEFENCE_WAIT_MS,
   AUTO_APPLY_WAIT_MS,
@@ -56,22 +57,20 @@ import {
 } from "../../combat/roll-modifier.js";
 import { getTowCombatOverlaySystemAdapter } from "../../system-adapter/system-adapter.js";
 import {
-  clearSavedPanelButtonKeyOrder,
   isSyntheticEmptySlotKey,
   parsePanelButtonKey,
   readSavedPanelButtonKeyOrder,
-  readSavedPanelReorderUnlocked,
   resolvePanelButtonOrderScope,
   toPanelButtonKey,
   writeSavedPanelButtonKeyOrder,
-  writeSavedPanelPosition,
-  writeSavedPanelReorderUnlocked
+  writeSavedPanelPosition
 } from "./shared/state.js";
 import {
   applyInitialPanelPosition,
   applyPanelPosition,
   applyPanelPositionWithSelectionClamp,
   isControlPanelAlwaysCenteredEnabled,
+  isControlPanelLockedEnabled,
   syncSelectionPanelPosition
 } from "./shared/position.js";
 import { bindPanelTooltipEvent } from "./shared/tooltip.js";
@@ -396,8 +395,6 @@ const panelSlotsLayoutService = createPanelSlotsLayoutService({
   panelActionIconByKey: PANEL_ACTION_ICON_BY_KEY,
   resolvePanelButtonOrderScope,
   getControlPanelState: () => getControlPanelState(),
-  readSavedPanelReorderUnlocked,
-  syncPanelReorderToggleButton: (panelElement) => syncPanelReorderToggleButton(panelElement),
   toPanelButtonKey,
   getDefaultPanelButtonKeyOrder: () => getDefaultPanelButtonKeyOrder(),
   parsePanelButtonKey,
@@ -430,17 +427,13 @@ const panelStatusDisplayService = createPanelStatusDisplayService({
   getActorStatusSet
 });
 const panelReorderService = createPanelReorderService({
-  bindPanelTooltipEvent,
   getControlPanelState: () => getControlPanelState(),
-  writeSavedPanelReorderUnlocked,
-  clearSavedPanelButtonKeyOrder,
   readSavedPanelButtonKeyOrder,
   writeSavedPanelButtonKeyOrder,
   parsePanelButtonKey,
   toPanelButtonKey,
   reorderableGroupKeys: PANEL_REORDERABLE_GROUP_KEYS,
-  panelUnarmedActionId: PANEL_UNARMED_ACTION_ID,
-  updateSelectionDisplay: (panelElement) => updateSelectionDisplay(panelElement)
+  panelUnarmedActionId: PANEL_UNARMED_ACTION_ID
 });
 const panelAttackResourceService = createPanelAttackResourceService({
   towCombatOverlayArmAutoSubmitDialog,
@@ -453,7 +446,7 @@ const panelAttackResourceService = createPanelAttackResourceService({
 });
 const panelSlotBindingService = createPanelSlotBindingService({
   getControlPanelState: () => getControlPanelState(),
-  isPanelButtonReorderUnlocked: () => isPanelButtonReorderUnlocked(),
+  canReorderButtons: () => isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableButtonDragDrop, true),
   isMainActionPanelSlot: (slotElement) => isMainActionPanelSlot(slotElement),
   getSlotPanelButtonKey: (slotElement) => getSlotPanelButtonKey(slotElement),
   movePanelButtonKeyBeforeTarget: (sourceKey, targetKey, panelElement) => (
@@ -471,19 +464,16 @@ const panelDomLifecycleService = createPanelDomLifecycleService({
   panelViewportMarginPx: PANEL_VIEWPORT_MARGIN_PX,
   panelSelectionGapPx: PANEL_SELECTION_GAP_PX,
   getControlPanelState: () => getControlPanelState(),
-  readSavedPanelReorderUnlocked,
   removeStaleControlPanels,
   createControlPanelElement: () => createControlPanelElement(),
   applyInitialPanelPosition,
   syncSelectionPanelPosition,
   bindPanelActionControls: (panelElement) => bindPanelActionControls(panelElement),
-  bindPanelReorderToggle: (panelElement) => bindPanelReorderToggle(panelElement),
-  bindPanelReorderReset: (panelElement) => bindPanelReorderReset(panelElement),
   bindSelectionPanelStatEvents: (selectionPanelElement) => bindSelectionPanelStatEvents(selectionPanelElement),
   bindSelectionNameTooltipEvent: (selectionPanelElement) => bindSelectionNameTooltipEvent(selectionPanelElement),
   bindPanelStatusesTooltipEvents: (panelElement) => bindPanelStatusesTooltipEvents(panelElement),
   bindControlPanelDrag,
-  isPanelDragEnabled: () => !isControlPanelAlwaysCenteredEnabled(),
+  isPanelDragEnabled: () => !isControlPanelAlwaysCenteredEnabled() && !isControlPanelLockedEnabled(),
   applyPanelPositionWithSelectionClamp,
   writeSavedPanelPosition,
   bindPanelSelectionSync: (controlPanelState, panelElement) => bindPanelSelectionSync(controlPanelState, panelElement),
@@ -505,23 +495,6 @@ function getControlPanelState() {
 }
 function getDefaultPanelButtonKeyOrder() {
   return panelReorderService.getDefaultPanelButtonKeyOrder();
-}
-
-function isPanelButtonReorderUnlocked() {
-  return panelReorderService.isPanelButtonReorderUnlocked();
-}
-
-function syncPanelReorderToggleButton(panelElement) {
-  panelReorderService.syncPanelReorderToggleButton(panelElement);
-}
-
-function bindPanelReorderToggle(panelElement) {
-  panelReorderService.bindPanelReorderToggle(panelElement);
-}
-
-
-function bindPanelReorderReset(panelElement) {
-  panelReorderService.bindPanelReorderReset(panelElement);
 }
 function movePanelButtonKeyBeforeTarget(sourceKey, targetKey, panelElement = null) {
   return panelReorderService.movePanelButtonKeyBeforeTarget(sourceKey, targetKey, panelElement);
@@ -813,6 +786,3 @@ export async function towCombatOverlayEnsureControlPanel() {
 export function towCombatOverlayRemoveControlPanel() {
   panelDomLifecycleService.removeControlPanel();
 }
-
-
-

@@ -1,23 +1,12 @@
 export function createPanelReorderService({
-  bindPanelTooltipEvent,
   getControlPanelState,
-  isButtonReorderEnabled = () => true,
-  writeSavedPanelReorderUnlocked,
-  clearSavedPanelButtonKeyOrder,
   readSavedPanelButtonKeyOrder,
   writeSavedPanelButtonKeyOrder,
   parsePanelButtonKey,
   toPanelButtonKey,
   reorderableGroupKeys,
-  panelUnarmedActionId,
-  updateSelectionDisplay
+  panelUnarmedActionId
 } = {}) {
-  function localize(key, fallback = "") {
-    const localized = game?.i18n?.localize?.(String(key ?? ""));
-    if (typeof localized === "string" && localized !== key) return localized;
-    return String(fallback ?? key ?? "");
-  }
-
   function getCurrentPanelButtonOrderScope() {
     const controlPanelState = getControlPanelState();
     return String(controlPanelState?.buttonOrderScope ?? "global").trim() || "global";
@@ -41,99 +30,6 @@ export function createPanelReorderService({
     return preferredSequence
       .map(([groupKey, itemId]) => toPanelButtonKey(groupKey, itemId))
       .filter(Boolean);
-  }
-
-  function isPanelButtonReorderUnlocked() {
-    if (!isButtonReorderEnabled()) return false;
-    const controlPanelState = getControlPanelState();
-    return !!controlPanelState?.buttonReorderUnlocked;
-  }
-
-  function getPanelReorderToggleTooltipData(unlocked) {
-    if (unlocked) {
-      return {
-        title: localize("TOWCOMBATOVERLAY.Tooltip.Panel.ReorderToggle.Unlocked.Title", "Button Order: Unlocked"),
-        description: localize(
-          "TOWCOMBATOVERLAY.Tooltip.Panel.ReorderToggle.Unlocked.Description",
-          "<em>Click to lock button order.</em><br><br>Drag and drop is enabled."
-        )
-      };
-    }
-    return {
-      title: localize("TOWCOMBATOVERLAY.Tooltip.Panel.ReorderToggle.Locked.Title", "Button Order: Locked"),
-      description: localize(
-        "TOWCOMBATOVERLAY.Tooltip.Panel.ReorderToggle.Locked.Description",
-        "<em>Click to unlock and rearrange buttons.</em><br><br>Drag and drop is disabled."
-      )
-    };
-  }
-
-  function syncPanelReorderToggleButton(panelElement) {
-    if (!(panelElement instanceof HTMLElement)) return;
-    const button = panelElement.querySelector("[data-action='toggle-button-reorder']");
-    if (!(button instanceof HTMLButtonElement)) return;
-    const unlocked = isPanelButtonReorderUnlocked();
-    const tooltipData = getPanelReorderToggleTooltipData(unlocked);
-    button.dataset.state = unlocked ? "unlocked" : "locked";
-    button.setAttribute("aria-pressed", unlocked ? "true" : "false");
-    button.setAttribute("aria-label", unlocked
-      ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.ReorderToggle.AriaLock", "Lock button order")
-      : localize("TOWCOMBATOVERLAY.Tooltip.Panel.ReorderToggle.AriaUnlock", "Unlock button order"));
-    button.dataset.tooltipTitle = tooltipData.title;
-    button.dataset.tooltipDescription = tooltipData.description;
-    button.removeAttribute("title");
-    panelElement.classList.toggle("is-reorder-unlocked", unlocked);
-    const icon = button.querySelector(".tow-combat-overlay-control-panel__reorder-toggle-icon");
-    if (icon instanceof HTMLElement) {
-      icon.classList.remove("fa-lock", "fa-lock-open");
-      icon.classList.add(unlocked ? "fa-lock-open" : "fa-lock");
-    }
-  }
-
-  function bindPanelReorderToggle(panelElement) {
-    if (!isButtonReorderEnabled()) return;
-    if (!(panelElement instanceof HTMLElement)) return;
-    const button = panelElement.querySelector("[data-action='toggle-button-reorder']");
-    if (!(button instanceof HTMLButtonElement)) return;
-    bindPanelTooltipEvent(button, () => getPanelReorderToggleTooltipData(isPanelButtonReorderUnlocked()));
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      const controlPanelState = getControlPanelState();
-      if (!controlPanelState) return;
-      const scope = getCurrentPanelButtonOrderScope();
-      const unlocked = !isPanelButtonReorderUnlocked();
-      controlPanelState.buttonReorderUnlocked = unlocked;
-      writeSavedPanelReorderUnlocked(unlocked, scope);
-      syncPanelReorderToggleButton(panelElement);
-    });
-    syncPanelReorderToggleButton(panelElement);
-  }
-
-  function bindPanelReorderReset(panelElement) {
-    if (!isButtonReorderEnabled()) return;
-    if (!(panelElement instanceof HTMLElement)) return;
-    const button = panelElement.querySelector("[data-action='reset-button-order']");
-    if (!(button instanceof HTMLButtonElement)) return;
-    const tooltipTitle = localize("TOWCOMBATOVERLAY.Tooltip.Panel.ReorderReset.Title", "Reset Button Order");
-    const tooltipDescription = localize(
-      "TOWCOMBATOVERLAY.Tooltip.Panel.ReorderReset.Description",
-      "<em>Click to reset the selected token action buttons to default order.</em>"
-    );
-    button.dataset.tooltipTitle = tooltipTitle;
-    button.dataset.tooltipDescription = tooltipDescription;
-    button.removeAttribute("title");
-    bindPanelTooltipEvent(button, () => ({ title: tooltipTitle, description: tooltipDescription }));
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      const scope = getCurrentPanelButtonOrderScope();
-      clearSavedPanelButtonKeyOrder(scope);
-      const controlPanelState = getControlPanelState();
-      if (controlPanelState?.element instanceof HTMLElement) {
-        updateSelectionDisplay(controlPanelState.element);
-      }
-    });
   }
 
   function getSlotPanelButtonKey(slotElement) {
@@ -208,13 +104,8 @@ export function createPanelReorderService({
 
   return {
     getDefaultPanelButtonKeyOrder,
-    isPanelButtonReorderUnlocked,
-    syncPanelReorderToggleButton,
-    bindPanelReorderToggle,
-    bindPanelReorderReset,
     movePanelButtonKeyBeforeTarget,
     getSlotPanelButtonKey,
     isMainActionPanelSlot
   };
 }
-

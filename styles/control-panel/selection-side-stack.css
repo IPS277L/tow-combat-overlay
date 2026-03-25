@@ -297,3 +297,10 @@
   vertical-align: baseline;
 }
 
+.tow-combat-overlay-control-panel :is(button, [role="button"], a, input, select, textarea, [tabindex]):focus,
+.tow-combat-overlay-control-panel :is(button, [role="button"], a, input, select, textarea, [tabindex]):focus-visible,
+.tow-combat-overlay-selection-panel :is(button, [role="button"], a, input, select, textarea, [tabindex]):focus,
+.tow-combat-overlay-selection-panel :is(button, [role="button"], a, input, select, textarea, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: none;
+}

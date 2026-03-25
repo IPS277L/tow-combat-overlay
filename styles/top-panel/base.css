@@ -63,3 +63,7 @@
 .tow-combat-overlay-top-panel[data-always-centered="true"] .tow-combat-overlay-top-panel__list {
   max-width: 100%;
 }
+
+.tow-combat-overlay-top-panel.is-drag-locked .tow-combat-overlay-top-panel__list {
+  max-width: 100%;
+}

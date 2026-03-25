@@ -5,7 +5,7 @@ import {
 } from "./top-panel-state.js";
 import { TOP_PANEL_VIEWPORT_MARGIN_PX } from "./top-panel-constants.js";
 import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
-import { isTowCombatOverlayDisplaySettingEnabled } from "../../bootstrap/register-settings.js";
+import { getTowCombatOverlayDisplaySetting } from "../../bootstrap/register-settings.js";
 
 export function getCanvasClientBounds(viewportMarginPx = TOP_PANEL_VIEWPORT_MARGIN_PX) {
   const canvasView = canvas?.app?.view;
@@ -126,7 +126,12 @@ export function getSceneTokens() {
 
 export function isTopPanelAlwaysCenteredEnabled() {
   const { settings } = getTowCombatOverlayConstants();
-  return isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelAlwaysCentered, false);
+  return String(getTowCombatOverlayDisplaySetting(settings.tokensPanelPositionMode, "free")).trim() === "alwaysCentered";
+}
+
+export function isTopPanelLockedEnabled() {
+  const { settings } = getTowCombatOverlayConstants();
+  return String(getTowCombatOverlayDisplaySetting(settings.tokensPanelPositionMode, "free")).trim() === "locked";
 }
 
 export function getCurrentSceneId() {

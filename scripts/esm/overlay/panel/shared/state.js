@@ -1,15 +1,9 @@
 const PANEL_LOCAL_STORAGE_KEY = "tow-combat-overlay.control-panel-position.v1";
 const PANEL_BUTTON_ORDER_LOCAL_STORAGE_KEY = "tow-combat-overlay.control-panel-button-order.v1";
-const PANEL_REORDER_UNLOCKED_LOCAL_STORAGE_KEY = "tow-combat-overlay.control-panel-reorder-unlocked.v1";
 
 function getPanelButtonOrderStorageKey(scope = "global") {
   const rawScope = String(scope ?? "global").trim() || "global";
   return `${PANEL_BUTTON_ORDER_LOCAL_STORAGE_KEY}:${rawScope}`;
-}
-
-function getPanelReorderUnlockedStorageKey(scope = "global") {
-  const rawScope = String(scope ?? "global").trim() || "global";
-  return `${PANEL_REORDER_UNLOCKED_LOCAL_STORAGE_KEY}:${rawScope}`;
 }
 
 export function clampPanelCoordinate(value, min, max) {
@@ -107,23 +101,6 @@ export function clearSavedPanelButtonKeyOrder(scope = "global") {
   }
 }
 
-export function readSavedPanelReorderUnlocked(scope = "global") {
-  try {
-    return window.localStorage.getItem(getPanelReorderUnlockedStorageKey(scope)) === "true";
-  } catch (_error) {
-    return false;
-  }
-}
-
-export function writeSavedPanelReorderUnlocked(unlocked, scope = "global") {
-  try {
-    if (unlocked) window.localStorage.setItem(getPanelReorderUnlockedStorageKey(scope), "true");
-    else window.localStorage.removeItem(getPanelReorderUnlockedStorageKey(scope));
-  } catch (_error) {
-    // Ignore storage errors.
-  }
-}
-
 export function resolvePanelButtonOrderScope(token = null) {
   const tokenUuid = String(token?.document?.uuid ?? token?.document?.id ?? token?.id ?? "").trim();
   if (tokenUuid) return `token:${tokenUuid}`;
@@ -131,4 +108,3 @@ export function resolvePanelButtonOrderScope(token = null) {
   if (actorUuid) return `actor:${actorUuid}`;
   return "global";
 }
-

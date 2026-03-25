@@ -1,6 +1,6 @@
 export function createPanelSlotBindingService({
   getControlPanelState,
-  isPanelButtonReorderUnlocked,
+  canReorderButtons = () => true,
   isMainActionPanelSlot,
   getSlotPanelButtonKey,
   movePanelButtonKeyBeforeTarget,
@@ -10,14 +10,14 @@ export function createPanelSlotBindingService({
   showOverlayTooltip
 } = {}) {
   function bindPanelSlotEvent(slotElement) {
-    slotElement.addEventListener("pointerdown", (event) => {
-      if (event.button !== 0) return;
-      if (isPanelButtonReorderUnlocked() && isMainActionPanelSlot(slotElement)) return;
-      event.preventDefault();
-      void handlePanelSlotClick(slotElement, event);
-    });
     slotElement.addEventListener("click", (event) => {
       event.preventDefault();
+      const controlPanelState = getControlPanelState();
+      if (controlPanelState?.suppressNextPanelSlotClick === true) {
+        controlPanelState.suppressNextPanelSlotClick = false;
+        return;
+      }
+      void handlePanelSlotClick(slotElement, event);
     });
     slotElement.addEventListener("contextmenu", (event) => {
       event.preventDefault();
@@ -27,9 +27,13 @@ export function createPanelSlotBindingService({
       void handlePanelSlotClick(slotElement, event);
     });
 
-    slotElement.draggable = true;
+    slotElement.draggable = !!canReorderButtons();
     slotElement.addEventListener("dragstart", (event) => {
-      if (!isPanelButtonReorderUnlocked() || !isMainActionPanelSlot(slotElement)) {
+      if (!canReorderButtons()) {
+        event.preventDefault();
+        return;
+      }
+      if (!isMainActionPanelSlot(slotElement)) {
         event.preventDefault();
         return;
       }
@@ -47,7 +51,8 @@ export function createPanelSlotBindingService({
     });
 
     slotElement.addEventListener("dragover", (event) => {
-      if (!isPanelButtonReorderUnlocked() || !isMainActionPanelSlot(slotElement)) return;
+      if (!canReorderButtons()) return;
+      if (!isMainActionPanelSlot(slotElement)) return;
       const targetKey = getSlotPanelButtonKey(slotElement);
       if (!targetKey) return;
       const controlPanelState = getControlPanelState();
@@ -62,7 +67,8 @@ export function createPanelSlotBindingService({
     });
 
     slotElement.addEventListener("drop", (event) => {
-      if (!isPanelButtonReorderUnlocked() || !isMainActionPanelSlot(slotElement)) return;
+      if (!canReorderButtons()) return;
+      if (!isMainActionPanelSlot(slotElement)) return;
       const targetKey = getSlotPanelButtonKey(slotElement);
       const controlPanelState = getControlPanelState();
       const sourceKey = String(
@@ -74,6 +80,7 @@ export function createPanelSlotBindingService({
       event.preventDefault();
       const panelElement = slotElement.closest(".tow-combat-overlay-control-panel") ?? controlPanelState?.element ?? null;
       if (!movePanelButtonKeyBeforeTarget(sourceKey, targetKey, panelElement)) return;
+      if (controlPanelState) controlPanelState.suppressNextPanelSlotClick = true;
       if (controlPanelState?.element instanceof HTMLElement) {
         updateSelectionDisplay(controlPanelState.element);
       }
@@ -126,4 +133,3 @@ export function createPanelSlotBindingService({
     createPanelSlotElement
   };
 }
-

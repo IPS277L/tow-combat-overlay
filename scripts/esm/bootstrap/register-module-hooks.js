@@ -61,7 +61,8 @@ export function syncTowCombatOverlayDisplaySettings(changedSettingKey = "") {
     || normalizedChangedSettingKey === settings.controlPanelEnableWeaponsButtons
     || normalizedChangedSettingKey === settings.controlPanelEnableMagicButtons
     || normalizedChangedSettingKey === settings.controlPanelShowDeadPortraitStatus
-    || normalizedChangedSettingKey === settings.controlPanelAlwaysCentered;
+    || normalizedChangedSettingKey === settings.controlPanelPositionMode
+    || normalizedChangedSettingKey === settings.controlPanelEnableButtonDragDrop;
 
   const wantsEnabled = isTowCombatOverlayDisplaySettingEnabled(settings.enableOverlay, true);
   const wantsControlPanel = isTowCombatOverlayDisplaySettingEnabled(settings.enableControlPanel, true);
