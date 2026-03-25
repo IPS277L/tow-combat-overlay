@@ -83,6 +83,10 @@ function buildDisplaySettingsGroups(settingKeys) {
       key: settingKeys.tokensPanelDragButtonPosition,
       type: "select",
       defaultValue: "right",
+      visibleWhen: Object.freeze({
+        key: settingKeys.tokensPanelPositionMode,
+        equals: "free"
+      }),
       choices: Object.freeze({
         left: "TOWCOMBATOVERLAY.Setting.TokensPanelDragButtonPosition.OptionLeft",
         right: "TOWCOMBATOVERLAY.Setting.TokensPanelDragButtonPosition.OptionRight"
@@ -223,10 +227,10 @@ function buildDisplaySettingsGroups(settingKeys) {
       hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelPositionMode.Hint"
     },
     {
-      key: settingKeys.controlPanelEnableButtonDragDrop,
+      key: settingKeys.controlPanelEnableButtonsDragDrop,
       defaultValue: true,
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonDragDrop.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonDragDrop.Hint"
+      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonsDragDrop.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonsDragDrop.Hint"
     }
   ]);
 
@@ -296,7 +300,7 @@ function buildDisplaySettingsGroups(settingKeys) {
           settingKeys: Object.freeze([
             settingKeys.enableControlPanel,
             settingKeys.controlPanelPositionMode,
-            settingKeys.controlPanelEnableButtonDragDrop
+            settingKeys.controlPanelEnableButtonsDragDrop
           ])
         },
         {
@@ -366,12 +370,31 @@ function createGroupFormClass(group) {
 
     getData() {
       const { moduleId } = getTowCombatOverlayConstants();
+      const settingDefinitionByKey = new Map(
+        group.settings.map((entry) => [String(entry?.key ?? ""), entry])
+      );
+      const currentValueByKey = new Map(
+        group.settings.map((entry) => [entry.key, getTowCombatOverlayDisplaySetting(entry.key, entry.defaultValue)])
+      );
       const fields = group.settings.map((entry) => {
         const isSelect = String(entry?.type ?? "boolean").trim() === "select";
-        const rawValue = getTowCombatOverlayDisplaySetting(entry.key, entry.defaultValue);
+        const rawValue = currentValueByKey.get(entry.key);
         const normalizedValue = isSelect
           ? normalizeSelectSettingValue(entry, rawValue)
           : !!rawValue;
+        const visibilityRule = entry?.visibleWhen;
+        const visibleWhenKey = String(visibilityRule?.key ?? "").trim();
+        const visibleWhenValue = String(visibilityRule?.equals ?? "").trim();
+        let isVisible = true;
+        if (visibleWhenKey) {
+          const dependentDefinition = settingDefinitionByKey.get(visibleWhenKey) ?? null;
+          const dependentRawValue = currentValueByKey.get(visibleWhenKey);
+          const dependentIsSelect = String(dependentDefinition?.type ?? "boolean").trim() === "select";
+          const dependentValue = dependentIsSelect
+            ? normalizeSelectSettingValue(dependentDefinition, dependentRawValue)
+            : String(!!dependentRawValue);
+          isVisible = dependentValue === visibleWhenValue;
+        }
         const choices = isSelect
           ? Object.entries(entry?.choices ?? {}).map(([value, labelKey]) => ({
             value: String(value ?? ""),
@@ -387,7 +410,10 @@ function createGroupFormClass(group) {
           value: normalizedValue,
           isSelect,
           isBoolean: !isSelect,
-          choices
+          choices,
+          visibleWhenKey,
+          visibleWhenValue,
+          isVisible
         };
       });
       const fieldByKey = new Map(fields.map((field) => [field.key, field]));
@@ -405,6 +431,54 @@ function createGroupFormClass(group) {
         saveLabel: localizeMaybe("SETTINGS.Save", "Save"),
         moduleId
       };
+    }
+
+    activateListeners(html) {
+      super.activateListeners(html);
+      const rootElement = html?.[0] instanceof HTMLElement
+        ? html[0]
+        : (html instanceof HTMLElement ? html : null);
+      if (!(rootElement instanceof HTMLElement)) return;
+      let resizeFrameId = 0;
+
+      const syncWindowHeight = () => {
+        if (resizeFrameId) window.cancelAnimationFrame(resizeFrameId);
+        resizeFrameId = window.requestAnimationFrame(() => {
+          resizeFrameId = 0;
+          if (typeof this.setPosition === "function") this.setPosition({ height: "auto" });
+        });
+      };
+
+      const applyConditionalVisibility = () => {
+        const conditionalFields = rootElement.querySelectorAll("[data-visible-when-key]");
+        for (const fieldElement of conditionalFields) {
+          if (!(fieldElement instanceof HTMLElement)) continue;
+          const dependsOnKey = String(fieldElement.dataset.visibleWhenKey ?? "").trim();
+          const equalsValue = String(fieldElement.dataset.visibleWhenValue ?? "").trim();
+          if (!dependsOnKey) {
+            fieldElement.style.display = "";
+            continue;
+          }
+          const dependentInput = rootElement.querySelector(`[name="${dependsOnKey}"]`);
+          if (!(dependentInput instanceof HTMLElement)) {
+            fieldElement.style.display = "";
+            continue;
+          }
+          let currentValue = "";
+          if (dependentInput instanceof HTMLInputElement && dependentInput.type === "checkbox") {
+            currentValue = dependentInput.checked ? "true" : "false";
+          } else if (dependentInput instanceof HTMLSelectElement) {
+            currentValue = String(dependentInput.value ?? "").trim();
+          } else {
+            currentValue = String(dependentInput.getAttribute("value") ?? "").trim();
+          }
+          fieldElement.style.display = currentValue === equalsValue ? "" : "none";
+        }
+        syncWindowHeight();
+      };
+
+      rootElement.addEventListener("change", applyConditionalVisibility);
+      applyConditionalVisibility();
     }
 
     async _updateObject(_event, formData) {

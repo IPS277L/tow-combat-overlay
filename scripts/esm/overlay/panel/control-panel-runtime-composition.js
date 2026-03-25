@@ -446,7 +446,7 @@ const panelAttackResourceService = createPanelAttackResourceService({
 });
 const panelSlotBindingService = createPanelSlotBindingService({
   getControlPanelState: () => getControlPanelState(),
-  canReorderButtons: () => isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableButtonDragDrop, true),
+  canReorderButtons: () => isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableButtonsDragDrop, true),
   isMainActionPanelSlot: (slotElement) => isMainActionPanelSlot(slotElement),
   getSlotPanelButtonKey: (slotElement) => getSlotPanelButtonKey(slotElement),
   movePanelButtonKeyBeforeTarget: (sourceKey, targetKey, panelElement) => (

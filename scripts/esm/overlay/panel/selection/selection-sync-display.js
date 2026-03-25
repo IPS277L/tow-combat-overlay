@@ -24,6 +24,33 @@ export function createPanelSelectionSyncDisplayService({
   panelViewportMarginPx = 8,
   panelSelectionGapPx = 0
 } = {}) {
+  function scheduleSelectionNameRefit(controlPanelState, selectionNameMainElement) {
+    if (!(selectionNameMainElement instanceof HTMLElement)) return;
+    if (controlPanelState?.selectionNameRefitFrameId) {
+      window.cancelAnimationFrame(controlPanelState.selectionNameRefitFrameId);
+      controlPanelState.selectionNameRefitFrameId = 0;
+    }
+    if (controlPanelState?.selectionNameRefitTimerId) {
+      window.clearTimeout(controlPanelState.selectionNameRefitTimerId);
+      controlPanelState.selectionNameRefitTimerId = 0;
+    }
+
+    const runRefit = () => fitSelectionNameFont(selectionNameMainElement);
+    const firstFrameId = window.requestAnimationFrame(() => {
+      const secondFrameId = window.requestAnimationFrame(() => {
+        runRefit();
+      });
+      if (controlPanelState) controlPanelState.selectionNameRefitFrameId = secondFrameId;
+    });
+    if (controlPanelState) controlPanelState.selectionNameRefitFrameId = firstFrameId;
+    if (controlPanelState) {
+      controlPanelState.selectionNameRefitTimerId = window.setTimeout(() => {
+        runRefit();
+        controlPanelState.selectionNameRefitTimerId = 0;
+      }, 140);
+    }
+  }
+
   function syncItemGroupsMinWidth(panelElement) {
     if (!(panelElement instanceof HTMLElement)) return;
     const statusesTopElement = panelElement.querySelector(".tow-combat-overlay-control-panel__statuses-top");
@@ -116,6 +143,7 @@ export function createPanelSelectionSyncDisplayService({
     if (selectionNameMainElement instanceof HTMLElement) {
       selectionNameMainElement.textContent = tokenName || "-";
       fitSelectionNameFont(selectionNameMainElement);
+      scheduleSelectionNameRefit(controlPanelState, selectionNameMainElement);
     }
     if (selectionSpeedElement instanceof HTMLElement) {
       selectionSpeedElement.textContent = speed;

@@ -5,7 +5,11 @@
         <section class="tow-combat-overlay-settings-group-form__section" style="margin: 0 0 10px 0; padding: 8px 10px; border: 1px solid rgba(0, 0, 0, 0.28); border-radius: 6px; background: rgba(255, 255, 255, 0.18);">
           <h3 class="tow-combat-overlay-settings-group-form__section-title" style="margin: 0 0 8px 0; padding-bottom: 4px; border-bottom: 1px solid rgba(0, 0, 0, 0.28); font-family: inherit; font-size: inherit; letter-spacing: normal; font-weight: 400; ">{{this.title}}</h3>
           {{#each this.fields}}
-            <div class="form-group" style="margin: 0 0 8px 0;">
+            <div
+              class="form-group"
+              {{#if this.visibleWhenKey}}data-visible-when-key="{{this.visibleWhenKey}}" data-visible-when-value="{{this.visibleWhenValue}}"{{/if}}
+              style="margin: 0 0 8px 0; {{#unless this.isVisible}}display: none;{{/unless}}"
+            >
               <label for="{{this.id}}" style="font-weight: 700;">{{this.name}}</label>
               <div class="form-fields">
                 {{#if this.isSelect}}
@@ -25,7 +29,11 @@
       {{/each}}
     {{else}}
       {{#each fields}}
-        <div class="form-group" style="margin: 0 0 8px 0;">
+        <div
+          class="form-group"
+          {{#if this.visibleWhenKey}}data-visible-when-key="{{this.visibleWhenKey}}" data-visible-when-value="{{this.visibleWhenValue}}"{{/if}}
+          style="margin: 0 0 8px 0; {{#unless this.isVisible}}display: none;{{/unless}}"
+        >
           <label for="{{this.id}}" style="font-weight: 700;">{{this.name}}</label>
           <div class="form-fields">
             {{#if this.isSelect}}

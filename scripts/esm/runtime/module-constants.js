@@ -42,7 +42,7 @@ const MODULE_CONSTANTS_BASE = Object.freeze({
     controlPanelEnableMagicButtons: "controlPanelEnableMagicButtons",
     controlPanelShowDeadPortraitStatus: "controlPanelShowDeadPortraitStatus",
     controlPanelPositionMode: "controlPanelPositionMode",
-    controlPanelEnableButtonDragDrop: "controlPanelEnableButtonDragDrop"
+    controlPanelEnableButtonsDragDrop: "controlPanelEnableButtonsDragDrop"
   })
 });
 

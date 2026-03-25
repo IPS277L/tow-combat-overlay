@@ -5,6 +5,7 @@ import { registerTowCombatOverlayActionsRuntimeApi } from "./register-actions-ap
 import { registerTowCombatOverlayDeadWoundSyncHooks } from "./register-dead-wound-sync-hooks.js";
 import { getTowCombatOverlayOverlayApi } from "../api/module-api-registry.js";
 import {
+  getTowCombatOverlayDisplaySetting,
   isTowCombatOverlayDisplaySettingEnabled,
   registerTowCombatOverlayDisplaySettings
 } from "./register-settings.js";
@@ -12,6 +13,7 @@ import {
   towCombatOverlayEnsureControlPanel,
   towCombatOverlayRemoveControlPanel
 } from "../overlay/panel/control-panel-service.js";
+import { writeSavedPanelPosition } from "../overlay/panel/shared/state.js";
 import {
   towCombatOverlayEnsureTopPanel,
   towCombatOverlayRemoveTopPanel
@@ -45,6 +47,16 @@ function ensureTowCombatOverlayStylesheetLoaded() {
   return injected;
 }
 
+function syncControlPanelButtonsDragDrop(enabled = true) {
+  const panelElement = document.getElementById("tow-combat-overlay-control-panel");
+  if (!(panelElement instanceof HTMLElement)) return;
+  const slotElements = panelElement.querySelectorAll(".tow-combat-overlay-control-panel__slot");
+  for (const slotElement of slotElements) {
+    if (!(slotElement instanceof HTMLElement)) continue;
+    slotElement.draggable = !!enabled;
+  }
+}
+
 export function syncTowCombatOverlayDisplaySettings(changedSettingKey = "") {
   const { settings } = getTowCombatOverlayConstants();
   const overlayApi = getTowCombatOverlayOverlayApi();
@@ -61,8 +73,14 @@ export function syncTowCombatOverlayDisplaySettings(changedSettingKey = "") {
     || normalizedChangedSettingKey === settings.controlPanelEnableWeaponsButtons
     || normalizedChangedSettingKey === settings.controlPanelEnableMagicButtons
     || normalizedChangedSettingKey === settings.controlPanelShowDeadPortraitStatus
-    || normalizedChangedSettingKey === settings.controlPanelPositionMode
-    || normalizedChangedSettingKey === settings.controlPanelEnableButtonDragDrop;
+    || normalizedChangedSettingKey === settings.controlPanelPositionMode;
+  if (normalizedChangedSettingKey === settings.controlPanelPositionMode) {
+    const positionMode = String(getTowCombatOverlayDisplaySetting(settings.controlPanelPositionMode, "free")).trim();
+    if (positionMode === "free") {
+      const panelElement = document.getElementById("tow-combat-overlay-control-panel");
+      if (panelElement instanceof HTMLElement) writeSavedPanelPosition(panelElement);
+    }
+  }
 
   const wantsEnabled = isTowCombatOverlayDisplaySettingEnabled(settings.enableOverlay, true);
   const wantsControlPanel = isTowCombatOverlayDisplaySettingEnabled(settings.enableControlPanel, true);
@@ -100,9 +118,20 @@ export function syncTowCombatOverlayDisplaySettings(changedSettingKey = "") {
 
   if (wantsControlPanel) {
     if (shouldRebuildControlPanel) towCombatOverlayRemoveControlPanel();
-    void towCombatOverlayEnsureControlPanel().catch((error) => {
-      console.error("[tow-combat-overlay] Failed to initialize control panel.", error);
-    });
+    void towCombatOverlayEnsureControlPanel()
+      .then(() => {
+        if (shouldRebuildControlPanel || normalizedChangedSettingKey === settings.controlPanelPositionMode) {
+          requestTowCombatOverlayViewportSync();
+        }
+      })
+      .catch((error) => {
+        console.error("[tow-combat-overlay] Failed to initialize control panel.", error);
+      });
+    if (normalizedChangedSettingKey === settings.controlPanelEnableButtonsDragDrop) {
+      syncControlPanelButtonsDragDrop(
+        isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableButtonsDragDrop, true)
+      );
+    }
   } else {
     towCombatOverlayRemoveControlPanel();
   }
