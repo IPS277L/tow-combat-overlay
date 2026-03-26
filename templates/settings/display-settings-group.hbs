@@ -8,6 +8,7 @@
             <div
               class="form-group"
               {{#if this.visibleWhenKey}}data-visible-when-key="{{this.visibleWhenKey}}" data-visible-when-value="{{this.visibleWhenValue}}"{{/if}}
+              {{#if this.requiresEnabledKey}}data-requires-enabled-key="{{this.requiresEnabledKey}}" data-requires-enabled-value="{{this.requiresEnabledValue}}"{{/if}}
               style="margin: 0 0 8px 0; {{#unless this.isVisible}}display: none;{{/unless}}"
             >
               <label for="{{this.id}}" style="font-weight: 700;">{{this.name}}</label>
@@ -32,6 +33,7 @@
         <div
           class="form-group"
           {{#if this.visibleWhenKey}}data-visible-when-key="{{this.visibleWhenKey}}" data-visible-when-value="{{this.visibleWhenValue}}"{{/if}}
+          {{#if this.requiresEnabledKey}}data-requires-enabled-key="{{this.requiresEnabledKey}}" data-requires-enabled-value="{{this.requiresEnabledValue}}"{{/if}}
           style="margin: 0 0 8px 0; {{#unless this.isVisible}}display: none;{{/unless}}"
         >
           <label for="{{this.id}}" style="font-weight: 700;">{{this.name}}</label>

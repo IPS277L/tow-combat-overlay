@@ -143,15 +143,32 @@ export function limitChipList(items, maxCount = TOP_PANEL_CHIP_MAX_PER_ROW, over
   return visible;
 }
 
-export function createTopPanelChipElement(chip) {
+function isChipTooltipEnabled(chip, tooltipConfig = {}) {
+  const enabledByType = (tooltipConfig && typeof tooltipConfig.enabledByType === "object" && tooltipConfig.enabledByType !== null)
+    ? tooltipConfig.enabledByType
+    : {};
+  const chipType = String(chip?.type ?? "").trim().toLowerCase();
+  if (chipType in enabledByType) return enabledByType[chipType] !== false;
+  return tooltipConfig.defaultEnabled !== false;
+}
+
+export function createTopPanelChipElement(chip, tooltipConfig = {}) {
   const button = document.createElement("button");
   button.type = "button";
   button.classList.add("tow-combat-overlay-top-panel__chip", `is-${String(chip?.type ?? "ability")}`);
   button.classList.toggle("is-active", chip?.active === true);
   button.dataset.chipType = String(chip?.type ?? "ability");
-  button.dataset.tooltipTitle = String(chip?.title ?? "").trim();
-  button.dataset.tooltipDescription = String(chip?.description ?? TOP_PANEL_CHIP_TOOLTIP_FALLBACK).trim();
-  button.setAttribute("aria-label", button.dataset.tooltipTitle || "Info");
+  const tooltipEnabled = isChipTooltipEnabled(chip, tooltipConfig);
+  const tooltipTitle = String(chip?.title ?? "").trim();
+  const tooltipDescription = String(chip?.description ?? TOP_PANEL_CHIP_TOOLTIP_FALLBACK).trim();
+  if (tooltipEnabled) {
+    button.dataset.tooltipTitle = tooltipTitle;
+    button.dataset.tooltipDescription = tooltipDescription;
+  } else {
+    button.removeAttribute("data-tooltip-title");
+    button.removeAttribute("data-tooltip-description");
+  }
+  button.setAttribute("aria-label", tooltipTitle || "Info");
 
   const chipImage = String(chip?.img ?? "").trim();
   if (chipImage) {
@@ -170,11 +187,11 @@ export function createTopPanelChipElement(chip) {
   return button;
 }
 
-export function createTopPanelChipGroup(groupKey, chips = []) {
+export function createTopPanelChipGroup(groupKey, chips = [], tooltipConfig = {}) {
   const groupElement = document.createElement("div");
   groupElement.classList.add("tow-combat-overlay-top-panel__chip-group", `is-${groupKey}`);
   for (const chip of chips) {
-    groupElement.appendChild(createTopPanelChipElement(chip));
+    groupElement.appendChild(createTopPanelChipElement(chip, tooltipConfig));
   }
   return groupElement;
 }

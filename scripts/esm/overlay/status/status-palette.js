@@ -70,10 +70,22 @@ import { isTowCombatOverlayDisplaySettingEnabled } from "../../bootstrap/registe
 
 function getTokenLayoutPaletteVisibilitySettings() {
   const { settings } = getTowCombatOverlayConstants();
+  const enableStatusRow = isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableStatusRow, true);
   return {
-    enableStatuses: isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableStatuses, true),
-    enableWounds: isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableWounds, true),
-    enableTemporaryEffects: isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableTemporaryEffects, true)
+    enableStatuses: enableStatusRow
+      && isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableStatuses, true),
+    enableWounds: enableStatusRow
+      && isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableWounds, true),
+    enableTemporaryEffects: enableStatusRow
+      && isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableTemporaryEffects, true),
+    enableStatusesTooltip: isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableTooltips, true)
+      && isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableStatusesTooltip, true),
+    enableWoundsTooltip: isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableTooltips, true)
+      && isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableWoundsTooltip, true),
+    enableTemporaryEffectsTooltip: isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableTooltips, true)
+      && isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableTemporaryEffectsTooltip, true),
+    enableOverflowTooltip: isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableTooltips, true)
+      && isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableOverflowTooltip, true)
   };
 }
 
@@ -348,7 +360,9 @@ export function setupStatusPalette(tokenObject) {
         img: String(entry?.img ?? "").trim(),
         variant: "condition",
         forceActive: false,
-        tooltipData: getConditionTooltipData(entry?.id)
+        tooltipData: visibilitySettings.enableStatusesTooltip
+          ? getConditionTooltipData(entry?.id)
+          : { name: "", description: "" }
       })),
     ...(woundAbility
       ? [{
@@ -358,10 +372,12 @@ export function setupStatusPalette(tokenObject) {
         variant: "ability",
         forceActive: woundAbility?.isActive === true,
         overflowCount: 0,
-        tooltipData: {
-          name: String(woundAbility?.name ?? "Wounds"),
-          description: String(woundAbility?.description ?? "")
-        }
+        tooltipData: visibilitySettings.enableWoundsTooltip
+          ? {
+            name: String(woundAbility?.name ?? "Wounds"),
+            description: String(woundAbility?.description ?? "")
+          }
+          : { name: "", description: "" }
       }]
       : []),
     ...temporaryEffects.map((entry) => ({
@@ -371,10 +387,12 @@ export function setupStatusPalette(tokenObject) {
       variant: "effect",
       forceActive: true,
       overflowCount: 0,
-      tooltipData: {
-        name: String(entry?.name ?? "Effect"),
-        description: String(entry?.description ?? "")
-      }
+      tooltipData: visibilitySettings.enableTemporaryEffectsTooltip
+        ? {
+          name: String(entry?.name ?? "Effect"),
+          description: String(entry?.description ?? "")
+        }
+        : { name: "", description: "" }
     }))
   ].filter((entry) => !!entry.key && !!entry.id && !!entry.img);
   const visibleEntries = entries.length > STATUS_MAX_VISIBLE_CHIPS
@@ -387,10 +405,12 @@ export function setupStatusPalette(tokenObject) {
         variant: "overflow",
         forceActive: true,
         overflowCount: entries.length - STATUS_MAX_VISIBLE_CHIPS,
-        tooltipData: {
-          name: `+${entries.length - STATUS_MAX_VISIBLE_CHIPS}`,
-          description: `+${entries.length - STATUS_MAX_VISIBLE_CHIPS} more`
-        }
+        tooltipData: visibilitySettings.enableOverflowTooltip
+          ? {
+            name: `+${entries.length - STATUS_MAX_VISIBLE_CHIPS}`,
+            description: `+${entries.length - STATUS_MAX_VISIBLE_CHIPS} more`
+          }
+          : { name: "", description: "" }
       }
     ]
     : entries;

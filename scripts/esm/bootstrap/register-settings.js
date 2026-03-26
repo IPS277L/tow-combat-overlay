@@ -44,20 +44,38 @@ function buildDisplaySettingsGroups(settingKeys) {
       hintKey: "TOWCOMBATOVERLAY.Setting.EnableTopPanel.Hint"
     },
     {
+      key: settingKeys.tokensPanelEnableStatusRow,
+      defaultValue: true,
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableStatusRow.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableStatusRow.Hint"
+    },
+    {
       key: settingKeys.tokensPanelEnableStatuses,
       defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.tokensPanelEnableStatusRow,
+        equals: true
+      }),
       nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableStatuses.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableStatuses.Hint"
     },
     {
       key: settingKeys.tokensPanelEnableWounds,
       defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.tokensPanelEnableStatusRow,
+        equals: true
+      }),
       nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableWounds.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableWounds.Hint"
     },
     {
       key: settingKeys.tokensPanelEnableTemporaryEffects,
       defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.tokensPanelEnableStatusRow,
+        equals: true
+      }),
       nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableTemporaryEffects.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableTemporaryEffects.Hint"
     },
@@ -93,6 +111,62 @@ function buildDisplaySettingsGroups(settingKeys) {
       }),
       nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelDragButtonPosition.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelDragButtonPosition.Hint"
+    },
+    {
+      key: settingKeys.tokensPanelEnableTooltips,
+      defaultValue: true,
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableTooltips.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableTooltips.Hint"
+    },
+    {
+      key: settingKeys.tokensPanelEnableCardsTooltip,
+      defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.tokensPanelEnableTooltips,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableCardsTooltip.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableCardsTooltip.Hint"
+    },
+    {
+      key: settingKeys.tokensPanelEnableStatusesTooltip,
+      defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.tokensPanelEnableTooltips,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableStatusesTooltip.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableStatusesTooltip.Hint"
+    },
+    {
+      key: settingKeys.tokensPanelEnableWoundsTooltip,
+      defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.tokensPanelEnableTooltips,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableWoundsTooltip.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableWoundsTooltip.Hint"
+    },
+    {
+      key: settingKeys.tokensPanelEnableTemporaryEffectsTooltip,
+      defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.tokensPanelEnableTooltips,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableTemporaryEffectsTooltip.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableTemporaryEffectsTooltip.Hint"
+    },
+    {
+      key: settingKeys.tokensPanelEnableOverflowTooltip,
+      defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.tokensPanelEnableTooltips,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableOverflowTooltip.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableOverflowTooltip.Hint"
     }
   ]);
 
@@ -110,20 +184,38 @@ function buildDisplaySettingsGroups(settingKeys) {
       hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutShowBorder.Hint"
     },
     {
+      key: settingKeys.tokenLayoutEnableStatusRow,
+      defaultValue: true,
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatusRow.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatusRow.Hint"
+    },
+    {
       key: settingKeys.tokenLayoutEnableStatuses,
       defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.tokenLayoutEnableStatusRow,
+        equals: true
+      }),
       nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatuses.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatuses.Hint"
     },
     {
       key: settingKeys.tokenLayoutEnableWounds,
       defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.tokenLayoutEnableStatusRow,
+        equals: true
+      }),
       nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableWounds.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableWounds.Hint"
     },
     {
       key: settingKeys.tokenLayoutEnableTemporaryEffects,
       defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.tokenLayoutEnableStatusRow,
+        equals: true
+      }),
       nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTemporaryEffects.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTemporaryEffects.Hint"
     },
@@ -138,6 +230,62 @@ function buildDisplaySettingsGroups(settingKeys) {
       defaultValue: true,
       nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutShowDeadVisuals.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutShowDeadVisuals.Hint"
+    },
+    {
+      key: settingKeys.tokenLayoutEnableTooltips,
+      defaultValue: true,
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTooltips.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTooltips.Hint"
+    },
+    {
+      key: settingKeys.tokenLayoutEnableNameTooltip,
+      defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.tokenLayoutEnableTooltips,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableNameTooltip.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableNameTooltip.Hint"
+    },
+    {
+      key: settingKeys.tokenLayoutEnableStatusesTooltip,
+      defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.tokenLayoutEnableTooltips,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatusesTooltip.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatusesTooltip.Hint"
+    },
+    {
+      key: settingKeys.tokenLayoutEnableWoundsTooltip,
+      defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.tokenLayoutEnableTooltips,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableWoundsTooltip.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableWoundsTooltip.Hint"
+    },
+    {
+      key: settingKeys.tokenLayoutEnableTemporaryEffectsTooltip,
+      defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.tokenLayoutEnableTooltips,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTemporaryEffectsTooltip.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTemporaryEffectsTooltip.Hint"
+    },
+    {
+      key: settingKeys.tokenLayoutEnableOverflowTooltip,
+      defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.tokenLayoutEnableTooltips,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableOverflowTooltip.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableOverflowTooltip.Hint"
     }
   ]);
 
@@ -149,68 +297,140 @@ function buildDisplaySettingsGroups(settingKeys) {
       hintKey: "TOWCOMBATOVERLAY.Setting.EnableControlPanel.Hint"
     },
     {
+      key: settingKeys.controlPanelEnableStatusRow,
+      defaultValue: true,
+      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatusRow.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatusRow.Hint"
+    },
+    {
       key: settingKeys.controlPanelEnableStatuses,
       defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnableStatusRow,
+        equals: true
+      }),
       nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatuses.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatuses.Hint"
     },
     {
       key: settingKeys.controlPanelEnableAbilities,
       defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnableStatusRow,
+        equals: true
+      }),
       nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableAbilities.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableAbilities.Hint"
     },
     {
       key: settingKeys.controlPanelEnableWounds,
       defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnableStatusRow,
+        equals: true
+      }),
       nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableWounds.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableWounds.Hint"
     },
     {
       key: settingKeys.controlPanelEnableTemporaryEffects,
       defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnableStatusRow,
+        equals: true
+      }),
       nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableTemporaryEffects.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableTemporaryEffects.Hint"
     },
     {
+      key: settingKeys.controlPanelEnablePortrait,
+      defaultValue: true,
+      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnablePortrait.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnablePortrait.Hint"
+    },
+    {
       key: settingKeys.controlPanelEnableName,
       defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnablePortrait,
+        equals: true
+      }),
       nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableName.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableName.Hint"
     },
     {
       key: settingKeys.controlPanelEnableImage,
       defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnablePortrait,
+        equals: true
+      }),
       nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableImage.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableImage.Hint"
     },
     {
       key: settingKeys.controlPanelEnableStats,
       defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnablePortrait,
+        equals: true
+      }),
       nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStats.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStats.Hint"
     },
     {
+      key: settingKeys.controlPanelEnableGridButtons,
+      defaultValue: true,
+      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableGridButtons.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableGridButtons.Hint"
+    },
+    {
       key: settingKeys.controlPanelEnableActionButtons,
       defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnableGridButtons,
+        equals: true
+      }),
       nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableActionButtons.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableActionButtons.Hint"
     },
     {
       key: settingKeys.controlPanelEnableWeaponsButtons,
       defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnableGridButtons,
+        equals: true
+      }),
       nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableWeaponsButtons.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableWeaponsButtons.Hint"
     },
     {
       key: settingKeys.controlPanelEnableMagicButtons,
       defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnableGridButtons,
+        equals: true
+      }),
       nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableMagicButtons.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableMagicButtons.Hint"
     },
     {
+      key: settingKeys.controlPanelEnableItemsRarity,
+      defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnableGridButtons,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableItemsRarity.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableItemsRarity.Hint"
+    },
+    {
       key: settingKeys.controlPanelShowDeadPortraitStatus,
       defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnablePortrait,
+        equals: true
+      }),
       nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelShowDeadPortraitStatus.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelShowDeadPortraitStatus.Hint"
     },
@@ -228,9 +448,95 @@ function buildDisplaySettingsGroups(settingKeys) {
     },
     {
       key: settingKeys.controlPanelEnableButtonsDragDrop,
-      defaultValue: true,
+      defaultValue: false,
       nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonsDragDrop.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonsDragDrop.Hint"
+    },
+    {
+      key: settingKeys.controlPanelEnableTooltips,
+      defaultValue: true,
+      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableTooltips.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableTooltips.Hint"
+    },
+    {
+      key: settingKeys.controlPanelShowTooltipClickBehaviorText,
+      defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnableTooltips,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelShowTooltipClickBehaviorText.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelShowTooltipClickBehaviorText.Hint"
+    },
+    {
+      key: settingKeys.controlPanelEnableNameTooltip,
+      defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnableTooltips,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableNameTooltip.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableNameTooltip.Hint"
+    },
+    {
+      key: settingKeys.controlPanelEnableStatsTooltip,
+      defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnableTooltips,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatsTooltip.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatsTooltip.Hint"
+    },
+    {
+      key: settingKeys.controlPanelEnableStatusesTooltip,
+      defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnableTooltips,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatusesTooltip.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatusesTooltip.Hint"
+    },
+    {
+      key: settingKeys.controlPanelEnableAbilitiesTooltip,
+      defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnableTooltips,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableAbilitiesTooltip.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableAbilitiesTooltip.Hint"
+    },
+    {
+      key: settingKeys.controlPanelEnableWoundsTooltip,
+      defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnableTooltips,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableWoundsTooltip.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableWoundsTooltip.Hint"
+    },
+    {
+      key: settingKeys.controlPanelEnableTemporaryEffectsTooltip,
+      defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnableTooltips,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableTemporaryEffectsTooltip.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableTemporaryEffectsTooltip.Hint"
+    },
+    {
+      key: settingKeys.controlPanelEnableButtonsTooltip,
+      defaultValue: true,
+      visibleWhen: Object.freeze({
+        key: settingKeys.controlPanelEnableTooltips,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonsTooltip.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonsTooltip.Hint"
     }
   ]);
 
@@ -250,6 +556,7 @@ function buildDisplaySettingsGroups(settingKeys) {
         {
           titleKey: "TOWCOMBATOVERLAY.SettingsSection.TokensPanel.Chips",
           settingKeys: Object.freeze([
+            settingKeys.tokensPanelEnableStatusRow,
             settingKeys.tokensPanelEnableStatuses,
             settingKeys.tokensPanelEnableWounds,
             settingKeys.tokensPanelEnableTemporaryEffects
@@ -259,6 +566,17 @@ function buildDisplaySettingsGroups(settingKeys) {
           titleKey: "TOWCOMBATOVERLAY.SettingsSection.TokensPanel.Behavior",
           settingKeys: Object.freeze([
             settingKeys.tokensPanelShowDeadVisual
+          ])
+        },
+        {
+          titleKey: "TOWCOMBATOVERLAY.SettingsSection.TokensPanel.Tooltips",
+          settingKeys: Object.freeze([
+            settingKeys.tokensPanelEnableTooltips,
+            settingKeys.tokensPanelEnableCardsTooltip,
+            settingKeys.tokensPanelEnableStatusesTooltip,
+            settingKeys.tokensPanelEnableWoundsTooltip,
+            settingKeys.tokensPanelEnableTemporaryEffectsTooltip,
+            settingKeys.tokensPanelEnableOverflowTooltip
           ])
         }
       ])
@@ -276,6 +594,7 @@ function buildDisplaySettingsGroups(settingKeys) {
         {
           titleKey: "TOWCOMBATOVERLAY.SettingsSection.TokenLayout.Chips",
           settingKeys: Object.freeze([
+            settingKeys.tokenLayoutEnableStatusRow,
             settingKeys.tokenLayoutEnableStatuses,
             settingKeys.tokenLayoutEnableWounds,
             settingKeys.tokenLayoutEnableTemporaryEffects
@@ -287,6 +606,17 @@ function buildDisplaySettingsGroups(settingKeys) {
             settingKeys.tokenLayoutShowCustomName,
             settingKeys.tokenLayoutShowBorder,
             settingKeys.tokenLayoutShowDeadVisuals
+          ])
+        },
+        {
+          titleKey: "TOWCOMBATOVERLAY.SettingsSection.TokenLayout.Tooltips",
+          settingKeys: Object.freeze([
+            settingKeys.tokenLayoutEnableTooltips,
+            settingKeys.tokenLayoutEnableNameTooltip,
+            settingKeys.tokenLayoutEnableStatusesTooltip,
+            settingKeys.tokenLayoutEnableWoundsTooltip,
+            settingKeys.tokenLayoutEnableTemporaryEffectsTooltip,
+            settingKeys.tokenLayoutEnableOverflowTooltip
           ])
         }
       ])
@@ -306,6 +636,7 @@ function buildDisplaySettingsGroups(settingKeys) {
         {
           titleKey: "TOWCOMBATOVERLAY.SettingsSection.ControlPanel.StatusRow",
           settingKeys: Object.freeze([
+            settingKeys.controlPanelEnableStatusRow,
             settingKeys.controlPanelEnableStatuses,
             settingKeys.controlPanelEnableAbilities,
             settingKeys.controlPanelEnableWounds,
@@ -315,6 +646,7 @@ function buildDisplaySettingsGroups(settingKeys) {
         {
           titleKey: "TOWCOMBATOVERLAY.SettingsSection.ControlPanel.Portrait",
           settingKeys: Object.freeze([
+            settingKeys.controlPanelEnablePortrait,
             settingKeys.controlPanelEnableName,
             settingKeys.controlPanelEnableImage,
             settingKeys.controlPanelEnableStats,
@@ -324,9 +656,25 @@ function buildDisplaySettingsGroups(settingKeys) {
         {
           titleKey: "TOWCOMBATOVERLAY.SettingsSection.ControlPanel.GridButtons",
           settingKeys: Object.freeze([
+            settingKeys.controlPanelEnableGridButtons,
             settingKeys.controlPanelEnableActionButtons,
             settingKeys.controlPanelEnableWeaponsButtons,
-            settingKeys.controlPanelEnableMagicButtons
+            settingKeys.controlPanelEnableMagicButtons,
+            settingKeys.controlPanelEnableItemsRarity
+          ])
+        },
+        {
+          titleKey: "TOWCOMBATOVERLAY.SettingsSection.ControlPanel.Tooltips",
+          settingKeys: Object.freeze([
+            settingKeys.controlPanelEnableTooltips,
+            settingKeys.controlPanelShowTooltipClickBehaviorText,
+            settingKeys.controlPanelEnableNameTooltip,
+            settingKeys.controlPanelEnableStatsTooltip,
+            settingKeys.controlPanelEnableStatusesTooltip,
+            settingKeys.controlPanelEnableAbilitiesTooltip,
+            settingKeys.controlPanelEnableWoundsTooltip,
+            settingKeys.controlPanelEnableTemporaryEffectsTooltip,
+            settingKeys.controlPanelEnableButtonsTooltip
           ])
         }
       ])
@@ -369,7 +717,14 @@ function createGroupFormClass(group) {
     }
 
     getData() {
-      const { moduleId } = getTowCombatOverlayConstants();
+      const { moduleId, settings } = getTowCombatOverlayConstants();
+      const groupMasterKey = group.menuKey === "tokensPanel"
+        ? String(settings.enableTopPanel ?? "").trim()
+        : (group.menuKey === "tokenLayout"
+            ? String(settings.enableOverlay ?? "").trim()
+            : (group.menuKey === "controlPanel"
+                ? String(settings.enableControlPanel ?? "").trim()
+                : ""));
       const settingDefinitionByKey = new Map(
         group.settings.map((entry) => [String(entry?.key ?? ""), entry])
       );
@@ -385,7 +740,15 @@ function createGroupFormClass(group) {
         const visibilityRule = entry?.visibleWhen;
         const visibleWhenKey = String(visibilityRule?.key ?? "").trim();
         const visibleWhenValue = String(visibilityRule?.equals ?? "").trim();
+        const requiresEnabledKey = groupMasterKey && entry.key !== groupMasterKey
+          ? groupMasterKey
+          : "";
+        const requiresEnabledValue = requiresEnabledKey ? "true" : "";
         let isVisible = true;
+        if (requiresEnabledKey) {
+          const requiredRawValue = currentValueByKey.get(requiresEnabledKey);
+          isVisible = String(!!requiredRawValue) === requiresEnabledValue;
+        }
         if (visibleWhenKey) {
           const dependentDefinition = settingDefinitionByKey.get(visibleWhenKey) ?? null;
           const dependentRawValue = currentValueByKey.get(visibleWhenKey);
@@ -393,7 +756,7 @@ function createGroupFormClass(group) {
           const dependentValue = dependentIsSelect
             ? normalizeSelectSettingValue(dependentDefinition, dependentRawValue)
             : String(!!dependentRawValue);
-          isVisible = dependentValue === visibleWhenValue;
+          isVisible = isVisible && (dependentValue === visibleWhenValue);
         }
         const choices = isSelect
           ? Object.entries(entry?.choices ?? {}).map(([value, labelKey]) => ({
@@ -413,6 +776,8 @@ function createGroupFormClass(group) {
           choices,
           visibleWhenKey,
           visibleWhenValue,
+          requiresEnabledKey,
+          requiresEnabledValue,
           isVisible
         };
       });
@@ -450,18 +815,28 @@ function createGroupFormClass(group) {
       };
 
       const applyConditionalVisibility = () => {
-        const conditionalFields = rootElement.querySelectorAll("[data-visible-when-key]");
-        for (const fieldElement of conditionalFields) {
+        const allFields = rootElement.querySelectorAll(".form-group");
+        for (const fieldElement of allFields) {
           if (!(fieldElement instanceof HTMLElement)) continue;
+          let isVisible = true;
+          const requiresEnabledKey = String(fieldElement.dataset.requiresEnabledKey ?? "").trim();
+          const requiresEnabledValue = String(fieldElement.dataset.requiresEnabledValue ?? "").trim();
+          if (requiresEnabledKey) {
+            const requiredInput = rootElement.querySelector(`[name="${requiresEnabledKey}"]`);
+            if (requiredInput instanceof HTMLInputElement && requiredInput.type === "checkbox") {
+              const requiredCurrentValue = requiredInput.checked ? "true" : "false";
+              isVisible = requiredCurrentValue === requiresEnabledValue;
+            }
+          }
           const dependsOnKey = String(fieldElement.dataset.visibleWhenKey ?? "").trim();
           const equalsValue = String(fieldElement.dataset.visibleWhenValue ?? "").trim();
           if (!dependsOnKey) {
-            fieldElement.style.display = "";
+            fieldElement.style.display = isVisible ? "" : "none";
             continue;
           }
           const dependentInput = rootElement.querySelector(`[name="${dependsOnKey}"]`);
           if (!(dependentInput instanceof HTMLElement)) {
-            fieldElement.style.display = "";
+            fieldElement.style.display = isVisible ? "" : "none";
             continue;
           }
           let currentValue = "";
@@ -472,7 +847,14 @@ function createGroupFormClass(group) {
           } else {
             currentValue = String(dependentInput.getAttribute("value") ?? "").trim();
           }
-          fieldElement.style.display = currentValue === equalsValue ? "" : "none";
+          fieldElement.style.display = (isVisible && currentValue === equalsValue) ? "" : "none";
+        }
+        const sections = rootElement.querySelectorAll(".tow-combat-overlay-settings-group-form__section");
+        for (const sectionElement of sections) {
+          if (!(sectionElement instanceof HTMLElement)) continue;
+          const visibleFields = Array.from(sectionElement.querySelectorAll(".form-group"))
+            .filter((field) => field instanceof HTMLElement && field.style.display !== "none");
+          sectionElement.style.display = visibleFields.length > 0 ? "" : "none";
         }
         syncWindowHeight();
       };

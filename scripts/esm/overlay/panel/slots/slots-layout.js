@@ -26,9 +26,13 @@ export function createPanelSlotsLayoutService({
   updateGroupSlots
 } = {}) {
   function buildTopChips(groups, actor) {
-    const enableAbilities = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableAbilities, true);
-    const enableWounds = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableWounds, true);
-    const enableTemporaryEffects = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableTemporaryEffects, true);
+    const enableStatusRow = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableStatusRow, true);
+    const enableAbilities = enableStatusRow
+      && isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableAbilities, true);
+    const enableWounds = enableStatusRow
+      && isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableWounds, true);
+    const enableTemporaryEffects = enableStatusRow
+      && isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableTemporaryEffects, true);
     const abilities = enableAbilities
       ? (Array.isArray(groups?.abilities) ? groups.abilities : [])
       : [];
@@ -64,9 +68,13 @@ export function createPanelSlotsLayoutService({
   }
 
   function updatePanelSlots(panelElement, token = null) {
-    const enableActionButtons = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableActionButtons, true);
-    const enableWeaponsButtons = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableWeaponsButtons, true);
-    const enableMagicButtons = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableMagicButtons, true);
+    const enableGridButtons = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableGridButtons, true);
+    const enableActionButtons = enableGridButtons
+      && isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableActionButtons, true);
+    const enableWeaponsButtons = enableGridButtons
+      && isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableWeaponsButtons, true);
+    const enableMagicButtons = enableGridButtons
+      && isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableMagicButtons, true);
     const actor = token?.actor ?? token?.document?.actor ?? null;
     const groups = actor
       ? buildPanelItemGroupsForActor(actor, {
@@ -88,7 +96,7 @@ export function createPanelSlotsLayoutService({
     const groupKeys = ["manoeuvre", "recover", "actions", "attacks", "magic"];
     const groupedItems = Object.fromEntries(groupKeys.map((key) => {
       const items = Array.isArray(groups[key]) ? groups[key] : [];
-      const groupEnabled = (
+      const groupEnabled = enableGridButtons && (
         ((key === "actions" || key === "manoeuvre" || key === "recover"))
         || (key === "attacks")
         || (key === "magic" && enableMagicButtons)
@@ -120,6 +128,24 @@ export function createPanelSlotsLayoutService({
         });
       return [key, normalizedItems];
     }));
+    const hasAnyGridButtons = groupKeys.some((key) => (groupedItems[key] ?? []).length > 0);
+
+    if (!hasAnyGridButtons) {
+      const fallbackEmptySlots = getDefaultPanelButtonKeyOrder()
+        .map((key) => String(key ?? "").trim())
+        .map((key, index) => {
+          const parsed = parsePanelButtonKey(key);
+          const groupKey = String(parsed?.groupKey ?? "all").trim() || "all";
+          return {
+            __empty: true,
+            panelGroup: groupKey,
+            panelButtonKey: toPanelButtonKey(groupKey, `empty-slot-default-${index}`)
+          };
+        });
+      updateGroupSlots(panelElement, "all", fallbackEmptySlots, actor);
+      updateGroupSlots(panelElement, "topChips", topChips, actor);
+      return;
+    }
 
     const keyToItem = new Map();
     for (const groupKey of groupKeys) {

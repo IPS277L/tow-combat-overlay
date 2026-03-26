@@ -35,12 +35,20 @@ import {
   queueTopPanelRender,
   renderTopPanelContent
 } from "./top-panel-render.js";
+import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
+import { isTowCombatOverlayDisplaySettingEnabled } from "../../bootstrap/register-settings.js";
 
 function bindTopPanelElementEvents(topPanelElement) {
   const state = getTopPanelState();
   if (!state) return;
   const dragHandleButton = topPanelElement.querySelector("[data-action='drag-panel-handle']");
   const controlsElement = topPanelElement.querySelector(".tow-combat-overlay-top-panel__controls");
+  const { settings } = getTowCombatOverlayConstants();
+  const isTopPanelTooltipsEnabled = () => isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableTooltips, true);
+  const isTopPanelCardTooltipEnabled = () => (
+    isTopPanelTooltipsEnabled()
+    && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableCardsTooltip, true)
+  );
 
   const syncDragControls = () => {
     const alwaysCentered = isTopPanelAlwaysCenteredEnabled();
@@ -173,6 +181,7 @@ function bindTopPanelElementEvents(topPanelElement) {
   };
 
   const onPortraitTooltipShow = (event) => {
+    if (!isTopPanelCardTooltipEnabled()) return;
     const targetElement = event.target instanceof Element ? event.target : null;
     if (!targetElement || targetElement.closest(".tow-combat-overlay-top-panel__chip")) return;
     const portraitElement = targetElement.closest(".tow-combat-overlay-top-panel__portrait");
@@ -208,6 +217,7 @@ function bindTopPanelElementEvents(topPanelElement) {
   topPanelElement.addEventListener("pointercancel", () => clearLinkedTopPanelHover(state, { panelElement: topPanelElement }));
 
   const onChipTooltipShow = (event) => {
+    if (!isTopPanelTooltipsEnabled()) return;
     const chipElement = event.target instanceof Element
       ? event.target.closest(".tow-combat-overlay-top-panel__chip")
       : null;
@@ -239,6 +249,7 @@ function bindTopPanelElementEvents(topPanelElement) {
   topPanelElement.addEventListener("pointercancel", () => hideStatusTooltip());
 
   const onControlTooltipShow = (event) => {
+    if (!isTopPanelTooltipsEnabled()) return;
     const buttonElement = event.target instanceof Element
       ? event.target.closest(".tow-combat-overlay-top-panel__control-button")
       : null;

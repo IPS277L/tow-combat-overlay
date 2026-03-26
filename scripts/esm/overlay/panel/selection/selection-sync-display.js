@@ -132,7 +132,9 @@ export function createPanelSelectionSyncDisplayService({
     const actor = token?.actor ?? token?.document?.actor ?? null;
     const hasMagic = actorHasMagicCasting(actor);
     const isDead = !!actor?.hasCondition?.("dead");
-    const showDeadPortraitStatus = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelShowDeadPortraitStatus, true);
+    const showPortrait = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnablePortrait, true);
+    const showDeadPortraitStatus = showPortrait
+      && isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelShowDeadPortraitStatus, true);
     selectionElement.dataset.selection = "single";
     selectionElement.classList.toggle("is-dead", showDeadPortraitStatus && isDead);
     selectionElement.classList.toggle("is-magic", hasMagic);

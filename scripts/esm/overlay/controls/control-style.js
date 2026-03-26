@@ -4,6 +4,8 @@ import {
   PreciseTextClass,
   TOKEN_CONTROL_PAD
 } from "../../runtime/overlay-constants.js";
+import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
+import { isTowCombatOverlayDisplaySettingEnabled } from "../../bootstrap/register-settings.js";
 import {
   towCombatOverlayBindTooltipHandlers,
   towCombatOverlayForEachSceneToken,
@@ -47,6 +49,12 @@ function overlayControlsBindTooltipHandlersRef(displayObject, getTooltipData, ke
   return towCombatOverlayBindTooltipHandlers(displayObject, getTooltipData, keyStore, options ?? undefined);
 }
 
+function isTokenLayoutNameTooltipEnabled() {
+  const { settings } = getTowCombatOverlayConstants();
+  return isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableTooltips, true)
+    && isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableNameTooltip, true);
+}
+
 export function towCombatOverlayUpdateNameLabel(tokenObject) {
   if (!tokenObject || tokenObject.destroyed) return;
 
@@ -75,7 +83,7 @@ export function towCombatOverlayUpdateNameLabel(tokenObject) {
     labelContainer = new PIXI.Container();
     labelContainer.eventMode = "static";
     labelContainer.interactive = true;
-    labelContainer.cursor = "help";
+    labelContainer.cursor = isTokenLayoutNameTooltipEnabled() ? "help" : "default";
     labelContainer.roundPixels = true;
 
     const nameText = new PreciseTextClass("", towCombatOverlayGetNameStyle());
@@ -100,6 +108,7 @@ export function towCombatOverlayUpdateNameLabel(tokenObject) {
         const liveName = getPrimaryTokenName(tokenObject)
           || game?.i18n?.localize?.("TOWCOMBATOVERLAY.Tooltip.Panel.SelectionTokenFallbackName")
           || "Token";
+        if (!isTokenLayoutNameTooltipEnabled()) return { title: "", description: "" };
         const typeLabel = getPrimaryTokenTypeLabel(tokenObject) || "-";
         const description = game?.i18n?.format?.(
           "TOWCOMBATOVERLAY.Tooltip.Panel.SelectionTypeDescription",
@@ -116,6 +125,7 @@ export function towCombatOverlayUpdateNameLabel(tokenObject) {
       { theme: "panel", descriptionIsHtml: true }
     );
   }
+  labelContainer.cursor = isTokenLayoutNameTooltipEnabled() ? "help" : "default";
   nameText.text = tokenName;
   const labelScale = overlayControlsGetTokenOverlayScaleRef(tokenObject);
   const edgePad = overlayControlsGetOverlayEdgePadPxRef(tokenObject);

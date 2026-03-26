@@ -51,7 +51,9 @@ function buildPortraitElement(token, {
   enableStatuses = true,
   enableWounds = true,
   enableTemporaryEffects = true,
-  showDeadVisual = true
+  showDeadVisual = true,
+  enableCardTooltip = true,
+  enableChipTooltipByType = {}
 } = {}) {
   const portrait = document.createElement("button");
   portrait.type = "button";
@@ -63,12 +65,17 @@ function buildPortraitElement(token, {
   const tokenName = getPrimaryTokenName(token)
     || localizeMaybe("TOWCOMBATOVERLAY.Tooltip.Panel.SelectionTokenFallbackName", "Token");
   const typeLabel = getPrimaryTokenTypeLabel(token) || "-";
-  portrait.dataset.tooltipTitle = tokenName;
-  portrait.dataset.tooltipDescription = formatMaybe(
-    "TOWCOMBATOVERLAY.Tooltip.Panel.SelectionTypeDescription",
-    { type: typeLabel },
-    `Type: ${typeLabel}`
-  );
+  if (enableCardTooltip) {
+    portrait.dataset.tooltipTitle = tokenName;
+    portrait.dataset.tooltipDescription = formatMaybe(
+      "TOWCOMBATOVERLAY.Tooltip.Panel.SelectionTypeDescription",
+      { type: typeLabel },
+      `Type: ${typeLabel}`
+    );
+  } else {
+    portrait.removeAttribute("data-tooltip-title");
+    portrait.removeAttribute("data-tooltip-description");
+  }
   portrait.setAttribute("aria-label", tokenName);
   portrait.draggable = true;
 
@@ -95,7 +102,10 @@ function buildPortraitElement(token, {
     if (allChips.length) {
       const chipsLayer = document.createElement("div");
       chipsLayer.classList.add("tow-combat-overlay-top-panel__chips");
-      chipsLayer.appendChild(createTopPanelChipGroup("status-effects", allChips));
+      chipsLayer.appendChild(createTopPanelChipGroup("status-effects", allChips, {
+        defaultEnabled: true,
+        enabledByType: enableChipTooltipByType
+      }));
       portrait.appendChild(chipsLayer);
     }
   }
@@ -122,12 +132,26 @@ export async function renderTopPanelContent() {
   if (state) clearLinkedTopPanelHover(state, { panelElement });
   syncTopPanelWidth(panelElement);
   const { settings } = getTowCombatOverlayConstants();
-  const enableStatuses = isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableStatuses, true);
-  const enableWounds = isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableWounds, true);
-  const enableTemporaryEffects = isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableTemporaryEffects, true);
+  const enableStatusRow = isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableStatusRow, true);
+  const enableStatuses = enableStatusRow
+    && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableStatuses, true);
+  const enableWounds = enableStatusRow
+    && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableWounds, true);
+  const enableTemporaryEffects = enableStatusRow
+    && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableTemporaryEffects, true);
   const showDeadVisual = isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelShowDeadVisual, true);
   const alwaysCentered = isTopPanelAlwaysCenteredEnabled();
   const locked = isTopPanelLockedEnabled();
+  const enableTooltips = isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableTooltips, true);
+  const enableCardTooltip = enableTooltips
+    && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableCardsTooltip, true);
+  const enableChipTooltipByType = {
+    condition: enableTooltips && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableStatusesTooltip, true),
+    ability: enableTooltips && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableWoundsTooltip, true),
+    effect: enableTooltips && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableTemporaryEffectsTooltip, true),
+    overflow: enableTooltips && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableOverflowTooltip, true),
+    "row-overflow": enableTooltips && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableOverflowTooltip, true)
+  };
   const handlePositionRaw = String(
     getTowCombatOverlayDisplaySetting(settings.tokensPanelDragButtonPosition, "right")
   ).trim().toLowerCase();
@@ -159,7 +183,9 @@ export async function renderTopPanelContent() {
       enableStatuses,
       enableWounds,
       enableTemporaryEffects,
-      showDeadVisual
+      showDeadVisual,
+      enableCardTooltip,
+      enableChipTooltipByType
     }));
   }
   listElement.appendChild(fragment);

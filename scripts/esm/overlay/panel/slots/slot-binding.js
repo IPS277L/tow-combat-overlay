@@ -1,6 +1,7 @@
 export function createPanelSlotBindingService({
   getControlPanelState,
   canReorderButtons = () => true,
+  canShowSlotTooltip = () => true,
   isMainActionPanelSlot,
   getSlotPanelButtonKey,
   movePanelButtonKeyBeforeTarget,
@@ -92,6 +93,10 @@ export function createPanelSlotBindingService({
     });
 
     const onShowTooltip = (event) => {
+      if (!canShowSlotTooltip(slotElement)) {
+        hideStatusTooltip();
+        return;
+      }
       const title = String(slotElement.dataset.tooltipTitle ?? "").trim();
       const description = String(slotElement.dataset.tooltipDescription ?? "").trim();
       if (!title) {

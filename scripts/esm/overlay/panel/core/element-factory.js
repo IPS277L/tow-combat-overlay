@@ -17,17 +17,23 @@ export function createPanelElementFactoryService({
   function getPanelTemplateData() {
     const { settings } = getTowCombatOverlayConstants();
     const statuses = getAllConditionEntries();
-    const showStats = isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStats, true);
+    const showPortrait = isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnablePortrait, true);
+    const showStats = showPortrait
+      && isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStats, true);
+    const showStatusRow = isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStatusRow, true);
     return {
       statuses,
-      showStatusIcons: isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStatuses, true),
+      showStatusIcons: showStatusRow
+        && isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStatuses, true),
       roundLeftWhenStatsDisabled: !showStats
     };
   }
 
   function getSelectionPanelTemplateData() {
     const { settings } = getTowCombatOverlayConstants();
-    const showStats = isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStats, true);
+    const showPortrait = isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnablePortrait, true);
+    const showStats = showPortrait
+      && isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStats, true);
     return {
       icons: {
         wound: iconSrcWound,
@@ -36,9 +42,11 @@ export function createPanelElementFactoryService({
         roll: panelRollIcon,
         dice: panelDiceIcon
       },
-      showName: isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableName, true),
+      showName: showPortrait
+        && isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableName, true),
       showStats,
-      showImage: isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableImage, true),
+      showImage: showPortrait
+        && isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableImage, true),
       showActionButtons: true,
       showSelectionSideStack: showStats
     };

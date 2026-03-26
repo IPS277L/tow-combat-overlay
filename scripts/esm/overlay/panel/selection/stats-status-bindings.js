@@ -15,7 +15,13 @@
   towCombatOverlayRemoveWound,
   towCombatOverlayAddWound,
   towCombatOverlayIsShiftModifier,
-  towCombatOverlayIsCtrlModifier
+  towCombatOverlayIsCtrlModifier,
+  isTooltipsEnabled = () => true,
+  showClickBehaviorText = () => true,
+  canShowNameTooltip = () => true,
+  canShowStatsTooltip = () => true,
+  canShowStatusesTooltip = () => true,
+  canShowWoundsTooltip = () => true
 } = {}) {
   function localize(key, fallback = "") {
     const localized = game?.i18n?.localize?.(String(key ?? ""));
@@ -30,6 +36,7 @@
   }
 
   function getPanelStatTooltipData(statKey) {
+    if (!isTooltipsEnabled() || !canShowStatsTooltip()) return null;
     const key = String(statKey ?? "").trim();
     if (!key) return null;
 
@@ -51,9 +58,11 @@
       );
       const cleanedBaseDescription = baseDescription
         .replace(/Left-?click adds 1 wound\.?\s*Right-?click removes 1 wound\.?/gi, "")
+        .replace(/Left\s*click:\s*\+?1\s*wound\s*[·|]\s*Right\s*click:\s*-?1\s*wound\.?/gi, "")
         .trim();
       const description = cleanedBaseDescription ? `${hint}<br><br>${cleanedBaseDescription}` : hint;
-      return { title, description };
+      if (showClickBehaviorText()) return { title, description };
+      return { title, description: cleanedBaseDescription || "" };
     }
     if (key === "speed") return moduleTooltips.speed;
     if (key === "miscastDice") {
@@ -64,7 +73,7 @@
         "<em>Left click: +1 die &middot; Right click: -1 die &middot; Shift+click: roll miscast table &middot; Ctrl+click: reset to 0</em>"
       );
       const description = baseDescription ? `${hint}<br><br>${baseDescription}` : hint;
-      return { title, description };
+      return { title, description: showClickBehaviorText() ? description : baseDescription };
     }
     return null;
   }
@@ -227,6 +236,7 @@
     const nameElement = selectionPanelElement.querySelector(".tow-combat-overlay-control-panel__selection-name");
     if (!(nameElement instanceof HTMLElement)) return;
     bindPanelTooltipEvent(nameElement, () => {
+      if (!isTooltipsEnabled() || !canShowNameTooltip()) return null;
       const token = getSingleControlledToken();
       if (!token) return null;
       const tokenName = getPrimaryTokenName(token) || localize("TOWCOMBATOVERLAY.Tooltip.Panel.SelectionTokenFallbackName", "Token");
@@ -239,11 +249,28 @@
   }
 
   function bindPanelStatusesTooltipEvents(panelElement) {
+    const stripLeadingInteractionHint = (rawDescription) => {
+      const description = String(rawDescription ?? "").trim();
+      if (showClickBehaviorText()) return description;
+      const [firstBlock, ...restBlocks] = description.split("<br><br>");
+      if (/^<em>.*<\/em>$/i.test(String(firstBlock ?? "").trim()) && restBlocks.length > 0) {
+        return restBlocks.join("<br><br>").trim();
+      }
+      return description;
+    };
     const statusElements = Array.from(panelElement.querySelectorAll(".tow-combat-overlay-control-panel__status-icon[data-status-id]"));
     for (const statusElement of statusElements) {
       if (!(statusElement instanceof HTMLElement)) continue;
       const conditionId = String(statusElement.dataset.statusId ?? "");
-      bindPanelTooltipEvent(statusElement, () => getConditionTooltipData(conditionId));
+      bindPanelTooltipEvent(statusElement, () => {
+        if (!isTooltipsEnabled() || !canShowStatusesTooltip()) return null;
+        const tooltipData = getConditionTooltipData(conditionId);
+        if (!tooltipData) return null;
+        return {
+          ...tooltipData,
+          description: stripLeadingInteractionHint(tooltipData.description)
+        };
+      });
       statusElement.addEventListener("click", async (event) => {
         event.preventDefault();
         const token = getSingleControlledToken();
@@ -260,9 +287,10 @@
     const woundActionIndicator = panelElement.querySelector("[data-wound-action-indicator]");
     if (woundActionIndicator instanceof HTMLElement) {
       bindPanelTooltipEvent(woundActionIndicator, () => {
+        if (!isTooltipsEnabled() || !canShowWoundsTooltip()) return null;
         const title = String(woundActionIndicator.dataset.tooltipTitle ?? "").trim();
         if (!title) return null;
-        const description = String(woundActionIndicator.dataset.tooltipDescription ?? "").trim();
+        const description = stripLeadingInteractionHint(String(woundActionIndicator.dataset.tooltipDescription ?? "").trim());
         return { title, description };
       });
     }
@@ -277,4 +305,3 @@
     bindPanelStatusesTooltipEvents
   };
 }
-

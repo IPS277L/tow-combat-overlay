@@ -8,6 +8,8 @@
   towCombatOverlayWarnNoPermission,
   towCombatOverlayIsCtrlModifier,
   bindPanelTooltipEvent,
+  canShowButtonsTooltip = () => true,
+  showClickBehaviorText = () => true,
   getPrimaryTokenTypeLabel,
   getSingleControlledActor
 } = {}) {
@@ -27,13 +29,20 @@
     const actor = getSingleControlledActor();
     const state = getTowCombatOverlayActorRollModifierState(actor);
     const value = `${state.diceModifier >= 0 ? "+" : ""}${state.diceModifier}d10`;
+    const includeClickBehaviorText = showClickBehaviorText();
     return {
       title: localize("TOWCOMBATOVERLAY.Tooltip.Panel.DiceModifier.Title", "Dice Modifier"),
-      description: format(
-        "TOWCOMBATOVERLAY.Tooltip.Panel.DiceModifier.Description",
-        { value },
-        `<em>Left click: +1d10 · Right click: -1d10 · Ctrl+click: reset to +0d10</em><br><br>Current: ${value}`
-      )
+      description: includeClickBehaviorText
+        ? format(
+          "TOWCOMBATOVERLAY.Tooltip.Panel.DiceModifier.Description",
+          { value },
+          `<em>Left click: +1d10 · Right click: -1d10 · Ctrl+click: reset to +0d10</em><br><br>Current: ${value}`
+        )
+        : format(
+          "TOWCOMBATOVERLAY.Tooltip.Panel.DiceModifier.CurrentOnly",
+          { value },
+          `Current: ${value}`
+        )
     };
   }
 
@@ -41,13 +50,20 @@
     const actor = getSingleControlledActor();
     const state = getTowCombatOverlayActorRollModifierState(actor);
     const label = getTowCombatOverlayActorRollModifierStateLabel(state);
+    const includeClickBehaviorText = showClickBehaviorText();
     return {
       title: localize("TOWCOMBATOVERLAY.Tooltip.Panel.RollState.Title", "Roll State"),
-      description: format(
-        "TOWCOMBATOVERLAY.Tooltip.Panel.RollState.Description",
-        { stateLabel: label },
-        `<em>Left click: next state · Right click: previous state · Ctrl+click: set Common</em><br><br>Current: ${label}`
-      )
+      description: includeClickBehaviorText
+        ? format(
+          "TOWCOMBATOVERLAY.Tooltip.Panel.RollState.Description",
+          { stateLabel: label },
+          `<em>Left click: next state · Right click: previous state · Ctrl+click: set Common</em><br><br>Current: ${label}`
+        )
+        : format(
+          "TOWCOMBATOVERLAY.Tooltip.Panel.RollState.CurrentOnly",
+          { stateLabel: label },
+          `Current: ${label}`
+        )
     };
   }
 
@@ -98,8 +114,8 @@
     for (const button of actionButtons) {
       if (!(button instanceof HTMLElement)) continue;
       const control = String(button.dataset.actionControl ?? "");
-      if (control === "diceModifier") bindPanelTooltipEvent(button, getDiceModifierTooltipData);
-      if (control === "rollState") bindPanelTooltipEvent(button, getRollStateTooltipData);
+      if (control === "diceModifier" && canShowButtonsTooltip()) bindPanelTooltipEvent(button, getDiceModifierTooltipData);
+      if (control === "rollState" && canShowButtonsTooltip()) bindPanelTooltipEvent(button, getRollStateTooltipData);
 
       button.addEventListener("click", async (event) => {
         event.preventDefault();
@@ -146,4 +162,3 @@
     bindPanelActionControls
   };
 }
-

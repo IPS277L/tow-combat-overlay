@@ -12,6 +12,8 @@ export function createPanelSlotRenderService({
   updatePanelSlotAmmoBadge,
   updatePanelSlotAttackAmmoVisualState,
   updatePanelSlotAttackRarity,
+  showItemRarity = () => true,
+  showClickBehaviorText = () => true,
   updatePanelSlotDamageBadge,
   panelMainGridMinColumns = 7,
   panelMainGridMinRows = 2
@@ -111,6 +113,8 @@ export function createPanelSlotRenderService({
   }
 
   function updateGroupSlots(panelElement, groupKey, groupItems = [], actor = null) {
+    const rarityEnabled = (typeof showItemRarity === "function") ? !!showItemRarity() : true;
+    const includeClickBehaviorText = (typeof showClickBehaviorText === "function") ? !!showClickBehaviorText() : true;
     const groupElement = panelElement.querySelector(
       `.tow-combat-overlay-control-panel__item-group[data-item-group="${groupKey}"]`
     ) ?? getGroupGridElement(panelElement, groupKey);
@@ -170,7 +174,12 @@ export function createPanelSlotRenderService({
         if (iconPlaceholder instanceof HTMLElement) iconPlaceholder.style.display = "";
         updatePanelSlotAmmoBadge(slotElement, null, emptyGroupKey);
         updatePanelSlotAttackAmmoVisualState(slotElement, null, emptyGroupKey, actor);
-        updatePanelSlotAttackRarity(slotElement, null, emptyGroupKey);
+        if (rarityEnabled) updatePanelSlotAttackRarity(slotElement, null, emptyGroupKey);
+        else {
+          delete slotElement.dataset.attackRarity;
+          const existingBadge = slotElement.querySelector(".tow-combat-overlay-control-panel__slot-property");
+          if (existingBadge instanceof HTMLElement) existingBadge.style.display = "none";
+        }
         updatePanelSlotDamageBadge(slotElement, null, emptyGroupKey);
         continue;
       }
@@ -195,9 +204,11 @@ export function createPanelSlotRenderService({
       slotElement.classList.toggle("is-top-chip-wound-active", isTopChipWoundActive);
       const itemKey = String(item?.id ?? "").trim().toLowerCase();
       if (resolvedGroupKey === "attacks") {
-        const attackHint = itemKey === panelUnarmedActionId
-          ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.AttackUnarmed", "<em>Click: pick target then auto-roll unarmed attack (Brawn vs Endurance). Shift+click: self auto-roll. Alt+click: pick target then open default attack dialog. Alt+Shift+click: open default self-roll dialog.</em>")
-          : localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.AttackWeapon", "<em>Click: pick target, then auto-roll attack. Shift+click: auto-roll self attack. Alt+click: pick target, then open default Foundry attack dialog (no auto-roll). Alt+Shift+click: open default Foundry self-roll dialog (no auto-roll). Ctrl+click: instantly reload this weapon (ranged weapons with reload flow only).</em>");
+        const attackHint = includeClickBehaviorText
+          ? (itemKey === panelUnarmedActionId
+          ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.AttackUnarmed", "<em>Left click: pick target then auto-roll unarmed attack (Brawn vs Endurance) · Shift+click: self auto-roll · Alt+click: pick target then open default attack dialog · Alt+Shift+click: open default self-roll dialog</em>")
+          : localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.AttackWeapon", "<em>Left click: pick target then auto-roll attack · Shift+click: auto-roll self attack · Alt+click: pick target then open default Foundry attack dialog (no auto-roll) · Alt+Shift+click: open default Foundry self-roll dialog (no auto-roll) · Ctrl+click: instantly reload this weapon (ranged weapons with reload flow only)</em>"))
+          : "";
         const attackAmmoState = resolvePanelAttackAmmoState(item);
         const reloadProgressHint = (attackAmmoState.isRanged && attackAmmoState.usesReloadFlow && attackAmmoState.current <= 0)
           ? `<br><br>${format("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.ReloadProgress", {
@@ -221,20 +232,24 @@ export function createPanelSlotRenderService({
           ? `${attackHint}${damageHint}${reloadProgressHint}${specialPropertyHint}<br><br>${itemDescription}`
           : `${attackHint}${damageHint}${reloadProgressHint}${specialPropertyHint}`;
       } else if (resolvedGroupKey === "actions") {
-        let actionsHint = localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.ActionDefault", "<em>Click: auto-flow action (auto-roll / auto-pick first). Alt+click: default Foundry action dialogs.</em>");
-        if (itemKey === "aim") {
-          actionsHint = localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.ActionAim", "<em>Click: pick target then auto-roll. Shift+click: self auto-roll. Alt+click: pick target then manual dialog. Alt+Shift+click: self manual dialog.</em>");
-        } else if (itemKey === "help") {
-          actionsHint = localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.ActionHelp", "<em>Click: pick target then auto-flow. Shift+click: self auto-flow. Alt+click: pick target then manual dialogs. Alt+Shift+click: self manual dialogs.</em>");
-        } else if (itemKey === "improvise") {
-          actionsHint = localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.ActionImprovise", "<em>Click: auto-pick first skill and auto-roll. Alt+click: manual skill selection/dialogs.</em>");
-        } else if (itemKey === "defence") {
-          actionsHint = localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.ActionDefence", "<em>Click: auto defence. Alt+click: manual defence selection dialog.</em>");
+        let actionsHint = includeClickBehaviorText
+          ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.ActionDefault", "<em>Left click: auto-flow action (auto-roll and auto-pick first) · Alt+click: default Foundry action dialogs</em>")
+          : "";
+        if (itemKey === "aim" && includeClickBehaviorText) {
+          actionsHint = localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.ActionAim", "<em>Left click: pick target then auto-roll · Shift+click: self auto-roll · Alt+click: pick target then manual dialog · Alt+Shift+click: self manual dialog</em>");
+        } else if (itemKey === "help" && includeClickBehaviorText) {
+          actionsHint = localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.ActionHelp", "<em>Left click: pick target then auto-flow · Shift+click: self auto-flow · Alt+click: pick target then manual dialogs · Alt+Shift+click: self manual dialogs</em>");
+        } else if (itemKey === "improvise" && includeClickBehaviorText) {
+          actionsHint = localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.ActionImprovise", "<em>Left click: auto-pick first skill and auto-roll · Alt+click: manual skill selection and dialogs</em>");
+        } else if (itemKey === "defence" && includeClickBehaviorText) {
+          actionsHint = localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.ActionDefence", "<em>Left click: auto defence · Alt+click: manual defence selection dialog</em>");
         } else if (itemKey === "accumulatepower") {
           const miscastReady = item?.system?.miscastReady === true;
-          actionsHint = miscastReady
-            ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.ActionAccumulatePowerReady", "<em>Click: roll on the miscast table. Ctrl+click: reset accumulated and potency values to 0.</em>")
-            : localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.ActionAccumulatePowerBuild", "<em>Click: auto-roll casting test with current roll modifiers to accumulate power. Alt+click: open default manual casting dialog. Ctrl+click: reset accumulated and potency values to 0.</em>");
+          actionsHint = includeClickBehaviorText
+            ? (miscastReady
+            ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.ActionAccumulatePowerReady", "<em>Left click: roll on the miscast table · Ctrl+click: reset accumulated and potency values to 0</em>")
+            : localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.ActionAccumulatePowerBuild", "<em>Left click: auto-roll casting test with current roll modifiers to accumulate power · Alt+click: open default manual casting dialog · Ctrl+click: reset accumulated and potency values to 0</em>"))
+            : "";
           const accumulatedRaw = Number(item?.system?.accumulatedPower ?? NaN);
           const accumulated = Number.isFinite(accumulatedRaw) ? Math.max(0, Math.trunc(accumulatedRaw)) : 0;
           const potencyRaw = Number(item?.system?.potency ?? NaN);
@@ -252,36 +267,48 @@ export function createPanelSlotRenderService({
         }
         slotElement.dataset.tooltipDescription = itemDescription ? `${actionsHint}<br><br>${itemDescription}` : actionsHint;
       } else if (resolvedGroupKey === "recover") {
-        const recoverHint = (itemKey === "recover")
-          ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.RecoverMain", "<em>Click: run Recover with auto flow.</em>")
-          : localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.Recover", "<em>Click: run selected Recover action with auto flow. Alt+click: open manual dialogs for the selected Recover action.</em>");
+        const recoverHint = includeClickBehaviorText
+          ? ((itemKey === "recover")
+          ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.RecoverMain", "<em>Left click: run Recover with auto flow</em>")
+          : localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.Recover", "<em>Left click: run selected Recover action with auto flow · Alt+click: open manual dialogs for the selected Recover action</em>"))
+          : "";
         slotElement.dataset.tooltipDescription = itemDescription
           ? `${recoverHint}<br><br>${itemDescription}`
           : recoverHint;
       } else if (resolvedGroupKey === "manoeuvre") {
-        const manoeuvreHint = localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.Manoeuvre", "<em>Click: auto-roll manoeuvre checks (no dialogs). Alt+click: default Foundry manoeuvre flow (with dialogs).</em>");
+        const manoeuvreHint = includeClickBehaviorText
+          ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.Manoeuvre", "<em>Left click: auto-roll manoeuvre checks (no dialogs) · Alt+click: default Foundry manoeuvre flow (with dialogs)</em>")
+          : "";
         slotElement.dataset.tooltipDescription = itemDescription
           ? `${manoeuvreHint}<br><br>${itemDescription}`
           : manoeuvreHint;
       } else if (resolvedGroupKey === "temporaryEffects") {
-        const infoHint = localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.TemporaryEffects", "<em>Right click: remove temporary effect.</em>");
+        const infoHint = includeClickBehaviorText
+          ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.TemporaryEffects", "<em>Right click: remove temporary effect.</em>")
+          : "";
         slotElement.dataset.tooltipDescription = itemDescription
           ? `${infoHint}<br><br>${itemDescription}`
           : infoHint;
       } else if (resolvedGroupKey === "abilities") {
-        const abilitiesHint = localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.Abilities", "<em>Left click: show details.</em>");
+        const abilitiesHint = includeClickBehaviorText
+          ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.Abilities", "<em>Left click: show details.</em>")
+          : "";
         slotElement.dataset.tooltipDescription = itemDescription
           ? `${abilitiesHint}<br><br>${itemDescription}`
           : abilitiesHint;
       } else if (resolvedGroupKey === "topChips") {
         const topChipType = String(item?.panelTopChipType ?? "").trim();
         if (topChipType === "temporaryEffects") {
-          const infoHint = localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.TemporaryEffects", "<em>Right click: remove temporary effect.</em>");
+          const infoHint = includeClickBehaviorText
+            ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.TemporaryEffects", "<em>Right click: remove temporary effect.</em>")
+            : "";
           slotElement.dataset.tooltipDescription = itemDescription
             ? `${infoHint}<br><br>${itemDescription}`
             : infoHint;
         } else if (topChipType === "abilities") {
-          const abilitiesHint = localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.Abilities", "<em>Left click: show details.</em>");
+          const abilitiesHint = includeClickBehaviorText
+            ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.Abilities", "<em>Left click: show details.</em>")
+            : "";
           slotElement.dataset.tooltipDescription = itemDescription
             ? `${abilitiesHint}<br><br>${itemDescription}`
             : abilitiesHint;
@@ -289,7 +316,9 @@ export function createPanelSlotRenderService({
           slotElement.dataset.tooltipDescription = itemDescription;
         }
       } else if (resolvedGroupKey === "magic") {
-        const magicHint = localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.Magic", "<em>Click: cast and auto-process Apply buttons (with target pick when needed). Shift+click: same cast flow, but using only currently selected targets (no target pick mode, no self fallback). Alt+click: pick target then cast manually (no auto-apply).</em>");
+        const magicHint = includeClickBehaviorText
+          ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.Magic", "<em>Left click: cast and auto-process Apply buttons (with target pick when needed) · Shift+click: same cast flow, but using only currently selected targets (no target pick mode, no self fallback) · Alt+click: pick target then cast manually (no auto-apply)</em>")
+          : "";
         const magicDamageLabel = resolvePanelAttackDamageLabel(item) || "0";
         const hasMagicPotency = item?.system?.damage?.potency === true;
         const targetKey = String(item?.system?.target?.value ?? "").trim();
@@ -322,6 +351,9 @@ export function createPanelSlotRenderService({
       } else {
         slotElement.dataset.tooltipDescription = itemDescription;
       }
+      slotElement.dataset.tooltipDescription = String(slotElement.dataset.tooltipDescription ?? "")
+        .replace(/^(?:<br><br>)+/i, "")
+        .trim();
       slotElement.setAttribute("aria-label", itemName);
       image.src = itemImage;
       image.alt = itemName;
@@ -329,7 +361,12 @@ export function createPanelSlotRenderService({
       if (iconPlaceholder instanceof HTMLElement) iconPlaceholder.style.display = "none";
       updatePanelSlotAmmoBadge(slotElement, item, resolvedGroupKey);
       updatePanelSlotAttackAmmoVisualState(slotElement, item, resolvedGroupKey, actor);
-      updatePanelSlotAttackRarity(slotElement, item, resolvedGroupKey);
+      if (rarityEnabled) updatePanelSlotAttackRarity(slotElement, item, resolvedGroupKey);
+      else {
+        delete slotElement.dataset.attackRarity;
+        const existingBadge = slotElement.querySelector(".tow-combat-overlay-control-panel__slot-property");
+        if (existingBadge instanceof HTMLElement) existingBadge.style.display = "none";
+      }
       updatePanelSlotDamageBadge(slotElement, item, resolvedGroupKey);
     }
   }
@@ -338,4 +375,3 @@ export function createPanelSlotRenderService({
     updateGroupSlots
   };
 }
-
