@@ -37,6 +37,7 @@ const MODULE_CONSTANTS_BASE = Object.freeze({
     tokenLayoutEnableWounds: "tokenLayoutEnableWounds",
     tokenLayoutEnableTemporaryEffects: "tokenLayoutEnableTemporaryEffects",
     tokenLayoutShowCustomName: "tokenLayoutShowCustomName",
+    tokenLayoutNamePosition: "tokenLayoutNamePosition",
     tokenLayoutShowDeadVisuals: "tokenLayoutShowDeadVisuals",
     tokenLayoutEnableTooltips: "tokenLayoutEnableTooltips",
     tokenLayoutEnableNameTooltip: "tokenLayoutEnableNameTooltip",

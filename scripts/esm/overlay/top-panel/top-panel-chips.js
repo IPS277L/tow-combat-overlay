@@ -133,11 +133,31 @@ export function limitChipList(items, maxCount = TOP_PANEL_CHIP_MAX_PER_ROW, over
   if (list.length <= maxCount) return list;
   const visible = list.slice(0, maxCount);
   const overflowCount = list.length - maxCount;
+  const hiddenChips = list.slice(maxCount);
+  const escapeHtml = (value) => String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+  const hiddenChipsMarkup = hiddenChips
+    .map((chip) => {
+      const title = escapeHtml(String(chip?.title ?? "").trim() || "?");
+      const imageSrc = String(chip?.img ?? "").trim();
+      if (imageSrc) {
+        const safeImageSrc = escapeHtml(imageSrc);
+        return `<div class="tow-combat-overlay-status-tooltip__chip-row"><span class="tow-combat-overlay-status-tooltip__chip-icon"><img src="${safeImageSrc}" alt="" /></span><span>${title}</span></div>`;
+      }
+      return `<div class="tow-combat-overlay-status-tooltip__chip-row"><span>${title}</span></div>`;
+    })
+    .join("");
   visible.push({
     type: overflowType,
     key: `overflow:${overflowType}:${overflowCount}`,
     title: `+${overflowCount}`,
-    description: `+${overflowCount} more`,
+    description: hiddenChipsMarkup
+      ? `<div class="tow-combat-overlay-status-tooltip__chip-list">${hiddenChipsMarkup}</div>`
+      : `+${overflowCount} more`,
     img: ""
   });
   return visible;

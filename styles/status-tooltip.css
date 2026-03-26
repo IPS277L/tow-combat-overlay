@@ -39,6 +39,43 @@
   font-weight: 400;
 }
 
+.tow-combat-overlay-status-tooltip__chip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tow-combat-overlay-status-tooltip__chip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.tow-combat-overlay-status-tooltip__chip-icon {
+  width: var(--tow-top-panel-chip-size, 16px);
+  height: var(--tow-top-panel-chip-size, 16px);
+  min-width: var(--tow-top-panel-chip-size, 16px);
+  min-height: var(--tow-top-panel-chip-size, 16px);
+  border: 1px solid rgba(205, 205, 205, 0.7);
+  border-radius: 50%;
+  background: rgba(84, 84, 84, 0.9);
+  box-shadow: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.tow-combat-overlay-status-tooltip__chip-icon > img {
+  width: 88%;
+  height: 88%;
+  border-radius: 50%;
+  object-fit: contain;
+  object-position: center center;
+  display: block;
+}
+
 .tow-combat-overlay-status-tooltip.is-panel-theme {
   border: 1px solid #bdb9ab;
   background: #f2f1e8;

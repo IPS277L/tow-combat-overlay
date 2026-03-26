@@ -72,6 +72,7 @@ function getTokenLayoutPaletteVisibilitySettings() {
   const { settings } = getTowCombatOverlayConstants();
   const enableStatusRow = isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableStatusRow, true);
   return {
+    enableStatusRow,
     enableStatuses: enableStatusRow
       && isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableStatuses, true),
     enableWounds: enableStatusRow
@@ -87,6 +88,36 @@ function getTokenLayoutPaletteVisibilitySettings() {
     enableOverflowTooltip: isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableTooltips, true)
       && isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutEnableOverflowTooltip, true)
   };
+}
+
+function escapeTooltipHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function buildOverflowTooltipListMarkup(entries = []) {
+  const rows = (Array.isArray(entries) ? entries : [])
+    .map((entry) => {
+      const title = escapeTooltipHtml(
+        String(entry?.displayName ?? entry?.tooltipData?.name ?? entry?.id ?? "").trim() || "?"
+      );
+      const img = String(entry?.img ?? "").trim();
+      if (!img) return `<div class="tow-combat-overlay-status-tooltip__chip-row"><span>${title}</span></div>`;
+      return `<div class="tow-combat-overlay-status-tooltip__chip-row"><span class="tow-combat-overlay-status-tooltip__chip-icon"><img src="${escapeTooltipHtml(img)}" alt="" /></span><span>${title}</span></div>`;
+    })
+    .join("");
+  return rows ? `<div class="tow-combat-overlay-status-tooltip__chip-list">${rows}</div>` : "";
+}
+
+function centerOverflowText(overflowText, iconSize) {
+  if (!overflowText) return;
+  const center = Math.round(iconSize / 2);
+  overflowText.anchor.set(0.5, 0.5);
+  overflowText.position.set(center, center - 1);
 }
 
 function clearStatusIconHandler(sprite) {
@@ -347,6 +378,12 @@ export function setupStatusPalette(tokenObject) {
   const actor = towCombatOverlayGetActorFromToken(tokenObject);
   if (!actor) return;
   const visibilitySettings = getTokenLayoutPaletteVisibilitySettings();
+  if (!visibilitySettings.enableStatusRow) {
+    clearStatusPalette(tokenObject);
+    restoreDefaultStatusPanel(tokenObject);
+    return;
+  }
+  hideDefaultStatusPanel(tokenObject);
   const allConditions = getAllConditionEntries();
   const activeStatuses = getActorStatusSet(actor);
   const woundAbility = visibilitySettings.enableWounds ? getWoundsAbilityEntry(actor) : null;
@@ -354,16 +391,21 @@ export function setupStatusPalette(tokenObject) {
   const entries = [
     ...(visibilitySettings.enableStatuses ? allConditions : [])
       .filter((entry) => activeStatuses.has(String(entry?.id ?? "")))
-      .map((entry) => ({
-        key: `condition:${String(entry?.id ?? "")}`,
-        id: String(entry?.id ?? ""),
-        img: String(entry?.img ?? "").trim(),
-        variant: "condition",
-        forceActive: false,
-        tooltipData: visibilitySettings.enableStatusesTooltip
-          ? getConditionTooltipData(entry?.id)
-          : { name: "", description: "" }
-      })),
+      .map((entry) => {
+        const conditionTooltipData = getConditionTooltipData(entry?.id);
+        const displayName = String(conditionTooltipData?.name ?? entry?.id ?? "").trim() || "Condition";
+        return {
+          key: `condition:${String(entry?.id ?? "")}`,
+          id: String(entry?.id ?? ""),
+          img: String(entry?.img ?? "").trim(),
+          variant: "condition",
+          forceActive: false,
+          displayName,
+          tooltipData: visibilitySettings.enableStatusesTooltip
+            ? conditionTooltipData
+            : { name: "", description: "" }
+        };
+      }),
     ...(woundAbility
       ? [{
         key: String(woundAbility?.key ?? ""),
@@ -372,6 +414,7 @@ export function setupStatusPalette(tokenObject) {
         variant: "ability",
         forceActive: woundAbility?.isActive === true,
         overflowCount: 0,
+        displayName: String(woundAbility?.name ?? "Wounds").trim() || "Wounds",
         tooltipData: visibilitySettings.enableWoundsTooltip
           ? {
             name: String(woundAbility?.name ?? "Wounds"),
@@ -387,6 +430,7 @@ export function setupStatusPalette(tokenObject) {
       variant: "effect",
       forceActive: true,
       overflowCount: 0,
+      displayName: String(entry?.name ?? "Effect").trim() || "Effect",
       tooltipData: visibilitySettings.enableTemporaryEffectsTooltip
         ? {
           name: String(entry?.name ?? "Effect"),
@@ -395,20 +439,23 @@ export function setupStatusPalette(tokenObject) {
         : { name: "", description: "" }
     }))
   ].filter((entry) => !!entry.key && !!entry.id && !!entry.img);
+  const hiddenOverflowEntries = entries.length > STATUS_MAX_VISIBLE_CHIPS
+    ? entries.slice(STATUS_MAX_VISIBLE_CHIPS)
+    : [];
   const visibleEntries = entries.length > STATUS_MAX_VISIBLE_CHIPS
     ? [
       ...entries.slice(0, STATUS_MAX_VISIBLE_CHIPS),
       {
-        key: `overflow:${entries.length - STATUS_MAX_VISIBLE_CHIPS}`,
-        id: `__overflow__:${entries.length - STATUS_MAX_VISIBLE_CHIPS}`,
+        key: `overflow:${hiddenOverflowEntries.length}`,
+        id: `__overflow__:${hiddenOverflowEntries.length}`,
         img: "",
         variant: "overflow",
         forceActive: true,
-        overflowCount: entries.length - STATUS_MAX_VISIBLE_CHIPS,
+        overflowCount: hiddenOverflowEntries.length,
         tooltipData: visibilitySettings.enableOverflowTooltip
           ? {
-            name: `+${entries.length - STATUS_MAX_VISIBLE_CHIPS}`,
-            description: `+${entries.length - STATUS_MAX_VISIBLE_CHIPS} more`
+            name: `+${hiddenOverflowEntries.length}`,
+            description: buildOverflowTooltipListMarkup(hiddenOverflowEntries) || `+${hiddenOverflowEntries.length} more`
           }
           : { name: "", description: "" }
       }
@@ -483,9 +530,8 @@ export function setupStatusPalette(tokenObject) {
           strokeThickness: 0,
           align: "center"
         });
-        overflowText.anchor.set(0.5, 0.5);
         overflowText.eventMode = "none";
-        overflowText.position.set(Math.round(iconSize / 2), Math.round(iconSize / 2));
+        centerOverflowText(overflowText, iconSize);
         towCombatOverlayTuneTextForScale(overflowText, iconSize / Math.max(1, STATUS_PALETTE_ICON_SIZE));
         sprite.addChild(overflowText);
         sprite[STATUS_OVERFLOW_TEXT] = overflowText;
@@ -548,7 +594,7 @@ export function setupStatusPalette(tokenObject) {
     const overflowText = sprite?.[STATUS_OVERFLOW_TEXT];
     if (overflowText) {
       overflowText.text = `+${Number(sprite?.[STATUS_OVERFLOW_COUNT] ?? 0)}`;
-      overflowText.position.set(Math.round(iconSize / 2), Math.round(iconSize / 2));
+      centerOverflowText(overflowText, iconSize);
       towCombatOverlayTuneTextForScale(overflowText, iconSize / Math.max(1, STATUS_PALETTE_ICON_SIZE));
     }
     sprite.cursor = "default";

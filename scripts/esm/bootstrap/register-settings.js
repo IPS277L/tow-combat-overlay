@@ -226,6 +226,21 @@ function buildDisplaySettingsGroups(settingKeys) {
       hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutShowCustomName.Hint"
     },
     {
+      key: settingKeys.tokenLayoutNamePosition,
+      type: "select",
+      defaultValue: "bottom",
+      visibleWhen: Object.freeze({
+        key: settingKeys.tokenLayoutShowCustomName,
+        equals: true
+      }),
+      choices: Object.freeze({
+        top: "TOWCOMBATOVERLAY.Setting.TokenLayoutNamePosition.OptionTop",
+        bottom: "TOWCOMBATOVERLAY.Setting.TokenLayoutNamePosition.OptionBottom"
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutNamePosition.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutNamePosition.Hint"
+    },
+    {
       key: settingKeys.tokenLayoutShowDeadVisuals,
       defaultValue: true,
       nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutShowDeadVisuals.Name",
@@ -604,6 +619,7 @@ function buildDisplaySettingsGroups(settingKeys) {
           titleKey: "TOWCOMBATOVERLAY.SettingsSection.TokenLayout.Overlay",
           settingKeys: Object.freeze([
             settingKeys.tokenLayoutShowCustomName,
+            settingKeys.tokenLayoutNamePosition,
             settingKeys.tokenLayoutShowBorder,
             settingKeys.tokenLayoutShowDeadVisuals
           ])

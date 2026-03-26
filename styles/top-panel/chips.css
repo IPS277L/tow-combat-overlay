@@ -138,5 +138,13 @@
 .tow-combat-overlay-top-panel__chip.is-condition-overflow .tow-combat-overlay-top-panel__chip-text,
 .tow-combat-overlay-top-panel__chip.is-effect-overflow .tow-combat-overlay-top-panel__chip-text,
 .tow-combat-overlay-top-panel__chip.is-ability-overflow .tow-combat-overlay-top-panel__chip-text {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transform: none;
+  line-height: 1;
   color: #fff;
 }
