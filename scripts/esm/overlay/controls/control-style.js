@@ -1,6 +1,5 @@
 import {
   KEYS,
-  NAME_LABEL_MAX_WIDTH_MULTIPLIER,
   PreciseTextClass,
   TOKEN_CONTROL_PAD
 } from "../../runtime/overlay-constants.js";
@@ -157,7 +156,7 @@ export function towCombatOverlayUpdateNameLabel(tokenObject) {
   const combinedWidth = Math.max(1, combinedMaxX - combinedMinX);
   const tokenWidthWorld = Math.max(
     1,
-    (Number(tokenObject.w ?? 0) * NAME_LABEL_MAX_WIDTH_MULTIPLIER) - (edgePad * 2)
+    Number(tokenObject.w ?? 0)
   );
   const maxLocalWidth = Math.max(1, tokenWidthWorld / Math.max(0.0001, labelScale));
   const widthClampScale = Math.min(1, maxLocalWidth / combinedWidth);
