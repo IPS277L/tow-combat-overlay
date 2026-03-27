@@ -43,6 +43,8 @@ export function getTokenPortraitSrc(token) {
 
 function resolveTokenDispositionClass(token) {
   const disposition = Number(token?.document?.disposition ?? 0);
+  const secretDisposition = Number(globalThis?.CONST?.TOKEN_DISPOSITIONS?.SECRET);
+  if (Number.isFinite(secretDisposition) && disposition === secretDisposition) return "is-secret";
   if (disposition > 0) return "is-friendly";
   if (disposition < 0) return "is-hostile";
   return "is-neutral";

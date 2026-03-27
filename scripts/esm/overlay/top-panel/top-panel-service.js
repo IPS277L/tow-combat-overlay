@@ -45,7 +45,6 @@ import {
 function bindTopPanelElementEvents(topPanelElement) {
   const state = getTopPanelState();
   if (!state) return;
-  const cardDoubleClickDelayMs = 260;
   const dragHandleButton = topPanelElement.querySelector("[data-action='drag-panel-handle']");
   const controlsElement = topPanelElement.querySelector(".tow-combat-overlay-top-panel__controls");
   const { settings } = getTowCombatOverlayConstants();
@@ -152,24 +151,10 @@ function bindTopPanelElementEvents(topPanelElement) {
     if (!tokenId) return;
     const usedAsTargetPick = await resolvePendingControlPanelTargetPick(tokenId, event);
     if (usedAsTargetPick) return;
-
     const previousTokenId = String(liveState.lastCardClickTokenId ?? "").trim();
     const previousAt = Number(liveState.lastCardClickAt ?? 0);
     const now = Date.now();
-    const isDoubleClick = previousTokenId === tokenId && (now - previousAt) <= cardDoubleClickDelayMs;
-
-    if (typeof liveState.pendingCardClickTimer === "number") {
-      window.clearTimeout(liveState.pendingCardClickTimer);
-      liveState.pendingCardClickTimer = null;
-    }
-
-    if (isDoubleClick) {
-      liveState.lastCardClickTokenId = "";
-      liveState.lastCardClickAt = 0;
-      openTokenSheetFromTopPanel(tokenId);
-      return;
-    }
-
+    const isDoubleClick = previousTokenId === tokenId && (now - previousAt) <= 280;
     liveState.lastCardClickTokenId = tokenId;
     liveState.lastCardClickAt = now;
     const selectionEvent = {
@@ -177,12 +162,12 @@ function bindTopPanelElementEvents(topPanelElement) {
       ctrlKey: event.ctrlKey === true,
       metaKey: event.metaKey === true
     };
-    liveState.pendingCardClickTimer = window.setTimeout(() => {
-      const timeoutState = getTopPanelState();
-      if (!timeoutState) return;
-      timeoutState.pendingCardClickTimer = null;
-      selectTokenFromTopPanel(tokenId, selectionEvent);
-    }, cardDoubleClickDelayMs);
+    selectTokenFromTopPanel(tokenId, selectionEvent);
+    if (isDoubleClick) {
+      liveState.lastCardClickTokenId = "";
+      liveState.lastCardClickAt = 0;
+      openTokenSheetFromTopPanel(tokenId);
+    }
   });
 
   const onPortraitHoverStateShow = (event) => {

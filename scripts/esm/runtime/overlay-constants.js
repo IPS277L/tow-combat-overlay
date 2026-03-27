@@ -72,9 +72,10 @@ export const STATUS_PALETTE_BACKDROP_PAD_X = 4;
 export const STATUS_PALETTE_BACKDROP_PAD_Y = 3;
 export const LAYOUT_BORDER_COLOR = 0xC6B89A;
 export const LAYOUT_BORDER_COLOR_FRIENDLY = 0x00FF00;
-export const LAYOUT_BORDER_COLOR_NEUTRAL = 0x0088FF;
+export const LAYOUT_BORDER_COLOR_NEUTRAL = 0xFFE600;
 export const LAYOUT_BORDER_COLOR_HOSTILE = 0xFF0000;
-export const LAYOUT_BORDER_COLOR_CONTROLLED = 0xFFE600;
+export const LAYOUT_BORDER_COLOR_SECRET = 0x919191;
+export const LAYOUT_BORDER_COLOR_CONTROLLED = 0x0088FF;
 export const LAYOUT_BORDER_ALPHA = 0.85;
 export const LAYOUT_BORDER_WIDTH = 1.6;
 export const LAYOUT_BORDER_RADIUS = 6;
@@ -166,6 +167,8 @@ export function getLayoutBorderColor(tokenObject) {
   if (isControlled) return LAYOUT_BORDER_COLOR_CONTROLLED;
 
   const disposition = Number(tokenObject?.document?.disposition ?? 0);
+  const secretDisposition = Number(globalThis?.CONST?.TOKEN_DISPOSITIONS?.SECRET);
+  if (Number.isFinite(secretDisposition) && disposition === secretDisposition) return LAYOUT_BORDER_COLOR_SECRET;
   if (disposition > 0) return LAYOUT_BORDER_COLOR_FRIENDLY;
   if (disposition < 0) return LAYOUT_BORDER_COLOR_HOSTILE;
   if (disposition === 0) return LAYOUT_BORDER_COLOR_NEUTRAL;

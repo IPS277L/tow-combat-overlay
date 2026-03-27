@@ -37,8 +37,8 @@ body.tow-combat-overlay-is-picking-target .tow-combat-overlay-top-panel__portrai
 }
 
 .tow-combat-overlay-top-panel__portrait.is-neutral {
-  --tow-top-panel-token-border-color: var(--tow-top-panel-border-rare);
-  --tow-top-panel-token-bg: var(--tow-top-panel-bg-rare);
+  --tow-top-panel-token-border-color: var(--tow-top-panel-border-legendary);
+  --tow-top-panel-token-bg: var(--tow-top-panel-bg-legendary);
 }
 
 .tow-combat-overlay-top-panel__portrait.is-hostile {
@@ -46,20 +46,25 @@ body.tow-combat-overlay-is-picking-target .tow-combat-overlay-top-panel__portrai
   --tow-top-panel-token-bg: var(--tow-top-panel-bg-hostile);
 }
 
-/* Keep hover-linked cards on the shared yellow highlight, regardless of disposition class order. */
+.tow-combat-overlay-top-panel__portrait.is-secret {
+  --tow-top-panel-token-border-color: var(--tow-top-panel-border-secret);
+  --tow-top-panel-token-bg: var(--tow-top-panel-bg-secret);
+}
+
+/* Keep hover-linked cards on the shared blue highlight, regardless of disposition class order. */
 .tow-combat-overlay-top-panel__portrait.is-hover-linked {
-  --tow-top-panel-token-border-color: var(--tow-top-panel-border-legendary);
-  --tow-top-panel-token-bg: var(--tow-top-panel-bg-legendary);
-  border-color: var(--tow-top-panel-border-legendary);
+  --tow-top-panel-token-border-color: var(--tow-top-panel-border-rare);
+  --tow-top-panel-token-bg: var(--tow-top-panel-bg-rare);
+  border-color: var(--tow-top-panel-border-rare);
   background: var(--tow-top-panel-token-bg);
-  box-shadow: inset 0 0 0 1px rgba(255, 238, 140, 0.42);
+  box-shadow: inset 0 0 0 1px rgba(132, 194, 255, 0.42);
 }
 
 .tow-combat-overlay-top-panel__portrait.is-controlled {
-  --tow-top-panel-token-border-color: var(--tow-top-panel-border-legendary);
-  --tow-top-panel-token-bg: var(--tow-top-panel-bg-legendary);
+  --tow-top-panel-token-border-color: var(--tow-top-panel-border-rare);
+  --tow-top-panel-token-bg: var(--tow-top-panel-bg-rare);
   background: var(--tow-top-panel-token-bg);
-  box-shadow: inset 0 0 0 1px rgba(255, 238, 140, 0.42);
+  box-shadow: inset 0 0 0 1px rgba(132, 194, 255, 0.42);
 }
 
 .tow-combat-overlay-top-panel__portrait.is-dead {
@@ -73,11 +78,11 @@ body.tow-combat-overlay-is-picking-target .tow-combat-overlay-top-panel__portrai
 
 .tow-combat-overlay-top-panel__portrait.is-dead.is-controlled,
 .tow-combat-overlay-top-panel__portrait.is-dead.is-hover-linked {
-  --tow-top-panel-token-border-color: var(--tow-top-panel-border-legendary);
-  --tow-top-panel-token-bg: var(--tow-top-panel-bg-legendary);
-  border-color: var(--tow-top-panel-border-legendary);
+  --tow-top-panel-token-border-color: var(--tow-top-panel-border-rare);
+  --tow-top-panel-token-bg: var(--tow-top-panel-bg-rare);
+  border-color: var(--tow-top-panel-border-rare);
   background: var(--tow-top-panel-token-bg);
-  box-shadow: inset 0 0 0 1px rgba(255, 238, 140, 0.42);
+  box-shadow: inset 0 0 0 1px rgba(132, 194, 255, 0.42);
 }
 
 .tow-combat-overlay-top-panel__portrait-image {
