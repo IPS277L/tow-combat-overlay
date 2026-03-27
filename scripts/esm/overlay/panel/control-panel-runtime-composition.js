@@ -77,6 +77,7 @@ import {
   syncSelectionPanelPosition
 } from "./shared/position.js";
 import { bindPanelTooltipEvent } from "./shared/tooltip.js";
+import { createControlPanelTooltipVisibilityService } from "./shared/tooltip-visibility.js";
 import {
   escapePanelHtml,
   normalizeDescriptionSource,
@@ -166,6 +167,10 @@ const {
   notifications: MODULE_NOTIFICATIONS,
   tooltips: MODULE_TOOLTIPS
 } = getTowCombatOverlayConstants();
+const panelTooltipVisibilityService = createControlPanelTooltipVisibilityService({
+  moduleSettings: MODULE_SETTINGS,
+  isSettingEnabled: (key, fallback) => isTowCombatOverlayDisplaySettingEnabled(key, fallback)
+});
 const {
   panelContextAccessService,
   slotMeta,
@@ -226,8 +231,8 @@ const panelActionControlsService = createPanelActionControlsService({
   towCombatOverlayWarnNoPermission,
   towCombatOverlayIsCtrlModifier,
   bindPanelTooltipEvent,
-  canShowButtonsTooltip: () => isControlPanelButtonsTooltipEnabled(),
-  showClickBehaviorText: () => showControlPanelTooltipClickBehaviorText(),
+  canShowButtonsTooltip: () => panelTooltipVisibilityService.isControlPanelButtonsTooltipEnabled(),
+  showClickBehaviorText: () => panelTooltipVisibilityService.showControlPanelTooltipClickBehaviorText(),
   getPrimaryTokenTypeLabel,
   getSingleControlledActor: () => getSingleControlledActor()
 });
@@ -249,12 +254,12 @@ const panelStatsStatusBindingsService = createPanelStatsStatusBindingsService({
   towCombatOverlayAddWound,
   towCombatOverlayIsShiftModifier,
   towCombatOverlayIsCtrlModifier,
-  isTooltipsEnabled: () => isControlPanelTooltipsEnabled(),
-  showClickBehaviorText: () => showControlPanelTooltipClickBehaviorText(),
-  canShowNameTooltip: () => isControlPanelNameTooltipEnabled(),
-  canShowStatsTooltip: () => isControlPanelStatsTooltipEnabled(),
-  canShowStatusesTooltip: () => isControlPanelStatusesTooltipEnabled(),
-  canShowWoundsTooltip: () => isControlPanelWoundsTooltipEnabled()
+  isTooltipsEnabled: () => panelTooltipVisibilityService.isControlPanelTooltipsEnabled(),
+  showClickBehaviorText: () => panelTooltipVisibilityService.showControlPanelTooltipClickBehaviorText(),
+  canShowNameTooltip: () => panelTooltipVisibilityService.isControlPanelNameTooltipEnabled(),
+  canShowStatsTooltip: () => panelTooltipVisibilityService.isControlPanelStatsTooltipEnabled(),
+  canShowStatusesTooltip: () => panelTooltipVisibilityService.isControlPanelStatusesTooltipEnabled(),
+  canShowWoundsTooltip: () => panelTooltipVisibilityService.isControlPanelWoundsTooltipEnabled()
 });
 const panelSelectionSyncService = createPanelSelectionSyncService({
   updateSelectionDisplay: (panelElement) => updateSelectionDisplay(panelElement)
@@ -274,7 +279,7 @@ const panelSlotRenderService = createPanelSlotRenderService({
   updatePanelSlotAttackAmmoVisualState,
   updatePanelSlotAttackRarity,
   showItemRarity: () => isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableItemsRarity, true),
-  showClickBehaviorText: () => showControlPanelTooltipClickBehaviorText(),
+  showClickBehaviorText: () => panelTooltipVisibilityService.showControlPanelTooltipClickBehaviorText(),
   updatePanelSlotDamageBadge,
   panelMainGridMinColumns: PANEL_MAIN_GRID_MIN_COLUMNS,
   panelMainGridMinRows: PANEL_MAIN_GRID_MIN_ROWS
@@ -460,7 +465,7 @@ const panelAttackResourceService = createPanelAttackResourceService({
 const panelSlotBindingService = createPanelSlotBindingService({
   getControlPanelState: () => getControlPanelState(),
   canReorderButtons: () => isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableButtonsDragDrop, false),
-  canShowSlotTooltip: (slotElement) => canShowControlPanelSlotTooltip(slotElement),
+  canShowSlotTooltip: (slotElement) => panelTooltipVisibilityService.canShowControlPanelSlotTooltip(slotElement),
   isMainActionPanelSlot: (slotElement) => isMainActionPanelSlot(slotElement),
   getSlotPanelButtonKey: (slotElement) => getSlotPanelButtonKey(slotElement),
   movePanelButtonKeyBeforeTarget: (sourceKey, targetKey, panelElement) => (
@@ -506,74 +511,6 @@ function getSingleControlledToken() {
 
 function getControlPanelState() {
   return panelContextAccessService.getControlPanelState();
-}
-
-function isControlPanelTooltipsEnabled() {
-  return isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableTooltips, true);
-}
-
-function isControlPanelNameTooltipEnabled() {
-  return isControlPanelTooltipsEnabled()
-    && isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableNameTooltip, true);
-}
-
-function showControlPanelTooltipClickBehaviorText() {
-  return isControlPanelTooltipsEnabled()
-    && isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelShowTooltipClickBehaviorText, true);
-}
-
-function isControlPanelStatsTooltipEnabled() {
-  return isControlPanelTooltipsEnabled()
-    && isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableStatsTooltip, true);
-}
-
-function isControlPanelStatusesTooltipEnabled() {
-  return isControlPanelTooltipsEnabled()
-    && isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableStatusesTooltip, true);
-}
-
-function isControlPanelAbilitiesTooltipEnabled() {
-  return isControlPanelTooltipsEnabled()
-    && isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableAbilitiesTooltip, true);
-}
-
-function isControlPanelWoundsTooltipEnabled() {
-  return isControlPanelTooltipsEnabled()
-    && isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableWoundsTooltip, true);
-}
-
-function isControlPanelTemporaryEffectsTooltipEnabled() {
-  return isControlPanelTooltipsEnabled()
-    && isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableTemporaryEffectsTooltip, true);
-}
-
-function isControlPanelButtonsTooltipEnabled() {
-  return isControlPanelTooltipsEnabled()
-    && isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableButtonsTooltip, true);
-}
-
-function canShowControlPanelSlotTooltip(slotElement) {
-  if (!(slotElement instanceof HTMLElement)) return false;
-  if (!isControlPanelTooltipsEnabled()) return false;
-  const groupKey = String(slotElement.dataset.itemGroup ?? "").trim();
-  const topChipType = String(slotElement.dataset.itemTopChipType ?? "").trim();
-  if (groupKey === "topChips") {
-    if (topChipType === "abilities") return isControlPanelAbilitiesTooltipEnabled();
-    if (topChipType === "woundActions") return isControlPanelWoundsTooltipEnabled();
-    if (topChipType === "temporaryEffects") return isControlPanelTemporaryEffectsTooltipEnabled();
-    return false;
-  }
-  if (groupKey === "abilities") return isControlPanelAbilitiesTooltipEnabled();
-  if (groupKey === "temporaryEffects") return isControlPanelTemporaryEffectsTooltipEnabled();
-  if (groupKey === "all"
-    || groupKey === "actions"
-    || groupKey === "manoeuvre"
-    || groupKey === "recover"
-    || groupKey === "attacks"
-    || groupKey === "magic") {
-    return isControlPanelButtonsTooltipEnabled();
-  }
-  return isControlPanelButtonsTooltipEnabled();
 }
 
 function getDefaultPanelButtonKeyOrder() {

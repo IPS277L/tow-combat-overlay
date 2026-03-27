@@ -12,7 +12,11 @@ const MODULE_CONSTANTS_BASE = Object.freeze({
     overlay: "combatOverlay"
   }),
   flags: Object.freeze({
-    actorRollModifier: "actorRollModifier"
+    actorRollModifier: "actorRollModifier",
+    topPanelOrderRequest: "topPanelOrderRequest"
+  }),
+  sockets: Object.freeze({
+    topPanelOrderRequest: "topPanelOrderRequest"
   }),
   settings: Object.freeze({
     enableOverlay: "enableOverlay",
@@ -127,11 +131,11 @@ export function getTowCombatOverlayConstants() {
     tooltips: Object.freeze({
       wounds: Object.freeze({
         title: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.Wounds.Title", "Wounds"),
-        description: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.Wounds.Description", "Left click: +1 wound · Right click: -1 wound.")
+        description: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.Wounds.Description", "Left click: +1 wound | Right click: -1 wound.")
       }),
       rollModifier: Object.freeze({
         title: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.RollModifier.Title", "Roll Modifier"),
-        description: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.RollModifier.Description", "Left click: +1 bonus die · Right click: +1 penalty die · Shift+click: cycle Common, Glorious, and Grim.")
+        description: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.RollModifier.Description", "Left click: +1 bonus die | Right click: +1 penalty die | Shift+click: cycle Common, Glorious, and Grim.")
       }),
       speed: Object.freeze({
         title: localizeTowCombatOverlayText("TOWCOMBATOVERLAY.Tooltip.Speed.Title", "Speed"),
@@ -151,3 +155,4 @@ export function getTowCombatOverlayConstants() {
     })
   });
 }
+

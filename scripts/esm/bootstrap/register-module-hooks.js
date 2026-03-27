@@ -24,7 +24,6 @@ import {
   applyTopPanelWorldOrderUpdate,
   writeSavedTopPanelPosition
 } from "../overlay/top-panel/top-panel-state.js";
-const TOP_PANEL_ORDER_REQUEST_SOCKET_TYPE = "topPanelOrderRequest";
 
 function ensureTowCombatOverlayStylesheetLoaded() {
   const explicitHrefs = [
@@ -241,7 +240,8 @@ function ensureTowCombatOverlaySidebarObserver() {
 }
 
 function ensureTowCombatOverlayTopPanelOrderRelayHook() {
-  const { moduleId } = getTowCombatOverlayConstants();
+  const { moduleId, flags } = getTowCombatOverlayConstants();
+  const requestFlagKey = String(flags?.topPanelOrderRequest ?? "topPanelOrderRequest");
   const stateKey = "__towCombatOverlayTopPanelOrderRelayHookId";
   if (!game) return null;
   const existingState = game[stateKey];
@@ -261,7 +261,7 @@ function ensureTowCombatOverlayTopPanelOrderRelayHook() {
     });
   };
 
-  const handleOrderRequestPayload = (payload, requestUser = null) => {
+  const handleOrderRequestPayload = async (payload, requestUser = null) => {
     if (!payload || typeof payload !== "object") return false;
     const sourceUserId = String(requestUser?.id ?? payload?.requesterId ?? "").trim();
     if (!sourceUserId) return false;
@@ -271,28 +271,28 @@ function ensureTowCombatOverlayTopPanelOrderRelayHook() {
     const fingerprint = buildRequestFingerprint(payload, sourceUserId);
     if (processedRequestFingerprintByUserId.get(sourceUserId) === fingerprint) return false;
     processedRequestFingerprintByUserId.set(sourceUserId, fingerprint);
-    const didApply = applyTopPanelWorldOrderUpdate(sceneId, tokenIds);
+    const didApply = await applyTopPanelWorldOrderUpdate(sceneId, tokenIds);
     if (requestUser?.unsetFlag) {
-      void Promise.resolve(requestUser.unsetFlag(moduleId, "topPanelOrderRequest")).catch(() => {});
+      void Promise.resolve(requestUser.unsetFlag(moduleId, requestFlagKey)).catch(() => {});
     }
     return didApply;
   };
 
   const didUpdateTouchTopPanelRequest = (changed) => {
     const moduleFlags = changed?.flags?.[moduleId];
-    if (moduleFlags && Object.prototype.hasOwnProperty.call(moduleFlags, "topPanelOrderRequest")) return true;
+    if (moduleFlags && Object.prototype.hasOwnProperty.call(moduleFlags, requestFlagKey)) return true;
     if (!foundry?.utils?.flattenObject || !changed || typeof changed !== "object") return false;
     const flattened = foundry.utils.flattenObject(changed);
-    const rootPath = `flags.${moduleId}.topPanelOrderRequest`;
+    const rootPath = `flags.${moduleId}.${requestFlagKey}`;
     return Object.keys(flattened).some((key) => key === rootPath || key.startsWith(`${rootPath}.`) || key.startsWith(`${rootPath}.-=`));
   };
 
   const hookId = Hooks.on("updateUser", (user, changed) => {
     if (game?.user?.isGM !== true) return;
     if (!didUpdateTouchTopPanelRequest(changed)) return;
-    const payload = user?.getFlag?.(moduleId, "topPanelOrderRequest");
+    const payload = user?.getFlag?.(moduleId, requestFlagKey);
     if (!payload || typeof payload !== "object") return;
-    handleOrderRequestPayload(payload, user);
+    void Promise.resolve(handleOrderRequestPayload(payload, user)).catch(() => {});
   });
   const relayState = {
     hookId,
@@ -303,7 +303,8 @@ function ensureTowCombatOverlayTopPanelOrderRelayHook() {
 }
 
 function ensureTowCombatOverlayTopPanelOrderSocketRelay() {
-  const { moduleId } = getTowCombatOverlayConstants();
+  const { moduleId, sockets } = getTowCombatOverlayConstants();
+  const requestSocketType = String(sockets?.topPanelOrderRequest ?? "topPanelOrderRequest");
   const stateKey = "__towCombatOverlayTopPanelOrderSocketRelayBound";
   if (!game || game[stateKey] === true) return;
   const socket = game?.socket;
@@ -315,36 +316,43 @@ function ensureTowCombatOverlayTopPanelOrderSocketRelay() {
   socket.on(`module.${moduleId}`, (message) => {
     if (game?.user?.isGM !== true) return;
     if (!message || typeof message !== "object") return;
-    if (String(message.type ?? "").trim() !== TOP_PANEL_ORDER_REQUEST_SOCKET_TYPE) return;
+    if (String(message.type ?? "").trim() !== requestSocketType) return;
     const payload = message.payload;
     const requesterId = String(payload?.requesterId ?? "").trim();
     const requestUser = requesterId ? game?.users?.get?.(requesterId) : null;
-    handleOrderRequestPayload(payload, requestUser ?? null);
+    void Promise.resolve(handleOrderRequestPayload(payload, requestUser ?? null)).catch(() => {});
   });
 
   game[stateKey] = true;
 }
 
-function ensureTowCombatOverlayTopPanelOrderFlagPoller() {
-  const { moduleId } = getTowCombatOverlayConstants();
-  const stateKey = "__towCombatOverlayTopPanelOrderFlagPollerState";
-  if (!game || game[stateKey]?.timerId != null) return;
+async function runTowCombatOverlayTopPanelOrderFlagSweep() {
+  const { moduleId, flags } = getTowCombatOverlayConstants();
+  const requestFlagKey = String(flags?.topPanelOrderRequest ?? "topPanelOrderRequest");
+  if (!game || game?.user?.isGM !== true) return;
   const relayState = ensureTowCombatOverlayTopPanelOrderRelayHook();
   const handleOrderRequestPayload = relayState?.handleOrderRequestPayload;
   if (typeof handleOrderRequestPayload !== "function") return;
-  const timerId = window.setInterval(() => {
-    if (game?.user?.isGM !== true) return;
-    const users = game?.users ? Array.from(game.users) : [];
-    for (const user of users) {
-      const payload = user?.getFlag?.(moduleId, "topPanelOrderRequest");
-      if (!payload || typeof payload !== "object") continue;
-      handleOrderRequestPayload(payload, user);
-    }
-  }, 500);
 
-  game[stateKey] = {
-    timerId
-  };
+  const users = game?.users ? Array.from(game.users) : [];
+  for (const user of users) {
+    const payload = user?.getFlag?.(moduleId, requestFlagKey);
+    if (!payload || typeof payload !== "object") continue;
+    await handleOrderRequestPayload(payload, user);
+  }
+}
+
+function ensureTowCombatOverlayTopPanelOrderBackoffSweeps() {
+  const stateKey = "__towCombatOverlayTopPanelOrderBackoffSweepState";
+  if (!game) return;
+  if (game[stateKey] === true) return;
+  game[stateKey] = true;
+  const delays = [0, 2000, 10000];
+  for (const delayMs of delays) {
+    window.setTimeout(() => {
+      void runTowCombatOverlayTopPanelOrderFlagSweep().catch(() => {});
+    }, delayMs);
+  }
 }
 
 export function registerTowCombatOverlayModuleHooks() {
@@ -382,7 +390,7 @@ export function registerTowCombatOverlayModuleHooks() {
     ensureTowCombatOverlaySidebarObserver();
     ensureTowCombatOverlayTopPanelOrderSocketRelay();
     ensureTowCombatOverlayTopPanelOrderRelayHook();
-    ensureTowCombatOverlayTopPanelOrderFlagPoller();
+    ensureTowCombatOverlayTopPanelOrderBackoffSweeps();
     syncTowCombatOverlayDisplaySettings();
   });
 }

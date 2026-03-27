@@ -12,6 +12,7 @@ import {
   TOP_PANEL_WOUND_STATE_KEYS
 } from "./top-panel-constants.js";
 import { localizeMaybe } from "./top-panel-shared.js";
+import { buildTooltipChipListMarkup } from "../shared/tooltip-markup.js";
 
 function getConditionEntryLookup() {
   const entries = getAllConditionEntries();
@@ -134,23 +135,10 @@ export function limitChipList(items, maxCount = TOP_PANEL_CHIP_MAX_PER_ROW, over
   const visible = list.slice(0, maxCount);
   const overflowCount = list.length - maxCount;
   const hiddenChips = list.slice(maxCount);
-  const escapeHtml = (value) => String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-  const hiddenChipsMarkup = hiddenChips
-    .map((chip) => {
-      const title = escapeHtml(String(chip?.title ?? "").trim() || "?");
-      const imageSrc = String(chip?.img ?? "").trim();
-      if (imageSrc) {
-        const safeImageSrc = escapeHtml(imageSrc);
-        return `<div class="tow-combat-overlay-status-tooltip__chip-row"><span class="tow-combat-overlay-status-tooltip__chip-icon"><img src="${safeImageSrc}" alt="" /></span><span>${title}</span></div>`;
-      }
-      return `<div class="tow-combat-overlay-status-tooltip__chip-row"><span>${title}</span></div>`;
-    })
-    .join("");
+  const hiddenChipsMarkup = buildTooltipChipListMarkup(hiddenChips, {
+    resolveTitle: (chip) => String(chip?.title ?? "").trim() || "?",
+    resolveImage: (chip) => String(chip?.img ?? "").trim()
+  });
   visible.push({
     type: overflowType,
     key: `overflow:${overflowType}:${overflowCount}`,

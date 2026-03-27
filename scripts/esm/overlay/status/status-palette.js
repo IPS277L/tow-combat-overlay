@@ -67,6 +67,7 @@ import {
 } from "./status-palette-constants.js";
 import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
 import { isTowCombatOverlayDisplaySettingEnabled } from "../../bootstrap/register-settings.js";
+import { buildTooltipChipListMarkup } from "../shared/tooltip-markup.js";
 
 function getTokenLayoutPaletteVisibilitySettings() {
   const { settings } = getTowCombatOverlayConstants();
@@ -90,27 +91,11 @@ function getTokenLayoutPaletteVisibilitySettings() {
   };
 }
 
-function escapeTooltipHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
 function buildOverflowTooltipListMarkup(entries = []) {
-  const rows = (Array.isArray(entries) ? entries : [])
-    .map((entry) => {
-      const title = escapeTooltipHtml(
-        String(entry?.displayName ?? entry?.tooltipData?.name ?? entry?.id ?? "").trim() || "?"
-      );
-      const img = String(entry?.img ?? "").trim();
-      if (!img) return `<div class="tow-combat-overlay-status-tooltip__chip-row"><span>${title}</span></div>`;
-      return `<div class="tow-combat-overlay-status-tooltip__chip-row"><span class="tow-combat-overlay-status-tooltip__chip-icon"><img src="${escapeTooltipHtml(img)}" alt="" /></span><span>${title}</span></div>`;
-    })
-    .join("");
-  return rows ? `<div class="tow-combat-overlay-status-tooltip__chip-list">${rows}</div>` : "";
+  return buildTooltipChipListMarkup(entries, {
+    resolveTitle: (entry) => String(entry?.displayName ?? entry?.tooltipData?.name ?? entry?.id ?? "").trim() || "?",
+    resolveImage: (entry) => String(entry?.img ?? "").trim()
+  });
 }
 
 function centerOverflowText(overflowText, iconSize) {

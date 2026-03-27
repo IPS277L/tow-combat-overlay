@@ -1,3 +1,10 @@
+import {
+  clampCoordinate,
+  normalizeStringList,
+  readSavedPosition,
+  writeSavedPosition
+} from "../../shared/storage-utils.js";
+
 const PANEL_LOCAL_STORAGE_KEY = "tow-combat-overlay.control-panel-position.v1";
 const PANEL_BUTTON_ORDER_LOCAL_STORAGE_KEY = "tow-combat-overlay.control-panel-button-order.v1";
 
@@ -7,38 +14,15 @@ function getPanelButtonOrderStorageKey(scope = "global") {
 }
 
 export function clampPanelCoordinate(value, min, max) {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return min;
-  if (max < min) return min;
-  return Math.min(max, Math.max(min, numeric));
+  return clampCoordinate(value, min, max);
 }
 
 export function readSavedPanelPosition() {
-  try {
-    const raw = window.localStorage.getItem(PANEL_LOCAL_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    const left = Number(parsed?.left);
-    const top = Number(parsed?.top);
-    if (!Number.isFinite(left) || !Number.isFinite(top)) return null;
-    return { left, top };
-  } catch (_error) {
-    return null;
-  }
+  return readSavedPosition(PANEL_LOCAL_STORAGE_KEY);
 }
 
 export function writeSavedPanelPosition(panelElement) {
-  if (!(panelElement instanceof HTMLElement)) return;
-  try {
-    const payload = {
-      left: Number(panelElement.style.left.replace("px", "")),
-      top: Number(panelElement.style.top.replace("px", ""))
-    };
-    if (!Number.isFinite(payload.left) || !Number.isFinite(payload.top)) return;
-    window.localStorage.setItem(PANEL_LOCAL_STORAGE_KEY, JSON.stringify(payload));
-  } catch (_error) {
-    // Ignore storage errors.
-  }
+  writeSavedPosition(PANEL_LOCAL_STORAGE_KEY, panelElement);
 }
 
 export function toPanelButtonKey(groupKey, itemId) {
@@ -70,24 +54,22 @@ export function readSavedPanelButtonKeyOrder(scope = "global") {
     const raw = window.localStorage.getItem(getPanelButtonOrderStorageKey(scope));
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return null;
-    const keys = parsed
-      .map((entry) => String(entry ?? "").trim())
-      .filter((entry) => !!parsePanelButtonKey(entry));
-    return keys.length ? Array.from(new Set(keys)) : null;
+    const keys = normalizeStringList(parsed, {
+      predicate: (entry) => !!parsePanelButtonKey(entry)
+    });
+    return keys.length ? keys : null;
   } catch (_error) {
     return null;
   }
 }
 
 export function writeSavedPanelButtonKeyOrder(buttonKeys, scope = "global") {
-  if (!Array.isArray(buttonKeys)) return;
-  const keys = buttonKeys
-    .map((entry) => String(entry ?? "").trim())
-    .filter((entry) => !!parsePanelButtonKey(entry));
+  const keys = normalizeStringList(buttonKeys, {
+    predicate: (entry) => !!parsePanelButtonKey(entry)
+  });
   if (!keys.length) return;
   try {
-    window.localStorage.setItem(getPanelButtonOrderStorageKey(scope), JSON.stringify(Array.from(new Set(keys))));
+    window.localStorage.setItem(getPanelButtonOrderStorageKey(scope), JSON.stringify(keys));
   } catch (_error) {
     // Ignore storage errors.
   }

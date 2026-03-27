@@ -1,9 +1,14 @@
-const TOP_PANEL_ORDER_STORAGE_KEY = "tow-combat-overlay.top-panel-order.v1";
-const TOP_PANEL_POSITION_STORAGE_KEY = "tow-combat-overlay.top-panel-position.v1";
-const TOP_PANEL_ORDER_SETTING_KEY = "tokensPanelTokenOrderByScene";
-const TOP_PANEL_ORDER_REQUEST_FLAG_KEY = "topPanelOrderRequest";
-const MODULE_ID = "tow-combat-overlay";
-const TOP_PANEL_ORDER_REQUEST_SOCKET_TYPE = "topPanelOrderRequest";
+import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
+import {
+  TOP_PANEL_ORDER_STORAGE_KEY,
+  TOP_PANEL_POSITION_STORAGE_KEY
+} from "./top-panel-constants.js";
+import {
+  clampCoordinate,
+  normalizeStringList,
+  readSavedPosition,
+  writeSavedPosition
+} from "../shared/storage-utils.js";
 
 function getTopPanelOrderStorageKey(sceneId) {
   const safeSceneId = String(sceneId ?? "").trim();
@@ -20,9 +25,20 @@ function hasActiveGameMaster() {
   return users.some((user) => user?.isGM === true && user?.active === true);
 }
 
+function getTopPanelOrderKeys() {
+  const { moduleId, settings, flags, sockets } = getTowCombatOverlayConstants();
+  return {
+    moduleId,
+    settingKey: String(settings?.tokensPanelTokenOrderByScene ?? "tokensPanelTokenOrderByScene"),
+    requestFlagKey: String(flags?.topPanelOrderRequest ?? "topPanelOrderRequest"),
+    requestSocketType: String(sockets?.topPanelOrderRequest ?? "topPanelOrderRequest")
+  };
+}
+
 function readTopPanelWorldOrderState() {
+  const { moduleId, settingKey } = getTopPanelOrderKeys();
   try {
-    const raw = game?.settings?.get?.(MODULE_ID, TOP_PANEL_ORDER_SETTING_KEY);
+    const raw = game?.settings?.get?.(moduleId, settingKey);
     return (raw && typeof raw === "object") ? raw : {};
   } catch (_error) {
     return {};
@@ -30,18 +46,18 @@ function readTopPanelWorldOrderState() {
 }
 
 function normalizeTopPanelTokenIds(tokenIds) {
-  if (!Array.isArray(tokenIds)) return [];
-  return Array.from(new Set(
-    tokenIds
-      .map((entry) => String(entry ?? "").trim())
-      .filter(Boolean)
-  ));
+  return normalizeStringList(tokenIds);
 }
 
 function requestTopPanelWorldOrderUpdate(sceneId, tokenIds) {
   const safeSceneId = String(sceneId ?? "").trim();
   if (!safeSceneId) return;
   const currentUser = game?.user;
+  const {
+    moduleId,
+    requestFlagKey,
+    requestSocketType
+  } = getTopPanelOrderKeys();
   try {
     const payload = {
       sceneId: safeSceneId,
@@ -50,12 +66,12 @@ function requestTopPanelWorldOrderUpdate(sceneId, tokenIds) {
       timestamp: Date.now()
     };
     if (currentUser?.setFlag) {
-      void Promise.resolve(currentUser.setFlag(MODULE_ID, TOP_PANEL_ORDER_REQUEST_FLAG_KEY, payload)).catch(() => {});
+      void Promise.resolve(currentUser.setFlag(moduleId, requestFlagKey, payload)).catch(() => {});
     }
     const socket = game?.socket;
     if (socket?.emit) {
-      socket.emit(`module.${MODULE_ID}`, {
-        type: TOP_PANEL_ORDER_REQUEST_SOCKET_TYPE,
+      socket.emit(`module.${moduleId}`, {
+        type: requestSocketType,
         payload
       });
     }
@@ -71,11 +87,8 @@ function readSavedTopPanelTokenOrderLocal(sceneId) {
     const raw = window.localStorage.getItem(storageKey);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return null;
-    const ids = parsed
-      .map((entry) => String(entry ?? "").trim())
-      .filter(Boolean);
-    return ids.length ? Array.from(new Set(ids)) : null;
+    const ids = normalizeTopPanelTokenIds(parsed);
+    return ids.length ? ids : null;
   } catch (_error) {
     return null;
   }
@@ -96,15 +109,14 @@ function writeSavedTopPanelTokenOrderLocal(sceneId, tokenIds) {
   }
 }
 
-export function applyTopPanelWorldOrderUpdate(sceneId, tokenIds) {
+export async function applyTopPanelWorldOrderUpdate(sceneId, tokenIds) {
   const safeSceneId = String(sceneId ?? "").trim();
   if (!safeSceneId || !canUpdateTopPanelWorldOrderSetting()) return false;
+  const { moduleId, settingKey } = getTopPanelOrderKeys();
 
   const nextTokenIds = normalizeTopPanelTokenIds(tokenIds);
   const currentState = readTopPanelWorldOrderState();
-  const currentSceneIds = Array.isArray(currentState?.[safeSceneId])
-    ? Array.from(new Set(currentState[safeSceneId].map((entry) => String(entry ?? "").trim()).filter(Boolean)))
-    : [];
+  const currentSceneIds = normalizeTopPanelTokenIds(currentState?.[safeSceneId]);
   const isUnchanged = (
     currentSceneIds.length === nextTokenIds.length
     && currentSceneIds.every((tokenId, index) => tokenId === nextTokenIds[index])
@@ -116,7 +128,7 @@ export function applyTopPanelWorldOrderUpdate(sceneId, tokenIds) {
   else delete nextState[safeSceneId];
 
   try {
-    void Promise.resolve(game?.settings?.set?.(MODULE_ID, TOP_PANEL_ORDER_SETTING_KEY, nextState)).catch(() => {});
+    await game?.settings?.set?.(moduleId, settingKey, nextState);
     return true;
   } catch (_error) {
     return false;
@@ -126,15 +138,14 @@ export function applyTopPanelWorldOrderUpdate(sceneId, tokenIds) {
 export function readSavedTopPanelTokenOrder(sceneId) {
   const safeSceneId = String(sceneId ?? "").trim();
   if (!safeSceneId) return null;
+  const { moduleId, settingKey } = getTopPanelOrderKeys();
 
   try {
-    const rawWorldState = game?.settings?.get?.(MODULE_ID, TOP_PANEL_ORDER_SETTING_KEY);
+    const rawWorldState = game?.settings?.get?.(moduleId, settingKey);
     const worldState = (rawWorldState && typeof rawWorldState === "object") ? rawWorldState : null;
     const hasSceneEntry = !!worldState && Object.prototype.hasOwnProperty.call(worldState, safeSceneId);
     if (hasSceneEntry) {
-      const worldOrderRaw = Array.isArray(worldState[safeSceneId]) ? worldState[safeSceneId] : [];
-      const worldIds = worldOrderRaw.map((entry) => String(entry ?? "").trim()).filter(Boolean);
-      return Array.from(new Set(worldIds));
+      return normalizeTopPanelTokenIds(worldState[safeSceneId]);
     }
   } catch (_error) {
     // Fall back to local storage.
@@ -164,36 +175,13 @@ export function writeSavedTopPanelTokenOrder(sceneId, tokenIds) {
 }
 
 export function clampTopPanelCoordinate(value, min, max) {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return min;
-  if (max < min) return min;
-  return Math.min(max, Math.max(min, numeric));
+  return clampCoordinate(value, min, max);
 }
 
 export function readSavedTopPanelPosition() {
-  try {
-    const raw = window.localStorage.getItem(TOP_PANEL_POSITION_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    const left = Number(parsed?.left);
-    const top = Number(parsed?.top);
-    if (!Number.isFinite(left) || !Number.isFinite(top)) return null;
-    return { left, top };
-  } catch (_error) {
-    return null;
-  }
+  return readSavedPosition(TOP_PANEL_POSITION_STORAGE_KEY);
 }
 
 export function writeSavedTopPanelPosition(panelElement) {
-  if (!(panelElement instanceof HTMLElement)) return;
-  try {
-    const payload = {
-      left: Number(panelElement.style.left.replace("px", "")),
-      top: Number(panelElement.style.top.replace("px", ""))
-    };
-    if (!Number.isFinite(payload.left) || !Number.isFinite(payload.top)) return;
-    window.localStorage.setItem(TOP_PANEL_POSITION_STORAGE_KEY, JSON.stringify(payload));
-  } catch (_error) {
-    // Ignore storage errors.
-  }
+  writeSavedPosition(TOP_PANEL_POSITION_STORAGE_KEY, panelElement);
 }
