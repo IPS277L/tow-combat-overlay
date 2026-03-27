@@ -26,6 +26,7 @@ import {
   applyTopPanelHoveredCardHighlight,
   clearLinkedTopPanelHover,
   hasPendingControlPanelTargetPick,
+  openTokenSheetFromTopPanel,
   resolvePendingControlPanelTargetPick,
   selectTokenFromTopPanel,
   setLinkedTopPanelHover
@@ -44,6 +45,7 @@ import {
 function bindTopPanelElementEvents(topPanelElement) {
   const state = getTopPanelState();
   if (!state) return;
+  const cardDoubleClickDelayMs = 260;
   const dragHandleButton = topPanelElement.querySelector("[data-action='drag-panel-handle']");
   const controlsElement = topPanelElement.querySelector(".tow-combat-overlay-top-panel__controls");
   const { settings } = getTowCombatOverlayConstants();
@@ -146,9 +148,41 @@ function bindTopPanelElementEvents(topPanelElement) {
       : null;
     if (!(portrait instanceof HTMLElement)) return;
     event.preventDefault();
-    const usedAsTargetPick = await resolvePendingControlPanelTargetPick(portrait.dataset.tokenId, event);
+    const tokenId = String(portrait.dataset.tokenId ?? "").trim();
+    if (!tokenId) return;
+    const usedAsTargetPick = await resolvePendingControlPanelTargetPick(tokenId, event);
     if (usedAsTargetPick) return;
-    selectTokenFromTopPanel(portrait.dataset.tokenId, event);
+
+    const previousTokenId = String(liveState.lastCardClickTokenId ?? "").trim();
+    const previousAt = Number(liveState.lastCardClickAt ?? 0);
+    const now = Date.now();
+    const isDoubleClick = previousTokenId === tokenId && (now - previousAt) <= cardDoubleClickDelayMs;
+
+    if (typeof liveState.pendingCardClickTimer === "number") {
+      window.clearTimeout(liveState.pendingCardClickTimer);
+      liveState.pendingCardClickTimer = null;
+    }
+
+    if (isDoubleClick) {
+      liveState.lastCardClickTokenId = "";
+      liveState.lastCardClickAt = 0;
+      openTokenSheetFromTopPanel(tokenId);
+      return;
+    }
+
+    liveState.lastCardClickTokenId = tokenId;
+    liveState.lastCardClickAt = now;
+    const selectionEvent = {
+      shiftKey: event.shiftKey === true,
+      ctrlKey: event.ctrlKey === true,
+      metaKey: event.metaKey === true
+    };
+    liveState.pendingCardClickTimer = window.setTimeout(() => {
+      const timeoutState = getTopPanelState();
+      if (!timeoutState) return;
+      timeoutState.pendingCardClickTimer = null;
+      selectTokenFromTopPanel(tokenId, selectionEvent);
+    }, cardDoubleClickDelayMs);
   });
 
   const onPortraitHoverStateShow = (event) => {
@@ -439,6 +473,10 @@ export async function towCombatOverlayEnsureTopPanel() {
 
 export function towCombatOverlayRemoveTopPanel() {
   const state = game?.[TOP_PANEL_STATE_KEY];
+  if (typeof state?.pendingCardClickTimer === "number") {
+    window.clearTimeout(state.pendingCardClickTimer);
+    state.pendingCardClickTimer = null;
+  }
   if (state) clearLinkedTopPanelHover(state);
   unbindTopPanelHooks();
 

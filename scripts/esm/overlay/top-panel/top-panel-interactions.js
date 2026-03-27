@@ -20,6 +20,27 @@ export function selectTokenFromTopPanel(tokenId, event) {
   });
 }
 
+export function openTokenSheetFromTopPanel(tokenId) {
+  const token = canvas?.tokens?.get?.(String(tokenId ?? "").trim()) ?? null;
+  if (!token || token.destroyed) return false;
+  const tokenDocument = token.document ?? null;
+  const actor = token.actor ?? tokenDocument?.actor ?? null;
+  const canOpenSheet = tokenDocument?.isOwner === true || actor?.isOwner === true;
+  if (!canOpenSheet) return false;
+
+  if (typeof actor?.sheet?.render === "function") {
+    actor.sheet.render(true);
+    return true;
+  }
+
+  if (typeof tokenDocument?.sheet?.render === "function") {
+    tokenDocument.sheet.render(true);
+    return true;
+  }
+
+  return false;
+}
+
 export function applyTopPanelHoveredCardHighlight(panelElement, tokenId = "") {
   if (!(panelElement instanceof HTMLElement)) return;
   const hoveredId = String(tokenId ?? "").trim();
