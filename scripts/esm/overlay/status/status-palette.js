@@ -303,7 +303,9 @@ function getStatusPaletteLayoutForToken(tokenObject, expectedCount) {
   const hasTokenWidth = Number.isFinite(tokenWidth) && tokenWidth > 0;
   if (!hasTokenWidth) return { columns: Math.max(1, count), iconSize, iconGap };
 
-  const widthSafe = Math.max(1, tokenWidth - (STATUS_TOKEN_INSET_X * 2));
+  const tinyToken = tokenWidth <= 40;
+  const insetX = tinyToken ? 0 : STATUS_TOKEN_INSET_X;
+  const widthSafe = Math.max(1, tokenWidth - (insetX * 2));
   const ratio = STATUS_PALETTE_ICON_GAP / Math.max(1, STATUS_PALETTE_ICON_SIZE);
   const denom = STATUS_TARGET_CHIPS_PER_ROW + ((STATUS_TARGET_CHIPS_PER_ROW - 1) * ratio);
   const scaledSize = widthSafe / Math.max(1, denom);
@@ -312,6 +314,22 @@ function getStatusPaletteLayoutForToken(tokenObject, expectedCount) {
   if (count <= 1) return { columns: Math.max(1, count), iconSize, iconGap };
   const columns = Math.max(1, Math.min(count, STATUS_TARGET_CHIPS_PER_ROW));
   return { columns, iconSize, iconGap };
+}
+
+function getStatusPaletteFitScale(tokenObject, totalWidth) {
+  const tokenWidth = Math.max(1, Number(tokenObject?.w ?? 0));
+  const tinyToken = tokenWidth <= 40;
+  const insetX = tinyToken ? 0 : STATUS_TOKEN_INSET_X;
+  const availableWidth = Math.max(1, tokenWidth - (insetX * 2));
+  const widthScale = availableWidth / Math.max(1, Number(totalWidth) || 1);
+  return Math.max(0.1, Math.min(1, widthScale));
+}
+
+function getStatusChipIconInset(chipSize) {
+  const safeSize = Math.max(1, Number(chipSize) || STATUS_PALETTE_ICON_SIZE);
+  const insetScale = safeSize / 27;
+  const baseInset = CHIP_ICON_TOTAL_INSET * insetScale;
+  return Math.max(2, Math.round(baseInset));
 }
 
 function layoutStatusSpritesCentered(sprites, columns, iconSize, iconGap) {
@@ -486,8 +504,7 @@ export function setupStatusPalette(tokenObject) {
         ? new PIXI.Container()
         : PIXI.Sprite.from(entry.img);
       const chipSize = iconSize;
-      const insetScale = chipSize / 27;
-      const scaledInset = Math.max(2, Math.round(CHIP_ICON_TOTAL_INSET * insetScale));
+      const scaledInset = getStatusChipIconInset(chipSize);
       const iconDrawSize = isOverflow ? chipSize : Math.max(2, Math.round(chipSize - scaledInset));
       if (!isOverflow) {
         applyStatusIconSpriteStyle(sprite, iconDrawSize);
@@ -542,11 +559,18 @@ export function setupStatusPalette(tokenObject) {
 
   const statusSprites = layer.children?.filter((child) => child?.[KEYS.statusConditionId]) ?? [];
   const { totalWidth, totalHeight } = layoutStatusSpritesCentered(statusSprites, columns, iconSize, iconGap);
-  const availableWidth = Math.max(1, Number(tokenObject?.w ?? 0) - (STATUS_TOKEN_INSET_X * 2));
-  layer.scale.set(1);
+  const tokenWidth = Math.max(1, Number(tokenObject?.w ?? 0));
+  const tinyToken = tokenWidth <= 40;
+  const insetX = tinyToken ? 0 : STATUS_TOKEN_INSET_X;
+  const insetBottom = tinyToken ? 0 : STATUS_TOKEN_INSET_BOTTOM;
+  const availableWidth = Math.max(1, tokenWidth - (insetX * 2));
+  const fitScale = getStatusPaletteFitScale(tokenObject, totalWidth);
+  const scaledWidth = totalWidth * fitScale;
+  const scaledHeight = totalHeight * fitScale;
+  layer.scale.set(fitScale);
   layer.position.set(
-    Math.round(STATUS_TOKEN_INSET_X + ((availableWidth - totalWidth) / 2)),
-    Math.round(Math.max(0, tokenObject.h - totalHeight - STATUS_TOKEN_INSET_BOTTOM))
+    Math.round(insetX + ((availableWidth - scaledWidth) / 2)),
+    Math.round(Math.max(0, tokenObject.h - scaledHeight - insetBottom))
   );
   clearStatusPaletteBackdrop(layer);
   layer.visible = tokenObject.visible;
@@ -569,8 +593,7 @@ export function setupStatusPalette(tokenObject) {
       const chipSize = Number.isFinite(Number(sprite?.[STATUS_CHIP_SIZE]))
         ? Number(sprite[STATUS_CHIP_SIZE])
         : Math.max(1, Number(iconSize) || 1);
-      const insetScale = chipSize / 27;
-      const scaledInset = Math.max(2, Math.round(CHIP_ICON_TOTAL_INSET * insetScale));
+      const scaledInset = getStatusChipIconInset(chipSize);
       const iconDrawSize = Math.max(2, Math.round(chipSize - scaledInset));
       applyStatusIconSpriteStyle(sprite, iconDrawSize);
       ensureStatusIconMask(sprite, layer, chipSize);
