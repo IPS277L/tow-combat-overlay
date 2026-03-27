@@ -53,6 +53,8 @@
   "TOWCOMBATOVERLAY.Setting.TokensPanelDragButtonPosition.Hint": "Choose where the top panel drag button appears.",
   "TOWCOMBATOVERLAY.Setting.TokensPanelDragButtonPosition.OptionLeft": "Left",
   "TOWCOMBATOVERLAY.Setting.TokensPanelDragButtonPosition.OptionRight": "Right",
+  "TOWCOMBATOVERLAY.Setting.TokensPanelCardsDragDropMinimumRole.Name": "Cards Drag and Drop Role",
+  "TOWCOMBATOVERLAY.Setting.TokensPanelCardsDragDropMinimumRole.Hint": "Minimum Foundry role required to reorder tokens panel cards.",
   "TOWCOMBATOVERLAY.Setting.TokensPanelEnableTooltips.Name": "Enable Tooltips",
   "TOWCOMBATOVERLAY.Setting.TokensPanelEnableTooltips.Hint": "Enables top panel tooltips for cards, chips, and controls.",
   "TOWCOMBATOVERLAY.Setting.TokensPanelEnableCardsTooltip.Name": "Enable Cards Tooltip",

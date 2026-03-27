@@ -74,6 +74,7 @@ function isUserInMinimumRole(minimumRoleValue) {
 export function canTowCombatOverlayUserViewControl(settingKey, fallbackValue = "all") {
   const selectedRole = String(getTowCombatOverlayDisplaySetting(settingKey, fallbackValue) ?? "").trim().toLowerCase();
   if (!selectedRole || selectedRole === "all") return true;
+  if (selectedRole === "none" || selectedRole === "0") return false;
   const minimumRole = Number(selectedRole);
   if (!Number.isFinite(minimumRole)) return true;
   return isUserInMinimumRole(minimumRole);
@@ -87,6 +88,14 @@ function buildDisplaySettingsGroups(settingKeys) {
       defaultValue: true,
       nameKey: "TOWCOMBATOVERLAY.Setting.EnableTopPanel.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.EnableTopPanel.Hint"
+    },
+    {
+      key: settingKeys.tokensPanelCardsDragDropMinimumRole,
+      type: "select",
+      defaultValue: "all",
+      choices: minimumRoleChoices,
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelCardsDragDropMinimumRole.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelCardsDragDropMinimumRole.Hint"
     },
     {
       key: settingKeys.tokensPanelMinimumRole,
@@ -634,6 +643,7 @@ function buildDisplaySettingsGroups(settingKeys) {
           settingKeys: Object.freeze([
             settingKeys.enableTopPanel,
             settingKeys.tokensPanelMinimumRole,
+            settingKeys.tokensPanelCardsDragDropMinimumRole,
             settingKeys.tokensPanelPositionMode,
             settingKeys.tokensPanelDragButtonPosition
           ])
@@ -1042,6 +1052,16 @@ function registerDisplaySetting(moduleId, settingDefinition, onChange) {
   });
 }
 
+function registerWorldObjectSetting(moduleId, settingKey, defaultValue, onChange) {
+  game.settings.register(moduleId, settingKey, {
+    scope: "world",
+    config: false,
+    type: Object,
+    default: defaultValue,
+    onChange: () => onChange(settingKey)
+  });
+}
+
 export function getTowCombatOverlayDisplaySetting(settingKey, fallbackValue = null) {
   const { moduleId } = getTowCombatOverlayConstants();
   try {
@@ -1068,4 +1088,11 @@ export function registerTowCombatOverlayDisplaySettings({ onDisplaySettingsChang
       registerDisplaySetting(moduleId, settingDefinition, handleDisplaySettingChange);
     }
   }
+
+  registerWorldObjectSetting(
+    moduleId,
+    settingKeys.tokensPanelTokenOrderByScene,
+    {},
+    handleDisplaySettingChange
+  );
 }

@@ -36,7 +36,10 @@ import {
   renderTopPanelContent
 } from "./top-panel-render.js";
 import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
-import { isTowCombatOverlayDisplaySettingEnabled } from "../../bootstrap/register-settings.js";
+import {
+  canTowCombatOverlayUserViewControl,
+  isTowCombatOverlayDisplaySettingEnabled
+} from "../../bootstrap/register-settings.js";
 
 function bindTopPanelElementEvents(topPanelElement) {
   const state = getTopPanelState();
@@ -44,6 +47,7 @@ function bindTopPanelElementEvents(topPanelElement) {
   const dragHandleButton = topPanelElement.querySelector("[data-action='drag-panel-handle']");
   const controlsElement = topPanelElement.querySelector(".tow-combat-overlay-top-panel__controls");
   const { settings } = getTowCombatOverlayConstants();
+  const canReorderTopPanelCards = () => canTowCombatOverlayUserViewControl(settings.tokensPanelCardsDragDropMinimumRole, "all");
   const isTopPanelTooltipsEnabled = () => isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableTooltips, true);
   const isTopPanelCardTooltipEnabled = () => (
     isTopPanelTooltipsEnabled()
@@ -280,6 +284,10 @@ function bindTopPanelElementEvents(topPanelElement) {
   topPanelElement.addEventListener("pointerout", onControlTooltipHide);
 
   topPanelElement.addEventListener("dragstart", (event) => {
+    if (!canReorderTopPanelCards()) {
+      event.preventDefault();
+      return;
+    }
     if (hasPendingControlPanelTargetPick()) {
       event.preventDefault();
       return;
@@ -313,6 +321,7 @@ function bindTopPanelElementEvents(topPanelElement) {
   });
 
   topPanelElement.addEventListener("dragover", (event) => {
+    if (!canReorderTopPanelCards()) return;
     const targetPortrait = event.target instanceof Element
       ? event.target.closest(".tow-combat-overlay-top-panel__portrait")
       : null;
@@ -334,6 +343,7 @@ function bindTopPanelElementEvents(topPanelElement) {
   });
 
   topPanelElement.addEventListener("drop", (event) => {
+    if (!canReorderTopPanelCards()) return;
     const targetPortrait = event.target instanceof Element
       ? event.target.closest(".tow-combat-overlay-top-panel__portrait")
       : null;

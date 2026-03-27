@@ -21,6 +21,8 @@ const MODULE_CONSTANTS_BASE = Object.freeze({
     controlPanelMinimumRole: "controlPanelMinimumRole",
     enableTopPanel: "enableTopPanel",
     tokensPanelMinimumRole: "tokensPanelMinimumRole",
+    tokensPanelCardsDragDropMinimumRole: "tokensPanelCardsDragDropMinimumRole",
+    tokensPanelTokenOrderByScene: "tokensPanelTokenOrderByScene",
     tokensPanelEnableStatusRow: "tokensPanelEnableStatusRow",
     tokensPanelEnableStatuses: "tokensPanelEnableStatuses",
     tokensPanelEnableWounds: "tokensPanelEnableWounds",

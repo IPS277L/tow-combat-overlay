@@ -20,7 +20,10 @@ import {
   towCombatOverlayRemoveTopPanel
 } from "../overlay/top-panel/top-panel-service.js";
 import { TOP_PANEL_ID } from "../overlay/top-panel/top-panel-constants.js";
-import { writeSavedTopPanelPosition } from "../overlay/top-panel/top-panel-state.js";
+import {
+  applyTopPanelWorldOrderUpdate,
+  writeSavedTopPanelPosition
+} from "../overlay/top-panel/top-panel-state.js";
 
 function ensureTowCombatOverlayStylesheetLoaded() {
   const explicitHrefs = [
@@ -236,6 +239,23 @@ function ensureTowCombatOverlaySidebarObserver() {
   };
 }
 
+function ensureTowCombatOverlayTopPanelOrderRelayHook() {
+  const { moduleId } = getTowCombatOverlayConstants();
+  const stateKey = "__towCombatOverlayTopPanelOrderRelayHookId";
+  if (!game || game[stateKey] != null) return;
+
+  const hookId = Hooks.on("updateUser", (_user, changed) => {
+    if (game?.user?.isGM !== true) return;
+    const payload = changed?.flags?.[moduleId]?.topPanelOrderRequest;
+    if (!payload || typeof payload !== "object") return;
+    const sceneId = String(payload.sceneId ?? "").trim();
+    if (!sceneId) return;
+    const tokenIds = Array.isArray(payload.tokenIds) ? payload.tokenIds : [];
+    applyTopPanelWorldOrderUpdate(sceneId, tokenIds);
+  });
+  game[stateKey] = hookId;
+}
+
 export function registerTowCombatOverlayModuleHooks() {
   Hooks.once("init", () => {
     ensureTowCombatOverlayStylesheetLoaded();
@@ -269,6 +289,7 @@ export function registerTowCombatOverlayModuleHooks() {
     ensureTowCombatOverlayStylesheetLoaded();
     registerTowCombatOverlayDeadWoundSyncHooks();
     ensureTowCombatOverlaySidebarObserver();
+    ensureTowCombatOverlayTopPanelOrderRelayHook();
     syncTowCombatOverlayDisplaySettings();
   });
 }

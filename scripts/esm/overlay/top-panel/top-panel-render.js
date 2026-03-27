@@ -30,6 +30,7 @@ import {
 import { formatMaybe, getTopPanelState, localizeMaybe } from "./top-panel-shared.js";
 import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
 import {
+  canTowCombatOverlayUserViewControl,
   getTowCombatOverlayDisplaySetting,
   isTowCombatOverlayDisplaySettingEnabled
 } from "../../bootstrap/register-settings.js";
@@ -52,6 +53,7 @@ function buildPortraitElement(token, {
   enableWounds = true,
   enableTemporaryEffects = true,
   showDeadVisual = true,
+  canDragReorder = true,
   enableCardTooltip = true,
   enableChipTooltipByType = {}
 } = {}) {
@@ -77,7 +79,7 @@ function buildPortraitElement(token, {
     portrait.removeAttribute("data-tooltip-description");
   }
   portrait.setAttribute("aria-label", tokenName);
-  portrait.draggable = true;
+  portrait.draggable = !!canDragReorder;
 
   const image = document.createElement("img");
   image.classList.add("tow-combat-overlay-top-panel__portrait-image");
@@ -143,6 +145,7 @@ export async function renderTopPanelContent() {
   const alwaysCentered = isTopPanelAlwaysCenteredEnabled();
   const locked = isTopPanelLockedEnabled();
   const enableTooltips = isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableTooltips, true);
+  const canDragReorder = canTowCombatOverlayUserViewControl(settings.tokensPanelCardsDragDropMinimumRole, "all");
   const enableCardTooltip = enableTooltips
     && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableCardsTooltip, true);
   const enableChipTooltipByType = {
@@ -184,6 +187,7 @@ export async function renderTopPanelContent() {
       enableWounds,
       enableTemporaryEffects,
       showDeadVisual,
+      canDragReorder,
       enableCardTooltip,
       enableChipTooltipByType
     }));
