@@ -7,7 +7,10 @@ import {
 } from "../layout/wound-state.js";
 import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
 import { MODULE_KEY } from "../../runtime/overlay-constants.js";
-import { isTowCombatOverlayDisplaySettingEnabled } from "../../bootstrap/register-settings.js";
+import {
+  canTowCombatOverlayUserViewControl,
+  isTowCombatOverlayDisplaySettingEnabled
+} from "../../bootstrap/register-settings.js";
 import {
   AUTO_DEFENCE_WAIT_MS,
   AUTO_APPLY_WAIT_MS,
@@ -860,6 +863,10 @@ function bindPanelSelectionSync(controlPanelState, panelElement) {
 }
 
 export async function towCombatOverlayEnsureControlPanel() {
+  if (!canTowCombatOverlayUserViewControl(MODULE_SETTINGS.controlPanelMinimumRole, "all")) {
+    panelDomLifecycleService.removeControlPanel();
+    return;
+  }
   await panelDomLifecycleService.ensureControlPanel();
 }
 

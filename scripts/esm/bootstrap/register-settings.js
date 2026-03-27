@@ -35,13 +35,66 @@ function normalizeSelectSettingValue(settingDefinition, value) {
   return String(settingDefinition?.defaultValue ?? allowedValues[0] ?? "").trim();
 }
 
+function getFoundryUserRoleEntries() {
+  const source = CONST?.USER_ROLES;
+  if (!source || typeof source !== "object") return [];
+  return Object.entries(source)
+    .map(([roleName, roleValue]) => ({
+      roleName: String(roleName ?? "").trim(),
+      roleValue: Number(roleValue)
+    }))
+    .filter((entry) => entry.roleName && Number.isFinite(entry.roleValue))
+    .sort((left, right) => left.roleValue - right.roleValue);
+}
+
+function getRoleLabelLocalizationKey(roleName) {
+  const normalized = String(roleName ?? "").trim().toUpperCase();
+  if (!normalized) return "";
+  const sentenceCase = normalized.charAt(0) + normalized.slice(1).toLowerCase();
+  return `USER.Role${sentenceCase}`;
+}
+
+function buildMinimumRoleSettingChoices() {
+  const choices = {
+    all: "TOWCOMBATOVERLAY.Setting.VisibilityRole.OptionAllUsers"
+  };
+  for (const entry of getFoundryUserRoleEntries()) {
+    choices[String(entry.roleValue)] = getRoleLabelLocalizationKey(entry.roleName);
+  }
+  return Object.freeze(choices);
+}
+
+function isUserInMinimumRole(minimumRoleValue) {
+  const currentRole = Number(game?.user?.role);
+  const requiredRole = Number(minimumRoleValue);
+  if (!Number.isFinite(currentRole) || !Number.isFinite(requiredRole)) return true;
+  return currentRole >= requiredRole;
+}
+
+export function canTowCombatOverlayUserViewControl(settingKey, fallbackValue = "all") {
+  const selectedRole = String(getTowCombatOverlayDisplaySetting(settingKey, fallbackValue) ?? "").trim().toLowerCase();
+  if (!selectedRole || selectedRole === "all") return true;
+  const minimumRole = Number(selectedRole);
+  if (!Number.isFinite(minimumRole)) return true;
+  return isUserInMinimumRole(minimumRole);
+}
+
 function buildDisplaySettingsGroups(settingKeys) {
+  const minimumRoleChoices = buildMinimumRoleSettingChoices();
   const tokensPanelSettings = Object.freeze([
     {
       key: settingKeys.enableTopPanel,
       defaultValue: true,
       nameKey: "TOWCOMBATOVERLAY.Setting.EnableTopPanel.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.EnableTopPanel.Hint"
+    },
+    {
+      key: settingKeys.tokensPanelMinimumRole,
+      type: "select",
+      defaultValue: "all",
+      choices: minimumRoleChoices,
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelMinimumRole.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelMinimumRole.Hint"
     },
     {
       key: settingKeys.tokensPanelEnableStatusRow,
@@ -178,6 +231,14 @@ function buildDisplaySettingsGroups(settingKeys) {
       hintKey: "TOWCOMBATOVERLAY.Setting.EnableOverlay.Hint"
     },
     {
+      key: settingKeys.tokenLayoutMinimumRole,
+      type: "select",
+      defaultValue: "all",
+      choices: minimumRoleChoices,
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutMinimumRole.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutMinimumRole.Hint"
+    },
+    {
       key: settingKeys.tokenLayoutShowBorder,
       defaultValue: true,
       nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutShowBorder.Name",
@@ -310,6 +371,14 @@ function buildDisplaySettingsGroups(settingKeys) {
       defaultValue: true,
       nameKey: "TOWCOMBATOVERLAY.Setting.EnableControlPanel.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.EnableControlPanel.Hint"
+    },
+    {
+      key: settingKeys.controlPanelMinimumRole,
+      type: "select",
+      defaultValue: "all",
+      choices: minimumRoleChoices,
+      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelMinimumRole.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelMinimumRole.Hint"
     },
     {
       key: settingKeys.controlPanelEnableStatusRow,
@@ -564,6 +633,7 @@ function buildDisplaySettingsGroups(settingKeys) {
           titleKey: "TOWCOMBATOVERLAY.SettingsSection.TokensPanel.General",
           settingKeys: Object.freeze([
             settingKeys.enableTopPanel,
+            settingKeys.tokensPanelMinimumRole,
             settingKeys.tokensPanelPositionMode,
             settingKeys.tokensPanelDragButtonPosition
           ])
@@ -603,7 +673,8 @@ function buildDisplaySettingsGroups(settingKeys) {
         {
           titleKey: "TOWCOMBATOVERLAY.SettingsSection.TokenLayout.General",
           settingKeys: Object.freeze([
-            settingKeys.enableOverlay
+            settingKeys.enableOverlay,
+            settingKeys.tokenLayoutMinimumRole
           ])
         },
         {
@@ -645,6 +716,7 @@ function buildDisplaySettingsGroups(settingKeys) {
           titleKey: "TOWCOMBATOVERLAY.SettingsSection.ControlPanel.General",
           settingKeys: Object.freeze([
             settingKeys.enableControlPanel,
+            settingKeys.controlPanelMinimumRole,
             settingKeys.controlPanelPositionMode,
             settingKeys.controlPanelEnableButtonsDragDrop
           ])
@@ -830,6 +902,25 @@ function createGroupFormClass(group) {
         });
       };
 
+      const syncSelectFieldWidths = () => {
+        const selectElements = Array.from(rootElement.querySelectorAll("select"));
+        if (!selectElements.length) return;
+        const longestLabelLength = selectElements.reduce((maxLength, selectElement) => {
+          if (!(selectElement instanceof HTMLSelectElement)) return maxLength;
+          const optionLength = Array.from(selectElement.options).reduce((optionMaxLength, optionElement) => {
+            const labelLength = String(optionElement?.textContent ?? "").trim().length;
+            return Math.max(optionMaxLength, labelLength);
+          }, 0);
+          return Math.max(maxLength, optionLength);
+        }, 0);
+        const widthCh = Math.max(12, longestLabelLength + 4);
+        for (const selectElement of selectElements) {
+          if (!(selectElement instanceof HTMLSelectElement)) continue;
+          selectElement.style.width = `${widthCh}ch`;
+          selectElement.style.maxWidth = "100%";
+        }
+      };
+
       const applyConditionalVisibility = () => {
         const allFields = rootElement.querySelectorAll(".form-group");
         for (const fieldElement of allFields) {
@@ -872,6 +963,7 @@ function createGroupFormClass(group) {
             .filter((field) => field instanceof HTMLElement && field.style.display !== "none");
           sectionElement.style.display = visibleFields.length > 0 ? "" : "none";
         }
+        syncSelectFieldWidths();
         syncWindowHeight();
       };
 

@@ -16,8 +16,11 @@ const MODULE_CONSTANTS_BASE = Object.freeze({
   }),
   settings: Object.freeze({
     enableOverlay: "enableOverlay",
+    tokenLayoutMinimumRole: "tokenLayoutMinimumRole",
     enableControlPanel: "enableControlPanel",
+    controlPanelMinimumRole: "controlPanelMinimumRole",
     enableTopPanel: "enableTopPanel",
+    tokensPanelMinimumRole: "tokensPanelMinimumRole",
     tokensPanelEnableStatusRow: "tokensPanelEnableStatusRow",
     tokensPanelEnableStatuses: "tokensPanelEnableStatuses",
     tokensPanelEnableWounds: "tokensPanelEnableWounds",

@@ -5,6 +5,7 @@ import { registerTowCombatOverlayActionsRuntimeApi } from "./register-actions-ap
 import { registerTowCombatOverlayDeadWoundSyncHooks } from "./register-dead-wound-sync-hooks.js";
 import { getTowCombatOverlayOverlayApi } from "../api/module-api-registry.js";
 import {
+  canTowCombatOverlayUserViewControl,
   getTowCombatOverlayDisplaySetting,
   isTowCombatOverlayDisplaySettingEnabled,
   registerTowCombatOverlayDisplaySettings
@@ -104,9 +105,12 @@ export function syncTowCombatOverlayDisplaySettings(changedSettingKey = "") {
     }
   }
 
-  const wantsEnabled = isTowCombatOverlayDisplaySettingEnabled(settings.enableOverlay, true);
-  const wantsControlPanel = isTowCombatOverlayDisplaySettingEnabled(settings.enableControlPanel, true);
-  const wantsTopPanel = isTowCombatOverlayDisplaySettingEnabled(settings.enableTopPanel, true);
+  const wantsEnabled = isTowCombatOverlayDisplaySettingEnabled(settings.enableOverlay, true)
+    && canTowCombatOverlayUserViewControl(settings.tokenLayoutMinimumRole, "all");
+  const wantsControlPanel = isTowCombatOverlayDisplaySettingEnabled(settings.enableControlPanel, true)
+    && canTowCombatOverlayUserViewControl(settings.controlPanelMinimumRole, "all");
+  const wantsTopPanel = isTowCombatOverlayDisplaySettingEnabled(settings.enableTopPanel, true)
+    && canTowCombatOverlayUserViewControl(settings.tokensPanelMinimumRole, "all");
 
   if (!overlayApi) {
     if (!wantsControlPanel) towCombatOverlayRemoveControlPanel();
