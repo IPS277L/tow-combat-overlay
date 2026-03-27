@@ -26,7 +26,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 10012;
+  z-index: 92;
   max-width: min(calc(100vw - 16px), 980px);
   min-height: var(--tow-top-panel-portrait-size);
   padding: var(--tow-top-panel-padding);

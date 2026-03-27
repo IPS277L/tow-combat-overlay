@@ -11,7 +11,7 @@
   display: none;
   visibility: hidden;
   pointer-events: none;
-  z-index: 12000;
+  z-index: 93;
   max-width: var(--tow-status-tooltip-max-width);
   padding: var(--tow-status-tooltip-pad-y) var(--tow-status-tooltip-pad-x);
   border-radius: 5px;
