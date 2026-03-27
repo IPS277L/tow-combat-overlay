@@ -353,8 +353,8 @@ function bindTopPanelElementEvents(topPanelElement) {
     if (!liveState) return;
 
     const sourceId = String(
-      liveState.draggedTokenId
-      ?? event.dataTransfer?.getData("text/plain")
+      event.dataTransfer?.getData("text/plain")
+      ?? liveState.draggedTokenId
       ?? ""
     ).trim();
     const targetId = String(targetPortrait.dataset.tokenId ?? "").trim();
@@ -368,6 +368,8 @@ function bindTopPanelElementEvents(topPanelElement) {
     const nextOrder = moveTokenRelativeToTarget(currentTokenIds, sourceId, targetId, { placeAfter });
     writeSavedTopPanelTokenOrder(sceneId, nextOrder);
 
+    // Clear drag state immediately because rerender in this handler can prevent dragend on some clients.
+    liveState.draggedTokenId = "";
     liveState.suppressNextClick = true;
     void renderTopPanelContent();
   });

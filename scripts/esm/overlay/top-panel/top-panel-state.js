@@ -3,6 +3,7 @@ const TOP_PANEL_POSITION_STORAGE_KEY = "tow-combat-overlay.top-panel-position.v1
 const TOP_PANEL_ORDER_SETTING_KEY = "tokensPanelTokenOrderByScene";
 const TOP_PANEL_ORDER_REQUEST_FLAG_KEY = "topPanelOrderRequest";
 const MODULE_ID = "tow-combat-overlay";
+const TOP_PANEL_ORDER_REQUEST_SOCKET_TYPE = "topPanelOrderRequest";
 
 function getTopPanelOrderStorageKey(sceneId) {
   const safeSceneId = String(sceneId ?? "").trim();
@@ -41,15 +42,23 @@ function requestTopPanelWorldOrderUpdate(sceneId, tokenIds) {
   const safeSceneId = String(sceneId ?? "").trim();
   if (!safeSceneId) return;
   const currentUser = game?.user;
-  if (!currentUser?.setFlag) return;
   try {
     const payload = {
       sceneId: safeSceneId,
       tokenIds: normalizeTopPanelTokenIds(tokenIds),
-      requesterId: String(currentUser.id ?? "").trim(),
+      requesterId: String(currentUser?.id ?? "").trim(),
       timestamp: Date.now()
     };
-    void Promise.resolve(currentUser.setFlag(MODULE_ID, TOP_PANEL_ORDER_REQUEST_FLAG_KEY, payload)).catch(() => {});
+    if (currentUser?.setFlag) {
+      void Promise.resolve(currentUser.setFlag(MODULE_ID, TOP_PANEL_ORDER_REQUEST_FLAG_KEY, payload)).catch(() => {});
+    }
+    const socket = game?.socket;
+    if (socket?.emit) {
+      socket.emit(`module.${MODULE_ID}`, {
+        type: TOP_PANEL_ORDER_REQUEST_SOCKET_TYPE,
+        payload
+      });
+    }
   } catch (_error) {
     // Ignore relay errors.
   }
@@ -93,6 +102,15 @@ export function applyTopPanelWorldOrderUpdate(sceneId, tokenIds) {
 
   const nextTokenIds = normalizeTopPanelTokenIds(tokenIds);
   const currentState = readTopPanelWorldOrderState();
+  const currentSceneIds = Array.isArray(currentState?.[safeSceneId])
+    ? Array.from(new Set(currentState[safeSceneId].map((entry) => String(entry ?? "").trim()).filter(Boolean)))
+    : [];
+  const isUnchanged = (
+    currentSceneIds.length === nextTokenIds.length
+    && currentSceneIds.every((tokenId, index) => tokenId === nextTokenIds[index])
+  );
+  if (isUnchanged) return false;
+
   const nextState = { ...currentState };
   if (nextTokenIds.length) nextState[safeSceneId] = nextTokenIds;
   else delete nextState[safeSceneId];

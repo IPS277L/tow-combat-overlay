@@ -24,6 +24,7 @@ import {
   applyTopPanelWorldOrderUpdate,
   writeSavedTopPanelPosition
 } from "../overlay/top-panel/top-panel-state.js";
+const TOP_PANEL_ORDER_REQUEST_SOCKET_TYPE = "topPanelOrderRequest";
 
 function ensureTowCombatOverlayStylesheetLoaded() {
   const explicitHrefs = [
@@ -242,18 +243,108 @@ function ensureTowCombatOverlaySidebarObserver() {
 function ensureTowCombatOverlayTopPanelOrderRelayHook() {
   const { moduleId } = getTowCombatOverlayConstants();
   const stateKey = "__towCombatOverlayTopPanelOrderRelayHookId";
-  if (!game || game[stateKey] != null) return;
+  if (!game) return null;
+  const existingState = game[stateKey];
+  if (existingState && typeof existingState === "object") return existingState;
 
-  const hookId = Hooks.on("updateUser", (_user, changed) => {
-    if (game?.user?.isGM !== true) return;
-    const payload = changed?.flags?.[moduleId]?.topPanelOrderRequest;
-    if (!payload || typeof payload !== "object") return;
+  const processedRequestFingerprintByUserId = new Map();
+
+  const buildRequestFingerprint = (payload, fallbackRequesterId = "") => {
+    const sceneId = String(payload?.sceneId ?? "").trim();
+    const tokenIds = Array.isArray(payload?.tokenIds) ? payload.tokenIds : [];
+    const timestampValue = Number(payload?.timestamp);
+    return JSON.stringify({
+      sceneId,
+      tokenIds,
+      requesterId: String(payload?.requesterId ?? fallbackRequesterId).trim(),
+      timestamp: Number.isFinite(timestampValue) ? timestampValue : 0
+    });
+  };
+
+  const handleOrderRequestPayload = (payload, requestUser = null) => {
+    if (!payload || typeof payload !== "object") return false;
+    const sourceUserId = String(requestUser?.id ?? payload?.requesterId ?? "").trim();
+    if (!sourceUserId) return false;
     const sceneId = String(payload.sceneId ?? "").trim();
-    if (!sceneId) return;
+    if (!sceneId) return false;
     const tokenIds = Array.isArray(payload.tokenIds) ? payload.tokenIds : [];
-    applyTopPanelWorldOrderUpdate(sceneId, tokenIds);
+    const fingerprint = buildRequestFingerprint(payload, sourceUserId);
+    if (processedRequestFingerprintByUserId.get(sourceUserId) === fingerprint) return false;
+    processedRequestFingerprintByUserId.set(sourceUserId, fingerprint);
+    const didApply = applyTopPanelWorldOrderUpdate(sceneId, tokenIds);
+    if (requestUser?.unsetFlag) {
+      void Promise.resolve(requestUser.unsetFlag(moduleId, "topPanelOrderRequest")).catch(() => {});
+    }
+    return didApply;
+  };
+
+  const didUpdateTouchTopPanelRequest = (changed) => {
+    const moduleFlags = changed?.flags?.[moduleId];
+    if (moduleFlags && Object.prototype.hasOwnProperty.call(moduleFlags, "topPanelOrderRequest")) return true;
+    if (!foundry?.utils?.flattenObject || !changed || typeof changed !== "object") return false;
+    const flattened = foundry.utils.flattenObject(changed);
+    const rootPath = `flags.${moduleId}.topPanelOrderRequest`;
+    return Object.keys(flattened).some((key) => key === rootPath || key.startsWith(`${rootPath}.`) || key.startsWith(`${rootPath}.-=`));
+  };
+
+  const hookId = Hooks.on("updateUser", (user, changed) => {
+    if (game?.user?.isGM !== true) return;
+    if (!didUpdateTouchTopPanelRequest(changed)) return;
+    const payload = user?.getFlag?.(moduleId, "topPanelOrderRequest");
+    if (!payload || typeof payload !== "object") return;
+    handleOrderRequestPayload(payload, user);
   });
-  game[stateKey] = hookId;
+  const relayState = {
+    hookId,
+    handleOrderRequestPayload
+  };
+  game[stateKey] = relayState;
+  return relayState;
+}
+
+function ensureTowCombatOverlayTopPanelOrderSocketRelay() {
+  const { moduleId } = getTowCombatOverlayConstants();
+  const stateKey = "__towCombatOverlayTopPanelOrderSocketRelayBound";
+  if (!game || game[stateKey] === true) return;
+  const socket = game?.socket;
+  if (!socket?.on) return;
+  const relayState = ensureTowCombatOverlayTopPanelOrderRelayHook();
+  const handleOrderRequestPayload = relayState?.handleOrderRequestPayload;
+  if (typeof handleOrderRequestPayload !== "function") return;
+
+  socket.on(`module.${moduleId}`, (message) => {
+    if (game?.user?.isGM !== true) return;
+    if (!message || typeof message !== "object") return;
+    if (String(message.type ?? "").trim() !== TOP_PANEL_ORDER_REQUEST_SOCKET_TYPE) return;
+    const payload = message.payload;
+    const requesterId = String(payload?.requesterId ?? "").trim();
+    const requestUser = requesterId ? game?.users?.get?.(requesterId) : null;
+    handleOrderRequestPayload(payload, requestUser ?? null);
+  });
+
+  game[stateKey] = true;
+}
+
+function ensureTowCombatOverlayTopPanelOrderFlagPoller() {
+  const { moduleId } = getTowCombatOverlayConstants();
+  const stateKey = "__towCombatOverlayTopPanelOrderFlagPollerState";
+  if (!game || game[stateKey]?.timerId != null) return;
+  const relayState = ensureTowCombatOverlayTopPanelOrderRelayHook();
+  const handleOrderRequestPayload = relayState?.handleOrderRequestPayload;
+  if (typeof handleOrderRequestPayload !== "function") return;
+  const timerId = window.setInterval(() => {
+    if (game?.user?.isGM !== true) return;
+    const users = game?.users ? Array.from(game.users) : [];
+    for (const user of users) {
+      const payload = user?.getFlag?.(moduleId, "topPanelOrderRequest");
+      if (!payload || typeof payload !== "object") continue;
+      handleOrderRequestPayload(payload, user);
+    }
+  }, 500);
+
+  game[stateKey] = {
+    timerId
+  };
 }
 
 export function registerTowCombatOverlayModuleHooks() {
@@ -289,7 +380,9 @@ export function registerTowCombatOverlayModuleHooks() {
     ensureTowCombatOverlayStylesheetLoaded();
     registerTowCombatOverlayDeadWoundSyncHooks();
     ensureTowCombatOverlaySidebarObserver();
+    ensureTowCombatOverlayTopPanelOrderSocketRelay();
     ensureTowCombatOverlayTopPanelOrderRelayHook();
+    ensureTowCombatOverlayTopPanelOrderFlagPoller();
     syncTowCombatOverlayDisplaySettings();
   });
 }
