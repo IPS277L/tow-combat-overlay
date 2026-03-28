@@ -21,8 +21,8 @@ export const STATUS_MAX_VISIBLE_CHIPS = 23;
 export const STATUS_TARGET_CHIPS_PER_ROW = 6;
 export const STATUS_ICON_SIZE_MIN = 8;
 export const STATUS_ICON_SIZE_MAX = 72;
-export const STATUS_TOKEN_INSET_X = 2;
-export const STATUS_TOKEN_INSET_BOTTOM = 2;
+export const STATUS_TOKEN_INSET_X = 0;
+export const STATUS_TOKEN_INSET_BOTTOM = 0;
 export const STATUS_RENDER_VERSION = 10;
 
 export const STATUS_FORCE_ACTIVE = "_towCombatOverlayStatusForceActive";

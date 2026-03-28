@@ -295,6 +295,21 @@ function clearStatusPaletteBackdrop(layer) {
   delete layer[KEYS.statusPaletteBackdrop];
 }
 
+function getStatusPaletteInsets(tokenWidth) {
+  const tinyToken = Number(tokenWidth) <= 40;
+  if (!tinyToken) {
+    return {
+      insetX: STATUS_TOKEN_INSET_X,
+      insetBottom: STATUS_TOKEN_INSET_BOTTOM
+    };
+  }
+
+  return {
+    insetX: Math.max(1, Math.round(STATUS_TOKEN_INSET_X * 0.5)),
+    insetBottom: Math.max(1, Math.round(STATUS_TOKEN_INSET_BOTTOM * 0.5))
+  };
+}
+
 function getStatusPaletteLayoutForToken(tokenObject, expectedCount) {
   const count = Math.max(0, Number(expectedCount ?? 0) || 0);
   let iconSize = STATUS_PALETTE_ICON_SIZE;
@@ -303,8 +318,7 @@ function getStatusPaletteLayoutForToken(tokenObject, expectedCount) {
   const hasTokenWidth = Number.isFinite(tokenWidth) && tokenWidth > 0;
   if (!hasTokenWidth) return { columns: Math.max(1, count), iconSize, iconGap };
 
-  const tinyToken = tokenWidth <= 40;
-  const insetX = tinyToken ? 0 : STATUS_TOKEN_INSET_X;
+  const { insetX } = getStatusPaletteInsets(tokenWidth);
   const widthSafe = Math.max(1, tokenWidth - (insetX * 2));
   const ratio = STATUS_PALETTE_ICON_GAP / Math.max(1, STATUS_PALETTE_ICON_SIZE);
   const denom = STATUS_TARGET_CHIPS_PER_ROW + ((STATUS_TARGET_CHIPS_PER_ROW - 1) * ratio);
@@ -316,12 +330,23 @@ function getStatusPaletteLayoutForToken(tokenObject, expectedCount) {
   return { columns, iconSize, iconGap };
 }
 
-function getStatusPaletteFitScale(tokenObject, totalWidth) {
+function getStatusPaletteFitScale(tokenObject, totalWidth, iconSize, iconGap) {
   const tokenWidth = Math.max(1, Number(tokenObject?.w ?? 0));
-  const tinyToken = tokenWidth <= 40;
-  const insetX = tinyToken ? 0 : STATUS_TOKEN_INSET_X;
+  const { insetX } = getStatusPaletteInsets(tokenWidth);
   const availableWidth = Math.max(1, tokenWidth - (insetX * 2));
-  const widthScale = availableWidth / Math.max(1, Number(totalWidth) || 1);
+  const sizeSafe = Math.max(1, Number(iconSize) || STATUS_PALETTE_ICON_SIZE);
+  const gapSafe = Math.max(0, Number(iconGap) || 0);
+  const targetRowWidth = (
+    STATUS_TARGET_CHIPS_PER_ROW * sizeSafe
+  ) + (
+    (STATUS_TARGET_CHIPS_PER_ROW - 1) * gapSafe
+  );
+  const widthBasis = Math.max(
+    1,
+    Number(totalWidth) || 1,
+    targetRowWidth
+  );
+  const widthScale = availableWidth / widthBasis;
   return Math.max(0.1, Math.min(1, widthScale));
 }
 
@@ -560,11 +585,9 @@ export function setupStatusPalette(tokenObject) {
   const statusSprites = layer.children?.filter((child) => child?.[KEYS.statusConditionId]) ?? [];
   const { totalWidth, totalHeight } = layoutStatusSpritesCentered(statusSprites, columns, iconSize, iconGap);
   const tokenWidth = Math.max(1, Number(tokenObject?.w ?? 0));
-  const tinyToken = tokenWidth <= 40;
-  const insetX = tinyToken ? 0 : STATUS_TOKEN_INSET_X;
-  const insetBottom = tinyToken ? 0 : STATUS_TOKEN_INSET_BOTTOM;
+  const { insetX, insetBottom } = getStatusPaletteInsets(tokenWidth);
   const availableWidth = Math.max(1, tokenWidth - (insetX * 2));
-  const fitScale = getStatusPaletteFitScale(tokenObject, totalWidth);
+  const fitScale = getStatusPaletteFitScale(tokenObject, totalWidth, iconSize, iconGap);
   const scaledWidth = totalWidth * fitScale;
   const scaledHeight = totalHeight * fitScale;
   layer.scale.set(fitScale);
