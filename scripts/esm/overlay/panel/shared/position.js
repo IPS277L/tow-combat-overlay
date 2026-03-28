@@ -67,8 +67,8 @@ function applyCenteredPanelPosition(
   controlPanelState = null,
   selectionGapPx = PANEL_SELECTION_GAP_PX
 ) {
-  const canvasBounds = getCanvasClientBounds(viewportMarginPx);
-  const bounds = getPanelBounds(panelElement, viewportMarginPx);
+  const canvasBounds = getCanvasClientBounds(viewportMarginPx, { includeSidebarOffset: true });
+  const bounds = getPanelBounds(panelElement, viewportMarginPx, { includeSidebarOffset: true });
   const {
     compositeWidth,
     compositeHeight,
@@ -83,11 +83,15 @@ function applyCenteredPanelPosition(
   panelElement.style.top = `${Math.round(top)}px`;
 }
 
-export function getPanelBounds(panelElement, viewportMarginPx = 8) {
+export function getPanelBounds(
+  panelElement,
+  viewportMarginPx = 8,
+  { includeSidebarOffset = false } = {}
+) {
   const rect = panelElement.getBoundingClientRect();
   const panelWidth = Math.max(1, Math.round(rect.width || panelElement.offsetWidth || 1));
   const panelHeight = Math.max(1, Math.round(rect.height || panelElement.offsetHeight || 1));
-  const canvasBounds = getCanvasClientBounds(viewportMarginPx);
+  const canvasBounds = getCanvasClientBounds(viewportMarginPx, { includeSidebarOffset });
   const maxLeft = canvasBounds.right - panelWidth;
   const maxTop = canvasBounds.bottom - panelHeight;
   return {

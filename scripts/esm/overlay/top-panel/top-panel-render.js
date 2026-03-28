@@ -134,7 +134,6 @@ export async function renderTopPanelContent() {
   const panelElement = state?.element;
   if (!(panelElement instanceof HTMLElement) || !panelElement.isConnected) return;
   if (state) clearLinkedTopPanelHover(state, { panelElement });
-  syncTopPanelWidth(panelElement);
   const { settings } = getTowCombatOverlayConstants();
   const enableStatusRow = isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableStatusRow, true);
   const enableStatuses = enableStatusRow
@@ -161,12 +160,13 @@ export async function renderTopPanelContent() {
     getTowCombatOverlayDisplaySetting(settings.tokensPanelDragButtonPosition, "right")
   ).trim().toLowerCase();
   const handlePosition = handlePositionRaw === "right" ? "right" : "left";
+  syncTopPanelWidth(panelElement, undefined, { includeSidebarOffset: alwaysCentered });
   const controlsElement = panelElement.querySelector(".tow-combat-overlay-top-panel__controls");
   if (controlsElement instanceof HTMLElement) controlsElement.hidden = alwaysCentered || locked;
   panelElement.classList.toggle("is-drag-locked", alwaysCentered || locked);
   panelElement.dataset.alwaysCentered = alwaysCentered ? "true" : "false";
   panelElement.dataset.handlePosition = handlePosition;
-  if (alwaysCentered) applyDefaultTopPanelPosition(panelElement);
+  if (alwaysCentered) applyDefaultTopPanelPosition(panelElement, undefined, { includeSidebarOffset: true });
 
   const listElement = panelElement.querySelector(".tow-combat-overlay-top-panel__list");
   if (!(listElement instanceof HTMLElement)) return;
@@ -196,7 +196,7 @@ export async function renderTopPanelContent() {
   }
   listElement.appendChild(fragment);
   syncTopPanelListBottomPadding(panelElement);
-  if (alwaysCentered) applyDefaultTopPanelPosition(panelElement);
+  if (alwaysCentered) applyDefaultTopPanelPosition(panelElement, undefined, { includeSidebarOffset: true });
   applyTopPanelHoveredCardHighlight(panelElement, state?.hoveredCanvasTokenId ?? "");
 }
 

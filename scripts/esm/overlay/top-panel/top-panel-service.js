@@ -59,7 +59,7 @@ function bindTopPanelElementEvents(topPanelElement) {
     const alwaysCentered = isTopPanelAlwaysCenteredEnabled();
     const locked = isTopPanelLockedEnabled();
     if (controlsElement instanceof HTMLElement) controlsElement.hidden = alwaysCentered || locked;
-    if (alwaysCentered) applyDefaultTopPanelPosition(topPanelElement);
+    if (alwaysCentered) applyDefaultTopPanelPosition(topPanelElement, undefined, { includeSidebarOffset: true });
     const dragTooltipData = getTopPanelDragHandleTooltipData();
     topPanelElement.classList.toggle("is-drag-locked", alwaysCentered || locked);
 
@@ -116,11 +116,13 @@ function bindTopPanelElementEvents(topPanelElement) {
   };
 
   const onResize = () => {
-    syncTopPanelWidth(topPanelElement);
-    syncTopPanelListBottomPadding(topPanelElement);
     if (isTopPanelAlwaysCenteredEnabled()) {
-      applyDefaultTopPanelPosition(topPanelElement);
+      syncTopPanelWidth(topPanelElement, undefined, { includeSidebarOffset: true });
+      syncTopPanelListBottomPadding(topPanelElement);
+      applyDefaultTopPanelPosition(topPanelElement, undefined, { includeSidebarOffset: true });
     } else {
+      syncTopPanelWidth(topPanelElement);
+      syncTopPanelListBottomPadding(topPanelElement);
       const rect = topPanelElement.getBoundingClientRect();
       applyTopPanelPosition(topPanelElement, rect.left, rect.top);
     }

@@ -7,26 +7,84 @@ import { TOP_PANEL_VIEWPORT_MARGIN_PX } from "./top-panel-constants.js";
 import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
 import { getTowCombatOverlayDisplaySetting } from "../../bootstrap/register-settings.js";
 
-export function getCanvasClientBounds(viewportMarginPx = TOP_PANEL_VIEWPORT_MARGIN_PX) {
+function getRectHorizontalOverlapPx(leftA, rightA, leftB, rightB) {
+  const left = Math.max(leftA, leftB);
+  const right = Math.min(rightA, rightB);
+  return Math.max(0, right - left);
+}
+
+function getOpenedSidebarWidthPx() {
+  const sidebarElement = document.getElementById("sidebar");
+  if (!(sidebarElement instanceof HTMLElement)) return 0;
+  const computedStyle = window.getComputedStyle(sidebarElement);
+  if (
+    sidebarElement.hidden === true
+    || computedStyle.display === "none"
+    || computedStyle.visibility === "hidden"
+  ) {
+    return 0;
+  }
+
+  const sidebarRect = sidebarElement.getBoundingClientRect();
+  const viewportLeft = 0;
+  const viewportRight = window.innerWidth;
+  let occupiedWidth = getRectHorizontalOverlapPx(
+    sidebarRect.left,
+    sidebarRect.right,
+    viewportLeft,
+    viewportRight
+  );
+
+  const rightUiElement = document.getElementById("ui-right");
+  if (rightUiElement instanceof HTMLElement) {
+    const rightUiStyle = window.getComputedStyle(rightUiElement);
+    if (
+      rightUiElement.hidden !== true
+      && rightUiStyle.display !== "none"
+      && rightUiStyle.visibility !== "hidden"
+    ) {
+      const rightUiRect = rightUiElement.getBoundingClientRect();
+      const overlapInsideUiRight = getRectHorizontalOverlapPx(
+        sidebarRect.left,
+        sidebarRect.right,
+        rightUiRect.left,
+        rightUiRect.right
+      );
+      occupiedWidth = Math.min(occupiedWidth, overlapInsideUiRight);
+    }
+  }
+
+  return Math.max(0, Math.round(occupiedWidth));
+}
+
+export function getCanvasClientBounds(
+  viewportMarginPx = TOP_PANEL_VIEWPORT_MARGIN_PX,
+  { includeSidebarOffset = false } = {}
+) {
   const canvasView = canvas?.app?.view;
   const rect = (canvasView instanceof HTMLElement)
     ? canvasView.getBoundingClientRect()
     : null;
+  const rightUiOccupiedWidthPx = includeSidebarOffset ? getOpenedSidebarWidthPx() : 0;
+  const viewportRight = Math.max(
+    viewportMarginPx + 1,
+    window.innerWidth - viewportMarginPx - rightUiOccupiedWidthPx
+  );
 
   if (!rect) {
     return {
       left: viewportMarginPx,
       top: viewportMarginPx,
-      right: window.innerWidth - viewportMarginPx,
+      right: viewportRight,
       bottom: window.innerHeight - viewportMarginPx,
-      width: Math.max(1, window.innerWidth - (viewportMarginPx * 2)),
+      width: Math.max(1, viewportRight - viewportMarginPx),
       height: Math.max(1, window.innerHeight - (viewportMarginPx * 2))
     };
   }
 
   const left = Math.max(viewportMarginPx, Math.round(rect.left + viewportMarginPx));
   const top = Math.max(viewportMarginPx, Math.round(rect.top + viewportMarginPx));
-  const right = Math.min(window.innerWidth - viewportMarginPx, Math.round(rect.right - viewportMarginPx));
+  const right = Math.min(viewportRight, Math.round(rect.right - viewportMarginPx));
   const bottom = Math.min(window.innerHeight - viewportMarginPx, Math.round(rect.bottom - viewportMarginPx));
   return {
     left,
@@ -38,9 +96,13 @@ export function getCanvasClientBounds(viewportMarginPx = TOP_PANEL_VIEWPORT_MARG
   };
 }
 
-export function syncTopPanelWidth(panelElement, viewportMarginPx = TOP_PANEL_VIEWPORT_MARGIN_PX) {
+export function syncTopPanelWidth(
+  panelElement,
+  viewportMarginPx = TOP_PANEL_VIEWPORT_MARGIN_PX,
+  { includeSidebarOffset = false } = {}
+) {
   if (!(panelElement instanceof HTMLElement)) return;
-  const bounds = getCanvasClientBounds(viewportMarginPx);
+  const bounds = getCanvasClientBounds(viewportMarginPx, { includeSidebarOffset });
   panelElement.style.maxWidth = `${Math.max(1, Math.round(bounds.width))}px`;
 }
 
@@ -64,9 +126,13 @@ export function syncTopPanelListBottomPadding(panelElement) {
   listElement.style.paddingBottom = `${Math.ceil(maxExtraBottom)}px`;
 }
 
-export function getTopPanelBounds(panelElement, viewportMarginPx = TOP_PANEL_VIEWPORT_MARGIN_PX) {
+export function getTopPanelBounds(
+  panelElement,
+  viewportMarginPx = TOP_PANEL_VIEWPORT_MARGIN_PX,
+  { includeSidebarOffset = false } = {}
+) {
   const rect = panelElement.getBoundingClientRect();
-  const canvasBounds = getCanvasClientBounds(viewportMarginPx);
+  const canvasBounds = getCanvasClientBounds(viewportMarginPx, { includeSidebarOffset });
   const panelWidth = Math.max(1, Math.round(rect.width || panelElement.offsetWidth || 1));
   const panelHeight = Math.max(1, Math.round(rect.height || panelElement.offsetHeight || 1));
   return {
@@ -77,28 +143,39 @@ export function getTopPanelBounds(panelElement, viewportMarginPx = TOP_PANEL_VIE
   };
 }
 
-export function applyTopPanelPosition(panelElement, left, top, viewportMarginPx = TOP_PANEL_VIEWPORT_MARGIN_PX) {
-  const bounds = getTopPanelBounds(panelElement, viewportMarginPx);
+export function applyTopPanelPosition(
+  panelElement,
+  left,
+  top,
+  viewportMarginPx = TOP_PANEL_VIEWPORT_MARGIN_PX,
+  { includeSidebarOffset = false } = {}
+) {
+  const bounds = getTopPanelBounds(panelElement, viewportMarginPx, { includeSidebarOffset });
   const safeLeft = clampTopPanelCoordinate(left, bounds.minLeft, bounds.maxLeft);
   const safeTop = clampTopPanelCoordinate(top, bounds.minTop, bounds.maxTop);
   panelElement.style.left = `${Math.round(safeLeft)}px`;
   panelElement.style.top = `${Math.round(safeTop)}px`;
 }
 
-export function applyDefaultTopPanelPosition(panelElement, viewportMarginPx = TOP_PANEL_VIEWPORT_MARGIN_PX) {
+export function applyDefaultTopPanelPosition(
+  panelElement,
+  viewportMarginPx = TOP_PANEL_VIEWPORT_MARGIN_PX,
+  { includeSidebarOffset = false } = {}
+) {
   const rect = panelElement.getBoundingClientRect();
-  const canvasBounds = getCanvasClientBounds(viewportMarginPx);
+  const canvasBounds = getCanvasClientBounds(viewportMarginPx, { includeSidebarOffset });
   const panelWidth = Math.max(1, Math.round(rect.width || panelElement.offsetWidth || 1));
   const defaultLeft = Math.round(canvasBounds.left + ((canvasBounds.width - panelWidth) / 2));
-  applyTopPanelPosition(panelElement, defaultLeft, canvasBounds.top, viewportMarginPx);
+  applyTopPanelPosition(panelElement, defaultLeft, canvasBounds.top, viewportMarginPx, { includeSidebarOffset });
 }
 
 export function applyInitialTopPanelPosition(panelElement, viewportMarginPx = TOP_PANEL_VIEWPORT_MARGIN_PX) {
-  syncTopPanelWidth(panelElement, viewportMarginPx);
   if (isTopPanelAlwaysCenteredEnabled()) {
-    applyDefaultTopPanelPosition(panelElement, viewportMarginPx);
+    syncTopPanelWidth(panelElement, viewportMarginPx, { includeSidebarOffset: true });
+    applyDefaultTopPanelPosition(panelElement, viewportMarginPx, { includeSidebarOffset: true });
     return;
   }
+  syncTopPanelWidth(panelElement, viewportMarginPx);
   const saved = readSavedTopPanelPosition();
   if (saved) {
     applyTopPanelPosition(panelElement, saved.left, saved.top, viewportMarginPx);
