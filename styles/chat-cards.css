@@ -113,3 +113,28 @@
   background: #4b214f;
   color: #f0d8ff;
 }
+
+.chat-message .tow-combat-overlay-chat-card--censored {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  opacity: 1;
+  letter-spacing: normal;
+  line-height: normal;
+  font-size: inherit;
+}
+
+.chat-message .tow-combat-overlay-chat-card--censored .dice-roll {
+  margin: 0;
+  font-size: inherit;
+}
+
+.chat-message .tow-combat-overlay-chat-card--censored .dice-result {
+  margin: 0;
+}
+
+.chat-message .tow-combat-overlay-chat-card--censored .dice-formula,
+.chat-message .tow-combat-overlay-chat-card--censored .dice-total {
+  margin-left: 0;
+  margin-right: 0;
+}

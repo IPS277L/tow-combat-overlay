@@ -1,4 +1,5 @@
 import { towCombatOverlayEnsurePromiseClose } from "../combat/attack.js";
+import { towCombatOverlayApplyChatMessageCensorship } from "../combat/core.js";
 import { registerTowCombatOverlayApi } from "../api/combat-overlay-api.js";
 import { getTowCombatOverlayConstants } from "../runtime/module-constants.js";
 import { registerTowCombatOverlayActionsRuntimeApi } from "./register-actions-api.js";
@@ -374,6 +375,10 @@ export function registerTowCombatOverlayModuleHooks() {
 
   Hooks.on("renderWeaponDialog", (app) => {
     towCombatOverlayEnsurePromiseClose(app);
+  });
+
+  Hooks.on("renderChatMessage", (message, html) => {
+    towCombatOverlayApplyChatMessageCensorship(message, html);
   });
 
   Hooks.on("collapseSidebar", () => {

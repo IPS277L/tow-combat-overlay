@@ -5,12 +5,17 @@ import {
   MODULE_KEY,
   OPPOSED_LINK_WAIT_MS
 } from "../../runtime/overlay-constants.js";
+import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
 import { getTowCombatOverlayActionsApi } from "../../api/module-api-registry.js";
 import {
   towCombatOverlayApplyActorDamage,
   towCombatOverlayEnsureActionsApi
 } from "../shared/actions-bridge.js";
-import { towCombatOverlayLocalize, towCombatOverlayRenderTemplate } from "../../combat/core.js";
+import {
+  towCombatOverlayApplyRollVisibility,
+  towCombatOverlayLocalize,
+  towCombatOverlayRenderTemplate
+} from "../../combat/core.js";
 import { towCombatOverlayResolveConditionLabel } from "../shared/shared.js";
 import {
   deriveAppliedStatusLabels,
@@ -19,6 +24,10 @@ import {
 } from "./automation-helpers.js";
 
 const TOW_AUTOMATION_LOCAL_STATE = {};
+const {
+  moduleId: TOW_MODULE_ID,
+  flags: { chatVisibility: TOW_CHAT_VISIBILITY_FLAG }
+} = getTowCombatOverlayConstants();
 
 function getTowAutomationStateBucket() {
   const runtimeState = game?.[MODULE_KEY];
@@ -217,7 +226,60 @@ async function deriveSourceStatusHints(sourceActor, sourceBeforeState) {
   });
 }
 
-async function postFlowSeparatorCard(opposed, { sourceStatusHints = [], targetStatusHints = [] } = {}) {
+function hasRestrictedVisibility(message) {
+  if (!message) return false;
+  if (typeof message.isContentVisible === "boolean" && message.isContentVisible === false) return true;
+  const censoredFlag = message?.getFlag?.(TOW_MODULE_ID, TOW_CHAT_VISIBILITY_FLAG);
+  if (censoredFlag?.mode === "censored") return true;
+  const whisperIds = Array.isArray(message.whisper) ? message.whisper : [];
+  return whisperIds.length > 0 || message.blind === true;
+}
+
+function resolveMessageIdRef(value) {
+  if (!value) return "";
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  if (typeof value !== "object") return "";
+
+  const directId = String(value.id ?? value._id ?? "").trim();
+  if (directId) return directId;
+
+  const nestedMessage = value.message;
+  if (typeof nestedMessage === "string") return nestedMessage.trim();
+  if (nestedMessage && typeof nestedMessage === "object") {
+    const nestedId = String(nestedMessage.id ?? nestedMessage._id ?? "").trim();
+    if (nestedId) return nestedId;
+  }
+
+  const messageId = String(value.messageId ?? value.chatMessageId ?? "").trim();
+  if (messageId) return messageId;
+
+  return "";
+}
+
+function resolveFlowVisibilitySourceMessage(opposedMessage, fallbackMessage = null) {
+  if (hasRestrictedVisibility(opposedMessage)) return opposedMessage;
+  if (hasRestrictedVisibility(fallbackMessage)) return fallbackMessage;
+
+  const attackerMessageId = resolveMessageIdRef(opposedMessage?.system?.attackerMessage);
+  if (attackerMessageId) {
+    const attackerMessage = game.messages.get(attackerMessageId);
+    if (hasRestrictedVisibility(attackerMessage)) return attackerMessage;
+  }
+
+  const defenderMessageId = resolveMessageIdRef(opposedMessage?.system?.defenderMessage);
+  if (defenderMessageId) {
+    const defenderMessage = game.messages.get(defenderMessageId);
+    if (hasRestrictedVisibility(defenderMessage)) return defenderMessage;
+  }
+
+  return fallbackMessage ?? opposedMessage ?? null;
+}
+
+async function postFlowSeparatorCard(
+  opposed,
+  { sourceStatusHints = [], targetStatusHints = [], sourceMessage = null } = {}
+) {
   const attackerName = opposed?.attackerToken?.name ?? towCombatOverlayLocalize("TOWCOMBATOVERLAY.Chat.Attacker", "Attacker");
   const defenderName = opposed?.defenderToken?.name ?? opposed?.defender?.alias ?? towCombatOverlayLocalize("TOWCOMBATOVERLAY.Chat.Defender", "Defender");
   const outcome = opposed?.result?.outcome ?? "resolved";
@@ -315,10 +377,16 @@ async function postFlowSeparatorCard(opposed, { sourceStatusHints = [], targetSt
     targetStatusMarkup
   });
 
-  await ChatMessage.create({
+  const chatData = {
     content,
     speaker: { alias: towCombatOverlayLocalize("TOWCOMBATOVERLAY.Chat.CombatFlowAlias", "Combat Flow") }
+  };
+  const visibilitySourceMessage = resolveFlowVisibilitySourceMessage(sourceMessage, null);
+  towCombatOverlayApplyRollVisibility(chatData, {
+    sourceMessage: visibilitySourceMessage,
+    censorForUnauthorized: true
   });
+  await ChatMessage.create(chatData);
 }
 
 function armAutoApplyDamageForOpposed(opposedMessage, { sourceActor = null, sourceBeforeState = null } = {}) {
@@ -339,11 +407,16 @@ function armAutoApplyDamageForOpposed(opposedMessage, { sourceActor = null, sour
   void (async () => {
     let applying = false;
     let separatorPosted = false;
-    const postSeparatorOnce = async (opposed) => {
+    const postSeparatorOnce = async (opposed, sourceMessage = null) => {
       if (separatorPosted) return;
       separatorPosted = true;
       const sourceStatusHints = await deriveSourceStatusHints(sourceActor, sourceBeforeState);
-      await postFlowSeparatorCard(opposed, { sourceStatusHints, targetStatusHints: [] });
+      const visibilitySourceMessage = resolveFlowVisibilitySourceMessage(sourceMessage, opposedMessage);
+      await postFlowSeparatorCard(opposed, {
+        sourceStatusHints,
+        targetStatusHints: [],
+        sourceMessage: visibilitySourceMessage
+      });
     };
 
     const started = Date.now();
@@ -364,13 +437,13 @@ function armAutoApplyDamageForOpposed(opposedMessage, { sourceActor = null, sour
       }
 
       if (!hasDamage || alreadyApplied) {
-        await postSeparatorOnce(opposed);
+        await postSeparatorOnce(opposed, message);
         break;
       }
 
       const defenderActor = ChatMessage.getSpeakerActor(opposed.defender);
       if (!defenderActor?.isOwner || applying) {
-        await postSeparatorOnce(opposed);
+        await postSeparatorOnce(opposed, message);
         break;
       }
 
@@ -390,7 +463,12 @@ function armAutoApplyDamageForOpposed(opposedMessage, { sourceActor = null, sour
       const sourceStatusHints = await deriveSourceStatusHints(sourceActor, sourceBeforeState);
       if (!separatorPosted) {
         separatorPosted = true;
-        await postFlowSeparatorCard(opposed, { sourceStatusHints, targetStatusHints });
+        const visibilitySourceMessage = resolveFlowVisibilitySourceMessage(message, opposedMessage);
+        await postFlowSeparatorCard(opposed, {
+          sourceStatusHints,
+          targetStatusHints,
+          sourceMessage: visibilitySourceMessage
+        });
       }
       break;
     }

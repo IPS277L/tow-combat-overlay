@@ -42,7 +42,10 @@ import {
   towCombatOverlayArmAutoSubmitDialog,
   towCombatOverlaySetupAbilityTestWithDamage
 } from "../../combat/attack.js";
-import { towCombatOverlayRenderTemplate } from "../../combat/core.js";
+import {
+  towCombatOverlayApplyRollVisibility,
+  towCombatOverlayRenderTemplate
+} from "../../combat/core.js";
 import { towCombatOverlayDefenceActor } from "../../combat/defence.js";
 import { towCombatOverlayRollSkill } from "../../combat/defence.js";
 import {
@@ -395,6 +398,7 @@ const panelSpellAutoApplyService = createPanelSpellAutoApplyService({
   ),
   resolveActorLatestCastingPotency: (actor) => resolveActorLatestCastingPotency(actor),
   ensurePanelItemUseRollCompatibility: () => ensurePanelItemUseRollCompatibility(),
+  towCombatOverlayApplyRollVisibility,
   armApplyRollModifiersToNextTestDialog: (actor, options) => armApplyRollModifiersToNextTestDialog(actor, options),
   towCombatOverlayArmAutoSubmitDialog,
   createTowCombatOverlayRollContext

@@ -13,7 +13,8 @@ const MODULE_CONSTANTS_BASE = Object.freeze({
   }),
   flags: Object.freeze({
     actorRollModifier: "actorRollModifier",
-    topPanelOrderRequest: "topPanelOrderRequest"
+    topPanelOrderRequest: "topPanelOrderRequest",
+    chatVisibility: "chatVisibility"
   }),
   sockets: Object.freeze({
     topPanelOrderRequest: "topPanelOrderRequest"

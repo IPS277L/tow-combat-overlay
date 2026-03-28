@@ -9,6 +9,7 @@ export function createPanelSpellAutoApplyService({
   startPanelAttackPickMode,
   resolveActorLatestCastingPotency,
   ensurePanelItemUseRollCompatibility,
+  towCombatOverlayApplyRollVisibility,
   armApplyRollModifiersToNextTestDialog,
   towCombatOverlayArmAutoSubmitDialog,
   createTowCombatOverlayRollContext
@@ -227,7 +228,75 @@ export function createPanelSpellAutoApplyService({
     }
   }
 
-  async function invokeChatMessageActionByName(message, action, targetElement = null) {
+  function collectActorVisibilityRefs(actors = []) {
+    const refs = new Set();
+    for (const actor of Array.isArray(actors) ? actors : []) {
+      const actorId = String(actor?.id ?? "").trim();
+      const actorUuid = String(actor?.uuid ?? "").trim();
+      if (actorId) refs.add(actorId);
+      if (actorUuid) refs.add(actorUuid);
+    }
+    return refs;
+  }
+
+  function resolveCreateDataActorRefs(data = {}) {
+    const refs = new Set();
+    const add = (value) => {
+      const next = String(value ?? "").trim();
+      if (next) refs.add(next);
+    };
+
+    add(data?.speaker?.actor);
+    add(data?.system?.test?.context?.actor);
+    add(data?.system?.context?.actor);
+    add(data?.system?.actor?.id);
+    add(data?.system?.actor?.uuid);
+    return refs;
+  }
+
+  async function withScopedInheritedChatVisibility(sourceMessage, affectedActors, callback) {
+    const applyVisibility = towCombatOverlayApplyRollVisibility;
+    if (!sourceMessage || typeof applyVisibility !== "function") return callback();
+
+    const sourceUserId = String(
+      sourceMessage?.author?.id
+      ?? sourceMessage?.user?.id
+      ?? sourceMessage?.user
+      ?? ""
+    ).trim();
+    const actorRefs = collectActorVisibilityRefs(affectedActors);
+    const hookId = Hooks.on("preCreateChatMessage", (messageDoc, createData, _options, userId) => {
+      const creatingUserId = String(userId ?? "").trim();
+      if (sourceUserId && creatingUserId && creatingUserId !== sourceUserId) return;
+
+      if (actorRefs.size > 0) {
+        const messageActorRefs = resolveCreateDataActorRefs(createData);
+        const matchesActor = Array.from(messageActorRefs).some((ref) => actorRefs.has(ref));
+        if (!matchesActor) return;
+      }
+
+      const updateData = {};
+      applyVisibility(updateData, {
+        sourceMessage,
+        censorForUnauthorized: true
+      });
+      if (!Object.keys(updateData).length) return;
+      messageDoc.updateSource(updateData);
+    });
+
+    try {
+      return await callback();
+    } finally {
+      Hooks.off("preCreateChatMessage", hookId);
+    }
+  }
+
+  async function invokeChatMessageActionByName(
+    message,
+    action,
+    targetElement = null,
+    { visibilitySourceMessage = null } = {}
+  ) {
     const actionName = String(action ?? "").trim();
     if (!message || !actionName) return false;
     const system = message.system;
@@ -268,11 +337,13 @@ export function createPanelSpellAutoApplyService({
         for (const actor of affectedActors) {
           armApplyRollModifiersToNextTestDialog(actor);
         }
-        await withPatchedDirectTests(affectedActors, async () => (
-          withPatchedSkillTests(affectedActors, async () => {
-            await handler.call(system, syntheticEvent, targetElement ?? { dataset });
-          })
-        ));
+        await withScopedInheritedChatVisibility(visibilitySourceMessage ?? message, affectedActors, async () => {
+          await withPatchedDirectTests(affectedActors, async () => {
+            await withPatchedSkillTests(affectedActors, async () => {
+              await handler.call(system, syntheticEvent, targetElement ?? { dataset });
+            });
+          });
+        });
       } finally {
         restoreApplyActionAutoResolve();
       }
@@ -343,7 +414,12 @@ export function createPanelSpellAutoApplyService({
     let invoked = false;
     for (const { action, dataset } of actions) {
       const syntheticTarget = { dataset: { ...dataset, action } };
-      const done = await invokeChatMessageActionByName(message, action, syntheticTarget);
+      const done = await invokeChatMessageActionByName(
+        message,
+        action,
+        syntheticTarget,
+        { visibilitySourceMessage: message }
+      );
       invoked = invoked || done;
       await new Promise((resolve) => setTimeout(resolve, 20));
     }
