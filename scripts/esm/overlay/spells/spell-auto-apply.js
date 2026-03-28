@@ -41,6 +41,7 @@ export function createPanelSpellAutoApplyService({
       actionType: "spellAutoApply",
       messageId: String(messageId ?? "").trim(),
       targetTokenId: String(targetToken?.id ?? "").trim(),
+      rollMode: String(game?.settings?.get?.("core", "rollMode") ?? "").trim(),
       requesterId: String(game?.user?.id ?? "").trim(),
       timestamp: Date.now()
     };

@@ -2,7 +2,10 @@ import { towCombatOverlayEnsurePromiseClose } from "../combat/attack.js";
 import {
   towCombatOverlayArmAutoSubmitDialog
 } from "../combat/attack.js";
-import { towCombatOverlayApplyChatMessageCensorship } from "../combat/core.js";
+import {
+  towCombatOverlayApplyChatMessageCensorship,
+  towCombatOverlayApplyRollVisibility
+} from "../combat/core.js";
 import {
   towCombatOverlayDefenceActor,
   towCombatOverlayRollSkill
@@ -421,6 +424,170 @@ function resolveTowCombatOverlayMessageRefId(value) {
   return "";
 }
 
+function normalizeTowCombatOverlayRollMode(value) {
+  const mode = String(value ?? "").trim().toLowerCase();
+  return ["publicroll", "gmroll", "blindroll", "selfroll"].includes(mode) ? mode : "";
+}
+
+function collectTowCombatOverlayActorRefsFromCreateData(data = {}) {
+  const refs = new Set();
+  const add = (value) => {
+    const normalized = String(value ?? "").trim();
+    if (normalized) refs.add(normalized);
+  };
+  add(data?.speaker?.actor);
+  add(data?.system?.test?.context?.actor);
+  add(data?.system?.context?.actor);
+  add(data?.system?.actor?.id);
+  add(data?.system?.actor?.uuid);
+  return refs;
+}
+
+function collectTowCombatOverlayTokenRefsFromCreateData(data = {}) {
+  const refs = new Set();
+  const add = (value) => {
+    const normalized = String(value ?? "").trim();
+    if (normalized) refs.add(normalized);
+  };
+  add(data?.speaker?.token);
+  add(data?.system?.defender?.token);
+  add(data?.system?.attacker?.token);
+  const targetCandidates = [
+    data?.system?.test?.context?.targets,
+    data?.system?.context?.targets,
+    data?.system?.test?.targets,
+    data?.system?.targets
+  ];
+  for (const rawTargets of targetCandidates) {
+    if (Array.isArray(rawTargets)) {
+      for (const entry of rawTargets) {
+        add(entry?.token);
+        add(entry?.tokenId);
+        if (!entry?.actor && !entry?.actorId) add(entry?.id);
+      }
+      continue;
+    }
+    if (rawTargets && typeof rawTargets === "object") {
+      for (const [key, value] of Object.entries(rawTargets)) {
+        add(value?.token);
+        add(value?.tokenId);
+        if (!value?.actor && !value?.actorId) add(value?.id ?? key);
+      }
+    }
+  }
+  return refs;
+}
+
+function collectTowCombatOverlayActorRefsFromTokens(...tokens) {
+  const refs = new Set();
+  for (const token of tokens) {
+    const actor = token?.actor ?? token?.document?.actor ?? null;
+    const actorId = String(actor?.id ?? "").trim();
+    const actorUuid = String(actor?.uuid ?? "").trim();
+    if (actorId) refs.add(actorId);
+    if (actorUuid) refs.add(actorUuid);
+  }
+  return refs;
+}
+
+function collectTowCombatOverlayTokenRefsFromTokens(...tokens) {
+  const refs = new Set();
+  for (const token of tokens) {
+    const tokenId = String(token?.id ?? token?.document?.id ?? "").trim();
+    if (tokenId) refs.add(tokenId);
+  }
+  return refs;
+}
+
+function collectTowCombatOverlayRefsFromMessage(message = null) {
+  const actorRefs = new Set();
+  const tokenRefs = new Set();
+  const source = message?.toObject?.() ?? message ?? {};
+  for (const ref of collectTowCombatOverlayActorRefsFromCreateData(source)) actorRefs.add(ref);
+  for (const ref of collectTowCombatOverlayTokenRefsFromCreateData(source)) tokenRefs.add(ref);
+  return { actorRefs, tokenRefs };
+}
+
+async function withScopedTowCombatOverlayRelayVisibility(rollMode, callback, {
+  actorRefs = null,
+  tokenRefs = null,
+  messageRefs = null,
+  settleMs = 0
+} = {}) {
+  if (typeof callback !== "function") return callback?.();
+  const requestedMode = normalizeTowCombatOverlayRollMode(rollMode);
+  if (!requestedMode) return callback();
+  const actorRefSet = actorRefs instanceof Set
+    ? actorRefs
+    : new Set(Array.isArray(actorRefs) ? actorRefs : []);
+  const tokenRefSet = tokenRefs instanceof Set
+    ? tokenRefs
+    : new Set(Array.isArray(tokenRefs) ? tokenRefs : []);
+  const messageRefSet = messageRefs instanceof Set
+    ? messageRefs
+    : new Set(Array.isArray(messageRefs) ? messageRefs : []);
+  if (actorRefSet.size === 0 && tokenRefSet.size === 0 && messageRefSet.size === 0) {
+    return callback();
+  }
+
+  const hookId = Hooks.on("preCreateChatMessage", (messageDoc, createData, _options, userId) => {
+    const creatingUserId = String(userId ?? "").trim();
+    const currentUserId = String(game?.user?.id ?? "").trim();
+    if (creatingUserId && currentUserId && creatingUserId !== currentUserId) return;
+    const sourceData = (createData && typeof createData === "object")
+      ? createData
+      : (messageDoc?.toObject?.() ?? {});
+    const messageActorRefs = collectTowCombatOverlayActorRefsFromCreateData(sourceData);
+    const messageTokenRefs = collectTowCombatOverlayTokenRefsFromCreateData(sourceData);
+    const attackerMessageRef = resolveTowCombatOverlayMessageRefId(sourceData?.system?.attackerMessage);
+    const createdMessageRef = resolveTowCombatOverlayMessageRefId(sourceData?.id ?? sourceData?._id ?? messageDoc?.id);
+    const matchesActor = actorRefSet.size > 0
+      ? Array.from(messageActorRefs).some((ref) => actorRefSet.has(ref))
+      : false;
+    const matchesToken = tokenRefSet.size > 0
+      ? Array.from(messageTokenRefs).some((ref) => tokenRefSet.has(ref))
+      : false;
+    const matchesMessage = messageRefSet.size > 0
+      ? [attackerMessageRef, createdMessageRef].filter(Boolean).some((ref) => messageRefSet.has(ref))
+      : false;
+    if (!matchesActor && !matchesToken && !matchesMessage) return;
+    const updateData = {};
+    towCombatOverlayApplyRollVisibility(updateData, { rollMode: requestedMode });
+    if (!Object.keys(updateData).length) return;
+    messageDoc.updateSource(updateData);
+  });
+
+  try {
+    const result = await callback();
+    const settleDuration = Math.max(0, Math.trunc(Number(settleMs) || 0));
+    if (settleDuration > 0) {
+      await new Promise((resolve) => setTimeout(resolve, settleDuration));
+    }
+    return result;
+  } finally {
+    Hooks.off("preCreateChatMessage", hookId);
+  }
+}
+
+async function withTowCombatOverlayAutoStaggerChoice(callback, { restoreDelayMs = 6000 } = {}) {
+  if (typeof callback !== "function") return callback?.();
+  const restore = (typeof towCombatOverlayAutomation?.armDefaultStaggerChoiceWound === "function")
+    ? towCombatOverlayAutomation.armDefaultStaggerChoiceWound()
+    : null;
+  try {
+    return await callback();
+  } finally {
+    if (typeof restore === "function") {
+      const delay = Math.max(0, Math.trunc(Number(restoreDelayMs) || 0));
+      setTimeout(() => {
+        try {
+          restore();
+        } catch (_error) {}
+      }, delay);
+    }
+  }
+}
+
 function resolveOpposedMessageForRelay({ targetToken = null, opposedMessageId = "", attackerMessageId = "" } = {}) {
   const explicitOpposedId = String(opposedMessageId ?? "").trim();
   if (explicitOpposedId) {
@@ -689,25 +856,57 @@ async function handleTowCombatOverlayActionRelayPayload(payload) {
   if (!actionType) return false;
   const sourceToken = resolveCanvasTokenById(payload?.sourceTokenId);
   const targetToken = resolveCanvasTokenById(payload?.targetTokenId);
+  const requestedRollMode = normalizeTowCombatOverlayRollMode(payload?.rollMode);
+  const relayActorRefs = collectTowCombatOverlayActorRefsFromTokens(sourceToken, targetToken);
+  const relayTokenRefs = collectTowCombatOverlayTokenRefsFromTokens(sourceToken, targetToken);
 
   if (actionType === "spellautoapply") {
     const messageId = String(payload?.messageId ?? "").trim();
+    const sourceMessage = messageId ? (game?.messages?.get?.(messageId) ?? null) : null;
+    const messageRefs = new Set(messageId ? [messageId] : []);
+    const messageRefsFromSource = collectTowCombatOverlayRefsFromMessage(sourceMessage);
+    for (const ref of messageRefsFromSource.actorRefs) relayActorRefs.add(ref);
+    for (const ref of messageRefsFromSource.tokenRefs) relayTokenRefs.add(ref);
     if (targetToken) {
-      await withTemporaryCurrentUserTargets(targetToken, async () => {
-        await waitAndInvokeTowAutoApplyActionsInMessage(messageId, { attempts: 20, intervalMs: 100 });
+      await withScopedTowCombatOverlayRelayVisibility(requestedRollMode, async () => {
+        await withTowCombatOverlayAutoStaggerChoice(async () => {
+          await withTemporaryCurrentUserTargets(targetToken, async () => {
+            await waitAndInvokeTowAutoApplyActionsInMessage(messageId, { attempts: 20, intervalMs: 100 });
+          });
+        });
+      }, {
+        actorRefs: relayActorRefs,
+        tokenRefs: relayTokenRefs,
+        messageRefs,
+        settleMs: 2500
       });
       return true;
     }
-    await waitAndInvokeTowAutoApplyActionsInMessage(messageId, { attempts: 20, intervalMs: 100 });
+    await withScopedTowCombatOverlayRelayVisibility(requestedRollMode, async () => {
+      await withTowCombatOverlayAutoStaggerChoice(async () => {
+        await waitAndInvokeTowAutoApplyActionsInMessage(messageId, { attempts: 20, intervalMs: 100 });
+      });
+    }, {
+      actorRefs: relayActorRefs,
+      tokenRefs: relayTokenRefs,
+      messageRefs,
+      settleMs: 2500
+    });
     return true;
   }
 
   if (!sourceToken?.actor || !targetToken) return false;
 
   if (actionType === "help") {
-    if (payload?.autoRoll !== false) armAutoPickFirstHelpSkillDialog(sourceToken.actor);
-    await withTemporaryCurrentUserTargets(targetToken, async () => {
-      await runDefaultPanelActorAction(sourceToken.actor, "help");
+    await withScopedTowCombatOverlayRelayVisibility(requestedRollMode, async () => {
+      if (payload?.autoRoll !== false) armAutoPickFirstHelpSkillDialog(sourceToken.actor);
+      await withTemporaryCurrentUserTargets(targetToken, async () => {
+        await runDefaultPanelActorAction(sourceToken.actor, "help");
+      });
+    }, {
+      actorRefs: relayActorRefs,
+      tokenRefs: relayTokenRefs,
+      settleMs: 1200
     });
     return true;
   }
@@ -728,8 +927,17 @@ async function handleTowCombatOverlayActionRelayPayload(payload) {
       if (opposedMessage) break;
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
-    if (preferredSkill) await towCombatOverlayRollSkill(targetToken.actor, preferredSkill, { autoRoll: true });
-    else await towCombatOverlayDefenceActor(targetToken.actor, { manual: false });
+    await withScopedTowCombatOverlayRelayVisibility(requestedRollMode, async () => {
+      await withTowCombatOverlayAutoStaggerChoice(async () => {
+        if (preferredSkill) await towCombatOverlayRollSkill(targetToken.actor, preferredSkill, { autoRoll: true });
+        else await towCombatOverlayDefenceActor(targetToken.actor, { manual: false });
+      });
+    }, {
+      actorRefs: relayActorRefs,
+      tokenRefs: relayTokenRefs,
+      messageRefs: new Set([attackerMessageId, opposedMessageId].filter(Boolean)),
+      settleMs: 5000
+    });
     if (!opposedMessage) {
       const afterDefenceStarted = Date.now();
       while ((Date.now() - afterDefenceStarted) < 3000) {
@@ -774,6 +982,7 @@ function ensureTowCombatOverlayActionRelayFlagHook() {
     opposedMessageId: String(payload?.opposedMessageId ?? "").trim(),
     preferredSkill: String(payload?.preferredSkill ?? "").trim(),
     autoRoll: payload?.autoRoll === false ? false : true,
+    rollMode: normalizeTowCombatOverlayRollMode(payload?.rollMode),
     timestamp: Number(payload?.timestamp ?? 0)
   });
 

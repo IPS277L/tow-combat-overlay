@@ -76,6 +76,7 @@ export function createPanelActionExecutionService({
     const relayPayload = {
       ...payload,
       actionType,
+      rollMode: String(game?.settings?.get?.("core", "rollMode") ?? "").trim(),
       requesterId: String(game?.user?.id ?? "").trim(),
       timestamp: Date.now()
     };
