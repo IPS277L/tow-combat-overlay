@@ -1,4 +1,23 @@
 import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
+import {
+  collectActorReferenceSet,
+  collectPotentialApplyActors,
+  messageHasExplicitTargets
+} from "../shared/actor-reference-helpers.js";
+import { getMessageActionsByPrefix } from "../shared/chat-message-action-helpers.js";
+import {
+  AUTO_APPLY_ACTION_DEFAULT_ATTEMPTS,
+  AUTO_APPLY_ACTION_DEFAULT_INTERVAL_MS,
+  AUTO_APPLY_ACTION_MIN_INTERVAL_MS,
+  AUTO_APPLY_ACTION_PRIORITY_ENTRIES,
+  AUTO_APPLY_ACTION_SETTLE_CHECKS_REQUIRED,
+  AUTO_APPLY_ACTION_STEP_DELAY_MS,
+  AUTO_APPLY_DIALOG_TIMEOUT_MS
+} from "../shared/auto-apply-action-constants.js";
+import {
+  SPELL_AUTO_APPLY_HOOK_TIMEOUT_MS,
+  SPELL_AUTO_PATCH_EXTRA_TIMEOUT_MS
+} from "./spell-auto-apply-constants.js";
 
 const {
   moduleId: TOW_MODULE_ID,
@@ -117,101 +136,6 @@ export function createPanelSpellAutoApplyService({
     directTestPatchOriginalFromData = null;
   }
 
-  function resolveActorFromReference(reference) {
-    const value = String(reference ?? "").trim();
-    if (!value) return null;
-
-    const actorById = game?.actors?.get?.(value) ?? null;
-    if (actorById) return actorById;
-
-    const tokenById = canvas?.tokens?.get?.(value)
-      ?? canvas?.tokens?.placeables?.find?.((token) => String(token?.id ?? "").trim() === value)
-      ?? null;
-    const tokenActor = tokenById?.actor ?? tokenById?.document?.actor ?? null;
-    if (tokenActor) return tokenActor;
-
-    return null;
-  }
-
-  function collectMessageTargetActors(rawTargets) {
-    const results = [];
-    if (Array.isArray(rawTargets)) {
-      for (const entry of rawTargets) {
-        const actor = resolveActorFromReference(
-          entry?.actor
-          ?? entry?.actorId
-          ?? entry?.token
-          ?? entry?.tokenId
-          ?? entry?.id
-          ?? entry
-        );
-        if (actor) results.push(actor);
-      }
-      return results;
-    }
-
-    if (rawTargets instanceof Set) {
-      for (const entry of rawTargets) {
-        const actor = resolveActorFromReference(entry?.id ?? entry);
-        if (actor) results.push(actor);
-      }
-      return results;
-    }
-
-    if (rawTargets && typeof rawTargets === "object") {
-      for (const [key, value] of Object.entries(rawTargets)) {
-        const actor = resolveActorFromReference(
-          value?.actor
-          ?? value?.actorId
-          ?? value?.token
-          ?? value?.tokenId
-          ?? value?.id
-          ?? key
-        );
-        if (actor) results.push(actor);
-      }
-    }
-
-    return results;
-  }
-
-  function collectPotentialApplyActors(message, dataset = {}) {
-    const actors = [];
-    const add = (actor) => {
-      if (!actor) return;
-      if (actors.some((entry) => entry === actor || String(entry?.uuid ?? "") === String(actor?.uuid ?? ""))) return;
-      actors.push(actor);
-    };
-
-    add(resolveActorFromReference(
-      message?.speaker?.actor
-      ?? message?.system?.test?.context?.actor
-      ?? message?.system?.context?.actor
-    ));
-
-    const candidateTargets = [
-      message?.system?.test?.context?.targets,
-      message?.system?.context?.targets,
-      message?.system?.test?.targets,
-      message?.system?.targets
-    ];
-    for (const rawTargets of candidateTargets) {
-      for (const actor of collectMessageTargetActors(rawTargets)) add(actor);
-    }
-
-    for (const [key, value] of Object.entries(dataset ?? {})) {
-      const lowerKey = String(key ?? "").trim().toLowerCase();
-      if (!lowerKey || lowerKey === "action") continue;
-      if (!/(actor|token|target)/i.test(lowerKey)) continue;
-      add(resolveActorFromReference(value));
-    }
-
-    for (const token of Array.from(game?.user?.targets ?? [])) {
-      add(token?.actor ?? token?.document?.actor ?? null);
-    }
-
-    return actors;
-  }
 
   async function withPatchedSkillTests(actors, callback) {
     const patches = [];
@@ -265,17 +189,6 @@ export function createPanelSpellAutoApplyService({
     }
   }
 
-  function collectActorVisibilityRefs(actors = []) {
-    const refs = new Set();
-    for (const actor of Array.isArray(actors) ? actors : []) {
-      const actorId = String(actor?.id ?? "").trim();
-      const actorUuid = String(actor?.uuid ?? "").trim();
-      if (actorId) refs.add(actorId);
-      if (actorUuid) refs.add(actorUuid);
-    }
-    return refs;
-  }
-
   function resolveCreateDataActorRefs(data = {}) {
     const refs = new Set();
     const add = (value) => {
@@ -301,7 +214,7 @@ export function createPanelSpellAutoApplyService({
       ?? sourceMessage?.user
       ?? ""
     ).trim();
-    const actorRefs = collectActorVisibilityRefs(affectedActors);
+    const actorRefs = collectActorReferenceSet(affectedActors);
     const hookId = Hooks.on("preCreateChatMessage", (messageDoc, createData, _options, userId) => {
       const creatingUserId = String(userId ?? "").trim();
       if (sourceUserId && creatingUserId && creatingUserId !== sourceUserId) return;
@@ -361,7 +274,7 @@ export function createPanelSpellAutoApplyService({
       // Some spell Apply handlers open test dialogs on target actors (not caster).
       // Keep this fallback narrowly scoped to the current apply action execution window.
       const restoreApplyActionAutoResolve = armAutoResolveSpellTriggeredTestDialogs(null, {
-        timeoutMs: 2500,
+        timeoutMs: AUTO_APPLY_DIALOG_TIMEOUT_MS,
         matches: (app) => {
           const appActorId = String(app?.actor?.id ?? "").trim();
           const appActorUuid = String(app?.actor?.uuid ?? app?.context?.actor ?? "").trim();
@@ -390,63 +303,16 @@ export function createPanelSpellAutoApplyService({
     }
   }
 
-  function parseDatasetFromTag(tagHtml) {
-    const dataset = {};
-    const attrMatches = Array.from(String(tagHtml ?? "").matchAll(/\bdata-([a-z0-9_-]+)\s*=\s*["']([^"']*)["']/gi));
-    for (const match of attrMatches) {
-      const rawKey = String(match?.[1] ?? "").trim();
-      if (!rawKey) continue;
-      const camelKey = rawKey.replace(/-([a-z0-9])/gi, (_m, char) => String(char ?? "").toUpperCase());
-      dataset[camelKey] = String(match?.[2] ?? "");
-    }
-    return dataset;
-  }
-
-  function getMessageAutoApplyActions(message) {
-    const content = String(message?.content ?? "");
-    const buttonMatches = Array.from(content.matchAll(/<(button|a)\b[^>]*>/gi));
-    const actionsFromContent = buttonMatches
-      .map((match) => {
-        const tagHtml = String(match?.[0] ?? "");
-        const dataset = parseDatasetFromTag(tagHtml);
-        const action = String(dataset?.action ?? "").trim();
-        if (!action || !action.toLowerCase().startsWith("apply")) return null;
-        return { action, dataset };
-      })
-      .filter(Boolean);
-
-    const handlers = message?.system?.constructor?.actions ?? message?.system?.actions ?? {};
-    const availableHandlerNames = new Set(
-      Object.keys(handlers).map((name) => String(name ?? "").trim()).filter(Boolean)
-    );
-    const unique = [];
-    const seen = new Set();
-    for (const entry of actionsFromContent) {
-      const action = String(entry?.action ?? "").trim();
-      if (!availableHandlerNames.has(action)) continue;
-      const key = JSON.stringify({ action, dataset: entry?.dataset ?? {} });
-      if (seen.has(key)) continue;
-      seen.add(key);
-      unique.push({ action, dataset: entry?.dataset ?? {} });
-    }
-    const priority = new Map([
-      ["applydamage", 1],
-      ["applytargeteffect", 2]
-    ]);
-    return unique.sort((a, b) => {
-      const left = priority.get(String(a?.action ?? "").toLowerCase()) ?? 100;
-      const right = priority.get(String(b?.action ?? "").toLowerCase()) ?? 100;
-      if (left !== right) return left - right;
-      return String(a?.action ?? "").localeCompare(String(b?.action ?? ""));
-    });
-  }
 
   async function invokeAutoApplyActionsInMessage(messageId) {
     const id = String(messageId ?? "").trim();
     if (!id) return false;
     const message = game?.messages?.get?.(id) ?? null;
     if (!message) return false;
-    const actions = getMessageAutoApplyActions(message);
+    const actions = getMessageActionsByPrefix(message, {
+      actionPrefix: "apply",
+      priorityEntries: AUTO_APPLY_ACTION_PRIORITY_ENTRIES
+    });
     if (!actions.length) return false;
     let invoked = false;
     for (const { action, dataset } of actions) {
@@ -458,27 +324,30 @@ export function createPanelSpellAutoApplyService({
         { visibilitySourceMessage: message }
       );
       invoked = invoked || done;
-      await new Promise((resolve) => setTimeout(resolve, 20));
+      await new Promise((resolve) => setTimeout(resolve, AUTO_APPLY_ACTION_STEP_DELAY_MS));
     }
     return invoked;
   }
 
   async function waitAndInvokeAutoApplyActionsInMessage(messageId, {
-    attempts = 16,
-    intervalMs = 80
+    attempts = AUTO_APPLY_ACTION_DEFAULT_ATTEMPTS,
+    intervalMs = AUTO_APPLY_ACTION_DEFAULT_INTERVAL_MS
   } = {}) {
     const getActionKey = (entry) => JSON.stringify({
       action: String(entry?.action ?? "").trim(),
       dataset: entry?.dataset ?? {}
     });
     const total = Math.max(1, Math.trunc(Number(attempts) || 1));
-    const waitMs = Math.max(10, Math.trunc(Number(intervalMs) || 0));
+    const waitMs = Math.max(AUTO_APPLY_ACTION_MIN_INTERVAL_MS, Math.trunc(Number(intervalMs) || 0));
     const executedActionKeys = new Set();
     let anyInvoked = false;
     let settledNoActionsChecks = 0;
     for (let i = 0; i < total; i += 1) {
       const currentMessage = game?.messages?.get?.(String(messageId ?? "").trim()) ?? null;
-      const actionsBefore = getMessageAutoApplyActions(currentMessage);
+      const actionsBefore = getMessageActionsByPrefix(currentMessage, {
+        actionPrefix: "apply",
+        priorityEntries: AUTO_APPLY_ACTION_PRIORITY_ENTRIES
+      });
       const hadActionsBefore = actionsBefore.length > 0;
       const pendingBefore = actionsBefore.filter((entry) => !executedActionKeys.has(getActionKey(entry)));
       let invoked = false;
@@ -495,36 +364,24 @@ export function createPanelSpellAutoApplyService({
           invoked = true;
           executedActionKeys.add(actionKey);
         }
-        await new Promise((resolve) => setTimeout(resolve, 20));
+        await new Promise((resolve) => setTimeout(resolve, AUTO_APPLY_ACTION_STEP_DELAY_MS));
       }
       anyInvoked = anyInvoked || invoked;
       const latestMessage = game?.messages?.get?.(String(messageId ?? "").trim()) ?? null;
-      const actionsAfter = getMessageAutoApplyActions(latestMessage);
+      const actionsAfter = getMessageActionsByPrefix(latestMessage, {
+        actionPrefix: "apply",
+        priorityEntries: AUTO_APPLY_ACTION_PRIORITY_ENTRIES
+      });
       const hasPendingActionsAfter = actionsAfter.some((entry) => !executedActionKeys.has(getActionKey(entry)));
       if (!hasPendingActionsAfter && (invoked || hadActionsBefore || anyInvoked)) {
         settledNoActionsChecks += 1;
-        if (settledNoActionsChecks >= 2) return true;
+        if (settledNoActionsChecks >= AUTO_APPLY_ACTION_SETTLE_CHECKS_REQUIRED) return true;
       } else {
         settledNoActionsChecks = 0;
       }
       await new Promise((resolve) => setTimeout(resolve, waitMs));
     }
     return anyInvoked;
-  }
-
-  function messageHasExplicitTargets(message) {
-    const candidates = [
-      message?.system?.test?.context?.targets,
-      message?.system?.context?.targets,
-      message?.system?.test?.targets,
-      message?.system?.targets
-    ];
-    return candidates.some((value) => {
-      if (Array.isArray(value)) return value.length > 0;
-      if (value instanceof Set || value instanceof Map) return value.size > 0;
-      if (value && typeof value === "object") return Object.keys(value).length > 0;
-      return false;
-    });
   }
 
   function hasNonOwnedUserTargets() {
@@ -571,7 +428,7 @@ export function createPanelSpellAutoApplyService({
         const automation = getOverlayAutomationRef();
         const restoreStaggerPrompt = automation.armDefaultStaggerChoiceWound(panelStaggerPatchDurationMs);
         const restoreSpellTestAuto = armAutoResolveSpellTriggeredTestDialogs(actor, {
-          timeoutMs: autoApplyWaitMs + 8000,
+          timeoutMs: autoApplyWaitMs + SPELL_AUTO_PATCH_EXTRA_TIMEOUT_MS,
           matches: (app) => {
             const appActorId = String(app?.actor?.id ?? "").trim();
             const appActorUuid = String(app?.actor?.uuid ?? app?.context?.actor ?? "").trim();
@@ -661,7 +518,7 @@ export function createPanelSpellAutoApplyService({
       void processMessage(message);
     });
 
-    timeoutId = setTimeout(() => cleanup(createHookId), 30000);
+    timeoutId = setTimeout(() => cleanup(createHookId), SPELL_AUTO_APPLY_HOOK_TIMEOUT_MS);
   }
 
   async function runPanelCastSpecificSpellFromAccumulatedPower(actor, spell, {

@@ -237,18 +237,18 @@ const panelActionControlsService = createPanelActionControlsService({
   canShowButtonsTooltip: () => panelTooltipVisibilityService.isControlPanelButtonsTooltipEnabled(),
   showClickBehaviorText: () => panelTooltipVisibilityService.showControlPanelTooltipClickBehaviorText(),
   getPrimaryTokenTypeLabel,
-  getSingleControlledActor: () => getSingleControlledActor()
+  getSingleControlledActor: () => panelContextAccessService.getSingleControlledActor()
 });
 const panelStatsStatusBindingsService = createPanelStatsStatusBindingsService({
   moduleTooltips: MODULE_TOOLTIPS,
-  getSingleControlledToken: () => getSingleControlledToken(),
-  getControlPanelState: () => getControlPanelState(),
-  updateSelectionDisplay: (panelElement) => updateSelectionDisplay(panelElement),
+  getSingleControlledToken: () => panelContextAccessService.getSingleControlledToken(),
+  getControlPanelState: () => panelContextAccessService.getControlPanelState(),
+  updateSelectionDisplay: (panelElement) => panelSelectionSyncDisplayService.updateSelectionDisplay(panelElement),
   getTypeTooltipData,
   bindPanelTooltipEvent,
   getConditionTooltipData,
-  toggleConditionFromPanel,
-  updateStatusDisplay,
+  toggleConditionFromPanel: (actor, conditionId) => panelConditionToggleService.toggleConditionFromPanel(actor, conditionId),
+  updateStatusDisplay: (panelElement, token = null) => panelStatusDisplayService.updateStatusDisplay(panelElement, token),
   getPrimaryTokenName,
   getPrimaryTokenTypeLabel,
   towCombatOverlayGetActorWoundItemCount,
@@ -265,11 +265,11 @@ const panelStatsStatusBindingsService = createPanelStatsStatusBindingsService({
   canShowWoundsTooltip: () => panelTooltipVisibilityService.isControlPanelWoundsTooltipEnabled()
 });
 const panelSelectionSyncService = createPanelSelectionSyncService({
-  updateSelectionDisplay: (panelElement) => updateSelectionDisplay(panelElement)
+  updateSelectionDisplay: (panelElement) => panelSelectionSyncDisplayService.updateSelectionDisplay(panelElement)
 });
 const panelSlotRenderService = createPanelSlotRenderService({
   resolveDynamicGridLayout,
-  createPanelSlotElement: (slotIndex) => createPanelSlotElement(slotIndex),
+  createPanelSlotElement: (slotIndex) => panelSlotBindingService.createPanelSlotElement(slotIndex),
   toPanelButtonKey,
   normalizeItemDescription,
   panelFallbackItemIcon: PANEL_FALLBACK_ITEM_ICON,
@@ -291,79 +291,89 @@ const panelTargetPickService = createPanelTargetPickService({
   panelId: PANEL_ID,
   topPanelId: TOP_PANEL_ID,
   pickCursor: PANEL_ATTACK_PICK_CURSOR,
-  getControlPanelState: () => getControlPanelState(),
+  getControlPanelState: () => panelContextAccessService.getControlPanelState(),
   hideStatusTooltip,
   showOverlayTooltip,
   copyPoint: towCombatOverlayCopyPoint,
   tokenAtPoint: towCombatOverlayTokenAtPoint,
   isAltModifier: towCombatOverlayIsAltModifier,
-  runPanelAttackOnTarget: (sourceToken, targetToken, attackItem, options) => runPanelAttackOnTarget(sourceToken, targetToken, attackItem, options),
-  runPanelAimAction: (actor, sourceToken, options) => runPanelAimAction(actor, sourceToken, options),
-  runPanelHelpAction: (actor, sourceToken, options) => runPanelHelpAction(actor, sourceToken, options)
+  runPanelAttackOnTarget: (sourceToken, targetToken, attackItem, options) => (
+    panelActionExecutionService.runPanelAttackOnTarget(sourceToken, targetToken, attackItem, options)
+  ),
+  runPanelAimAction: (actor, sourceToken, options) => panelActionExecutionService.runPanelAimAction(actor, sourceToken, options),
+  runPanelHelpAction: (actor, sourceToken, options) => panelActionExecutionService.runPanelHelpAction(actor, sourceToken, options)
 });
 const panelActionExecutionService = createPanelActionExecutionService({
-  getOverlayAutomationRef: () => getOverlayAutomationRef(),
+  getOverlayAutomationRef: () => towCombatOverlayAutomation ?? createTowCombatOverlayAutomationCoordinator(),
   panelStaggerPatchDurationMs: PANEL_STAGGER_PATCH_DURATION_MS,
   autoApplyWaitMs: AUTO_APPLY_WAIT_MS,
   opposedLinkWaitMs: OPPOSED_LINK_WAIT_MS,
   autoDefenceWaitMs: AUTO_DEFENCE_WAIT_MS,
   setupAbilityTestWithDamage: towCombatOverlaySetupAbilityTestWithDamage,
   rollSkill: towCombatOverlayRollSkill,
-  armAutoSubmitActionSkillDialog: (actor, skill) => armAutoSubmitActionSkillDialog(actor, skill),
-  runDefaultPanelActorAction: (actor, actionKey) => runDefaultPanelActorAction(actor, actionKey),
+  armAutoSubmitActionSkillDialog: (actor, skill) => panelActionFlowService.armAutoSubmitActionSkillDialog(actor, skill),
+  runDefaultPanelActorAction: (actor, actionKey) => panelActionFlowService.runDefaultPanelActorAction(actor, actionKey),
   getSystemAdapter: () => getTowCombatOverlaySystemAdapter(),
   createRollContext: createTowCombatOverlayRollContext,
-  armApplyRollModifiersToNextTestDialog: (actor, options) => armApplyRollModifiersToNextTestDialog(actor, options),
-  armAutoPickFirstHelpSkillDialog: (actor) => armAutoPickFirstHelpSkillDialog(actor)
+  armApplyRollModifiersToNextTestDialog: (actor, options) => (
+    panelActionFlowService.armApplyRollModifiersToNextTestDialog(actor, options)
+  ),
+  armAutoPickFirstHelpSkillDialog: (actor) => panelActionFlowService.armAutoPickFirstHelpSkillDialog(actor)
 });
 const panelSlotClickService = createPanelSlotClickService({
   panelId: PANEL_ID,
   panelUnarmedActionId: PANEL_UNARMED_ACTION_ID,
   parsePanelButtonKey,
-  getSingleControlledActor: () => getSingleControlledActor(),
-  getSingleControlledToken: () => getSingleControlledToken(),
+  getSingleControlledActor: () => panelContextAccessService.getSingleControlledActor(),
+  getSingleControlledToken: () => panelContextAccessService.getSingleControlledToken(),
   canEditActor: towCombatOverlayCanEditActor,
   warnNoPermission: towCombatOverlayWarnNoPermission,
   isAltModifier: towCombatOverlayIsAltModifier,
   isShiftModifier: towCombatOverlayIsShiftModifier,
   isCtrlModifier: towCombatOverlayIsCtrlModifier,
-  clearPanelAttackPickMode: () => clearPanelAttackPickMode(),
+  clearPanelAttackPickMode: () => panelTargetPickService.clearPickMode(),
   startPanelAimPickMode: (panelElement, slotElement, sourceToken, originEvent, options) => (
-    startPanelAimPickMode(panelElement, slotElement, sourceToken, originEvent, options)
+    panelTargetPickService.startAimPickMode(panelElement, slotElement, sourceToken, originEvent, options)
   ),
   startPanelHelpPickMode: (panelElement, slotElement, sourceToken, originEvent, options) => (
-    startPanelHelpPickMode(panelElement, slotElement, sourceToken, originEvent, options)
+    panelTargetPickService.startHelpPickMode(panelElement, slotElement, sourceToken, originEvent, options)
   ),
   startPanelAttackPickMode: (panelElement, slotElement, sourceToken, attackItem, originEvent, options) => (
-    startPanelAttackPickMode(panelElement, slotElement, sourceToken, attackItem, originEvent, options)
+    panelTargetPickService.startAttackPickMode(panelElement, slotElement, sourceToken, attackItem, originEvent, options)
   ),
-  runPanelAimAction: (actor, sourceToken, options) => runPanelAimAction(actor, sourceToken, options),
-  runPanelHelpAction: (actor, sourceToken, options) => runPanelHelpAction(actor, sourceToken, options),
-  resetPanelAccumulatePowerValues: (actor) => resetPanelAccumulatePowerValues(actor),
-  resolveActorMiscastState: (actor) => resolveActorMiscastState(actor),
-  runPanelAccumulatePowerAction: (actor, options) => runPanelAccumulatePowerAction(actor, options),
-  runPanelActorAction: (actor, actionKey, options) => runPanelActorAction(actor, actionKey, options),
-  runPanelRecoverAction: (actor, subAction, options) => runPanelRecoverAction(actor, subAction, options),
-  runPanelManoeuvreAction: (actor, subAction, options) => runPanelManoeuvreAction(actor, subAction, options),
-  spellRequiresTargetPick: (spell) => spellRequiresTargetPick(spell),
-  withTemporaryUserTargets: (targetToken, callback) => withTemporaryUserTargets(targetToken, callback),
-  runPanelCastSpecificSpellFromAccumulatedPower: (actor, spell, options) => runPanelCastSpecificSpellFromAccumulatedPower(actor, spell, options),
-  spellTargetsSelf: (spell) => spellTargetsSelf(spell),
-  updateSelectionDisplay: (panelElement) => updateSelectionDisplay(panelElement),
-  withTemporaryPanelUnarmedAbility: (actor, callback) => withTemporaryPanelUnarmedAbility(actor, callback),
+  runPanelAimAction: (actor, sourceToken, options) => panelActionExecutionService.runPanelAimAction(actor, sourceToken, options),
+  runPanelHelpAction: (actor, sourceToken, options) => panelActionExecutionService.runPanelHelpAction(actor, sourceToken, options),
+  resetPanelAccumulatePowerValues: (actor) => panelSpellAutoApplyService.resetPanelAccumulatePowerValues(actor),
+  resolveActorMiscastState: (actor) => panelSpellSupportService.resolveActorMiscastState(actor),
+  runPanelAccumulatePowerAction: (actor, options) => panelActionFlowService.runPanelAccumulatePowerAction(actor, options),
+  runPanelActorAction: (actor, actionKey, options) => panelActionFlowService.runPanelActorAction(actor, actionKey, options),
+  runPanelRecoverAction: (actor, subAction, options) => panelActionFlowService.runPanelRecoverAction(actor, subAction, options),
+  runPanelManoeuvreAction: (actor, subAction, options) => panelActionFlowService.runPanelManoeuvreAction(actor, subAction, options),
+  spellRequiresTargetPick: (spell) => panelSpellSupportService.spellRequiresTargetPick(spell),
+  withTemporaryUserTargets: (targetToken, callback) => panelActionExecutionService.withTemporaryUserTargets(targetToken, callback),
+  runPanelCastSpecificSpellFromAccumulatedPower: (actor, spell, options) => (
+    panelSpellAutoApplyService.runPanelCastSpecificSpellFromAccumulatedPower(actor, spell, options)
+  ),
+  spellTargetsSelf: (spell) => panelSpellSupportService.spellTargetsSelf(spell),
+  updateSelectionDisplay: (panelElement) => panelSelectionSyncDisplayService.updateSelectionDisplay(panelElement),
+  withTemporaryPanelUnarmedAbility: (actor, callback) => panelUnarmedLifecycleService.withTemporaryPanelUnarmedAbility(actor, callback),
   setupAbilityTestWithDamage: towCombatOverlaySetupAbilityTestWithDamage,
   runPanelUnarmedAttackOnTarget: (sourceToken, targetToken, attackItem, options) => (
-    runPanelUnarmedAttackOnTarget(sourceToken, targetToken, attackItem, options)
+    panelActionExecutionService.runPanelUnarmedAttackOnTarget(sourceToken, targetToken, attackItem, options)
   ),
-  ensurePanelAttackResourceStateBeforeUse: (actor, attackItem) => ensurePanelAttackResourceStateBeforeUse(actor, attackItem),
+  ensurePanelAttackResourceStateBeforeUse: (actor, attackItem) => (
+    panelAttackResourceService.ensurePanelAttackResourceStateBeforeUse(actor, attackItem)
+  ),
   resolvePanelAttackAmmoState,
   writePanelAttackAmmoState,
   runPanelAttackOnTarget: (sourceToken, targetToken, attackItem, options) => (
-    runPanelAttackOnTarget(sourceToken, targetToken, attackItem, options)
+    panelActionExecutionService.runPanelAttackOnTarget(sourceToken, targetToken, attackItem, options)
   )
 });
 const panelActionFlowService = createPanelActionFlowService({
-  withPatchedActionSkillTestContext: (actor, callback) => withPatchedActionSkillTestContext(actor, callback),
+  withPatchedActionSkillTestContext: (actor, callback) => withPatchedPanelActionSkillTestContext(actor, callback, {
+    createRollContext: createTowCombatOverlayRollContext
+  }),
   getTowCombatOverlayActorRollModifierFields,
   towCombatOverlayArmAutoSubmitDialog,
   towCombatOverlayDefenceActor,
@@ -380,26 +390,28 @@ const panelActionEntriesService = createPanelActionEntriesService({
   panelRecoverIconByKey: PANEL_RECOVER_ICON_BY_KEY,
   panelFallbackItemIcon: PANEL_FALLBACK_ITEM_ICON,
   actorHasMagicCasting,
-  resolvePanelCastingLore: (actor) => resolvePanelCastingLore(actor),
+  resolvePanelCastingLore: (actor) => panelActionFlowService.resolvePanelCastingLore(actor),
   normalizeDescriptionSource
 });
 const panelSpellAutoApplyService = createPanelSpellAutoApplyService({
-  getOverlayAutomationRef: () => getOverlayAutomationRef(),
+  getOverlayAutomationRef: () => towCombatOverlayAutomation ?? createTowCombatOverlayAutomationCoordinator(),
   panelStaggerPatchDurationMs: PANEL_STAGGER_PATCH_DURATION_MS,
   autoApplyWaitMs: AUTO_APPLY_WAIT_MS,
   armAutoResolveSpellTriggeredTestDialogs: (actor = null, { timeoutMs, matches } = {}) => (
-    armAutoResolveSpellTriggeredTestDialogs(actor, { timeoutMs, matches })
+    panelSpellSupportService.armAutoResolveSpellTriggeredTestDialogs(actor, { timeoutMs, matches })
   ),
-  spellRequiresTargetPick: (spell) => spellRequiresTargetPick(spell),
-  spellTargetsSelf: (spell) => spellTargetsSelf(spell),
-  withTemporaryUserTargets: (targetToken, callback) => withTemporaryUserTargets(targetToken, callback),
+  spellRequiresTargetPick: (spell) => panelSpellSupportService.spellRequiresTargetPick(spell),
+  spellTargetsSelf: (spell) => panelSpellSupportService.spellTargetsSelf(spell),
+  withTemporaryUserTargets: (targetToken, callback) => panelActionExecutionService.withTemporaryUserTargets(targetToken, callback),
   startPanelAttackPickMode: (panelElement, slotElement, sourceToken, attackItem, originEvent, options) => (
-    startPanelAttackPickMode(panelElement, slotElement, sourceToken, attackItem, originEvent, options)
+    panelTargetPickService.startAttackPickMode(panelElement, slotElement, sourceToken, attackItem, originEvent, options)
   ),
-  resolveActorLatestCastingPotency: (actor) => resolveActorLatestCastingPotency(actor),
-  ensurePanelItemUseRollCompatibility: () => ensurePanelItemUseRollCompatibility(),
+  resolveActorLatestCastingPotency: (actor) => panelActionEntriesService.resolveActorLatestCastingPotency(actor),
+  ensurePanelItemUseRollCompatibility: () => panelSpellSupportService.ensurePanelItemUseRollCompatibility(),
   towCombatOverlayApplyRollVisibility,
-  armApplyRollModifiersToNextTestDialog: (actor, options) => armApplyRollModifiersToNextTestDialog(actor, options),
+  armApplyRollModifiersToNextTestDialog: (actor, options) => (
+    panelActionFlowService.armApplyRollModifiersToNextTestDialog(actor, options)
+  ),
   towCombatOverlayArmAutoSubmitDialog,
   createTowCombatOverlayRollContext
 });
@@ -407,26 +419,28 @@ const panelSlotsLayoutService = createPanelSlotsLayoutService({
   iconSrcWound: ICON_SRC_WOUND,
   escapePanelHtml,
   buildPanelItemGroupsForActor,
-  getPanelActionEntries: (actor) => getPanelActionEntries(actor),
-  getPanelManoeuvreSubActionEntries: () => getPanelManoeuvreSubActionEntries(),
-  getPanelRecoverActionEntries: () => getPanelRecoverActionEntries(),
-  isPanelGeneratedUnarmedItem: (item) => isPanelGeneratedUnarmedItem(item),
+  getPanelActionEntries: (actor) => panelActionEntriesService.getPanelActionEntries(actor),
+  getPanelManoeuvreSubActionEntries: () => panelActionEntriesService.getPanelManoeuvreSubActionEntries(),
+  getPanelRecoverActionEntries: () => panelActionEntriesService.getPanelRecoverActionEntries(),
+  isPanelGeneratedUnarmedItem: (item) => panelUnarmedLifecycleService.isPanelGeneratedUnarmedItem(item),
   resolveTemporaryEffectDescription,
   panelFallbackItemIcon: PANEL_FALLBACK_ITEM_ICON,
   panelUnarmedActionId: PANEL_UNARMED_ACTION_ID,
   panelActionIconByKey: PANEL_ACTION_ICON_BY_KEY,
   resolvePanelButtonOrderScope,
-  getControlPanelState: () => getControlPanelState(),
+  getControlPanelState: () => panelContextAccessService.getControlPanelState(),
   toPanelButtonKey,
-  getDefaultPanelButtonKeyOrder: () => getDefaultPanelButtonKeyOrder(),
+  getDefaultPanelButtonKeyOrder: () => panelReorderService.getDefaultPanelButtonKeyOrder(),
   parsePanelButtonKey,
   isSyntheticEmptySlotKey,
   readSavedPanelButtonKeyOrder,
-  updateGroupSlots: (panelElement, groupKey, groupItems, actor) => updateGroupSlots(panelElement, groupKey, groupItems, actor)
+  updateGroupSlots: (panelElement, groupKey, groupItems, actor) => (
+    panelSlotRenderService.updateGroupSlots(panelElement, groupKey, groupItems, actor)
+  )
 });
 const panelSelectionSyncDisplayService = createPanelSelectionSyncDisplayService({
-  getControlPanelState: () => getControlPanelState(),
-  clearPanelAttackPickMode: () => clearPanelAttackPickMode(),
+  getControlPanelState: () => panelContextAccessService.getControlPanelState(),
+  clearPanelAttackPickMode: () => panelTargetPickService.clearPickMode(),
   getPrimaryTokenIconSrc,
   getPrimaryTokenName,
   towCombatOverlayGetResilienceValue,
@@ -436,9 +450,9 @@ const panelSelectionSyncDisplayService = createPanelSelectionSyncDisplayService(
   formatStatNumber,
   formatWoundsWithMax,
   formatMiscastDiceValue,
-  updatePanelSlots: (panelElement, token) => updatePanelSlots(panelElement, token),
-  updateStatusDisplay: (panelElement, token) => updateStatusDisplay(panelElement, token),
-  updateActionControlsDisplay: (panelElement, token) => updateActionControlsDisplay(panelElement, token),
+  updatePanelSlots: (panelElement, token) => panelSlotsLayoutService.updatePanelSlots(panelElement, token),
+  updateStatusDisplay: (panelElement, token) => panelStatusDisplayService.updateStatusDisplay(panelElement, token),
+  updateActionControlsDisplay: (panelElement, token) => panelActionControlsService.updateActionControlsDisplay(panelElement, token),
   applyInitialPanelPosition,
   applyPanelPosition,
   syncSelectionPanelPosition,
@@ -449,7 +463,7 @@ const panelStatusDisplayService = createPanelStatusDisplayService({
   getActorStatusSet
 });
 const panelReorderService = createPanelReorderService({
-  getControlPanelState: () => getControlPanelState(),
+  getControlPanelState: () => panelContextAccessService.getControlPanelState(),
   readSavedPanelButtonKeyOrder,
   writeSavedPanelButtonKeyOrder,
   parsePanelButtonKey,
@@ -459,24 +473,28 @@ const panelReorderService = createPanelReorderService({
 });
 const panelAttackResourceService = createPanelAttackResourceService({
   towCombatOverlayArmAutoSubmitDialog,
-  armApplyRollModifiersToNextTestDialog: (actor, options) => armApplyRollModifiersToNextTestDialog(actor, options),
-  withPatchedActionSkillTestContext: (actor, callback) => withPatchedActionSkillTestContext(actor, callback),
+  armApplyRollModifiersToNextTestDialog: (actor, options) => (
+    panelActionFlowService.armApplyRollModifiersToNextTestDialog(actor, options)
+  ),
+  withPatchedActionSkillTestContext: (actor, callback) => withPatchedPanelActionSkillTestContext(actor, callback, {
+    createRollContext: createTowCombatOverlayRollContext
+  }),
   getTowCombatOverlaySystemAdapter: () => getTowCombatOverlaySystemAdapter(),
   createTowCombatOverlayRollContext,
   resolvePanelAttackAmmoState,
   writePanelAttackAmmoState
 });
 const panelSlotBindingService = createPanelSlotBindingService({
-  getControlPanelState: () => getControlPanelState(),
+  getControlPanelState: () => panelContextAccessService.getControlPanelState(),
   canReorderButtons: () => isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnableButtonsDragDrop, false),
   canShowSlotTooltip: (slotElement) => panelTooltipVisibilityService.canShowControlPanelSlotTooltip(slotElement),
-  isMainActionPanelSlot: (slotElement) => isMainActionPanelSlot(slotElement),
-  getSlotPanelButtonKey: (slotElement) => getSlotPanelButtonKey(slotElement),
+  isMainActionPanelSlot: (slotElement) => panelReorderService.isMainActionPanelSlot(slotElement),
+  getSlotPanelButtonKey: (slotElement) => panelReorderService.getSlotPanelButtonKey(slotElement),
   movePanelButtonKeyBeforeTarget: (sourceKey, targetKey, panelElement) => (
-    movePanelButtonKeyBeforeTarget(sourceKey, targetKey, panelElement)
+    panelReorderService.movePanelButtonKeyBeforeTarget(sourceKey, targetKey, panelElement)
   ),
-  handlePanelSlotClick: (slotElement, event) => handlePanelSlotClick(slotElement, event),
-  updateSelectionDisplay: (panelElement) => updateSelectionDisplay(panelElement),
+  handlePanelSlotClick: (slotElement, event) => panelSlotClickService.handleSlotClick(slotElement, event),
+  updateSelectionDisplay: (panelElement) => panelSelectionSyncDisplayService.updateSelectionDisplay(panelElement),
   hideStatusTooltip,
   showOverlayTooltip
 });
@@ -486,322 +504,31 @@ const panelDomLifecycleService = createPanelDomLifecycleService({
   panelStateKey: PANEL_STATE_KEY,
   panelViewportMarginPx: PANEL_VIEWPORT_MARGIN_PX,
   panelSelectionGapPx: PANEL_SELECTION_GAP_PX,
-  getControlPanelState: () => getControlPanelState(),
+  getControlPanelState: () => panelContextAccessService.getControlPanelState(),
   removeStaleControlPanels,
-  createControlPanelElement: () => createControlPanelElement(),
+  createControlPanelElement: () => panelElementFactoryService.createControlPanelElement(),
   applyInitialPanelPosition,
   syncSelectionPanelPosition,
-  bindPanelActionControls: (panelElement) => bindPanelActionControls(panelElement),
-  bindSelectionPanelStatEvents: (selectionPanelElement) => bindSelectionPanelStatEvents(selectionPanelElement),
-  bindSelectionNameTooltipEvent: (selectionPanelElement) => bindSelectionNameTooltipEvent(selectionPanelElement),
-  bindPanelStatusesTooltipEvents: (panelElement) => bindPanelStatusesTooltipEvents(panelElement),
+  bindPanelActionControls: (panelElement) => panelActionControlsService.bindPanelActionControls(panelElement, {
+    onUpdated: () => panelSelectionSyncDisplayService.updateSelectionDisplay(panelElement)
+  }),
+  bindSelectionPanelStatEvents: (selectionPanelElement) => (
+    panelStatsStatusBindingsService.bindSelectionPanelStatEvents(selectionPanelElement)
+  ),
+  bindSelectionNameTooltipEvent: (selectionPanelElement) => (
+    panelStatsStatusBindingsService.bindSelectionNameTooltipEvent(selectionPanelElement)
+  ),
+  bindPanelStatusesTooltipEvents: (panelElement) => panelStatsStatusBindingsService.bindPanelStatusesTooltipEvents(panelElement),
   bindControlPanelDrag,
   isPanelDragEnabled: () => !isControlPanelAlwaysCenteredEnabled() && !isControlPanelLockedEnabled(),
   applyPanelPositionWithSelectionClamp,
   writeSavedPanelPosition,
-  bindPanelSelectionSync: (controlPanelState, panelElement) => bindPanelSelectionSync(controlPanelState, panelElement),
-  clearPanelAttackPickMode: () => clearPanelAttackPickMode(),
+  bindPanelSelectionSync: (controlPanelState, panelElement) => (
+    panelSelectionSyncService.bindSelectionSync(controlPanelState, panelElement)
+  ),
+  clearPanelAttackPickMode: () => panelTargetPickService.clearPickMode(),
   panelSelectionSyncService
 });
-
-
-async function toggleConditionFromPanel(actor, conditionId) {
-  return panelConditionToggleService.toggleConditionFromPanel(actor, conditionId);
-}
-
-function getSingleControlledToken() {
-  return panelContextAccessService.getSingleControlledToken();
-}
-
-function getControlPanelState() {
-  return panelContextAccessService.getControlPanelState();
-}
-
-function getDefaultPanelButtonKeyOrder() {
-  return panelReorderService.getDefaultPanelButtonKeyOrder();
-}
-function movePanelButtonKeyBeforeTarget(sourceKey, targetKey, panelElement = null) {
-  return panelReorderService.movePanelButtonKeyBeforeTarget(sourceKey, targetKey, panelElement);
-}
-function getSlotPanelButtonKey(slotElement) {
-  return panelReorderService.getSlotPanelButtonKey(slotElement);
-}
-function isMainActionPanelSlot(slotElement) {
-  return panelReorderService.isMainActionPanelSlot(slotElement);
-}
-async function createControlPanelElement() {
-  return panelElementFactoryService.createControlPanelElement();
-}
-
-function bindPanelSlotEvent(slotElement) {
-  panelSlotBindingService.bindPanelSlotEvent(slotElement);
-}
-function getOverlayAutomationRef() {
-  return towCombatOverlayAutomation ?? createTowCombatOverlayAutomationCoordinator();
-}
-
-function clearPanelAttackPickMode() {
-  panelTargetPickService.clearPickMode();
-}
-async function runPanelAttackOnTarget(sourceToken, targetToken, attackItem, { autoRoll = true } = {}) {
-  return panelActionExecutionService.runPanelAttackOnTarget(sourceToken, targetToken, attackItem, { autoRoll });
-}
-
-function isPanelGeneratedUnarmedItem(item) {
-  return panelUnarmedLifecycleService.isPanelGeneratedUnarmedItem(item);
-}
-
-async function withTemporaryPanelUnarmedAbility(actor, callback) {
-  return panelUnarmedLifecycleService.withTemporaryPanelUnarmedAbility(actor, callback);
-}
-
-function armAutoEnduranceDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState } = {}) {
-  panelActionExecutionService.armAutoEnduranceDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState });
-}
-
-async function runPanelUnarmedAttackOnTarget(sourceToken, targetToken, attackItem, { autoRoll = true } = {}) {
-  return panelActionExecutionService.runPanelUnarmedAttackOnTarget(sourceToken, targetToken, attackItem, { autoRoll });
-}
-
-async function withTemporaryUserTargets(targetToken, callback) {
-  return panelActionExecutionService.withTemporaryUserTargets(targetToken, callback);
-}
-
-async function runPanelAimAction(actor, sourceToken, { autoRoll = true, targetToken = null } = {}) {
-  return panelActionExecutionService.runPanelAimAction(actor, sourceToken, { autoRoll, targetToken });
-}
-
-async function runPanelHelpAction(actor, sourceToken, { autoRoll = true, targetToken = null } = {}) {
-  return panelActionExecutionService.runPanelHelpAction(actor, sourceToken, { autoRoll, targetToken });
-}
-
-function startPanelAttackPickMode(panelElement, slotElement, sourceToken, attackItem, originEvent = null, options = {}) {
-  panelTargetPickService.startAttackPickMode(panelElement, slotElement, sourceToken, attackItem, originEvent, options);
-}
-
-function startPanelAimPickMode(panelElement, slotElement, sourceToken, originEvent = null, options = {}) {
-  panelTargetPickService.startAimPickMode(panelElement, slotElement, sourceToken, originEvent, options);
-}
-
-function startPanelHelpPickMode(panelElement, slotElement, sourceToken, originEvent = null, options = {}) {
-  panelTargetPickService.startHelpPickMode(panelElement, slotElement, sourceToken, originEvent, options);
-}
-
-async function handlePanelSlotClick(slotElement, event) {
-  await panelSlotClickService.handleSlotClick(slotElement, event);
-}
-
-async function runDefaultPanelActorAction(actor, actionKey) {
-  return panelActionFlowService.runDefaultPanelActorAction(actor, actionKey);
-}
-
-async function withPatchedActionSkillTestContext(actor, callback) {
-  return withPatchedPanelActionSkillTestContext(actor, callback, {
-    createRollContext: createTowCombatOverlayRollContext
-  });
-}
-
-function armApplyRollModifiersToNextTestDialog(actor, { matches = null, timeoutMs = 20000 } = {}) {
-  panelActionFlowService.armApplyRollModifiersToNextTestDialog(actor, { matches, timeoutMs });
-}
-
-function armAutoSubmitActionSkillDialog(actor, skill) {
-  panelActionFlowService.armAutoSubmitActionSkillDialog(actor, skill);
-}
-
-function armAutoResolveSpellTriggeredTestDialogs(actor = null, { timeoutMs = 20000, matches = null } = {}) {
-  return panelSpellSupportService.armAutoResolveSpellTriggeredTestDialogs(actor, { timeoutMs, matches });
-}
-
-function ensurePanelItemUseRollCompatibility() {
-  panelSpellSupportService.ensurePanelItemUseRollCompatibility();
-}
-
-function armAutoPickFirstImproviseSkillDialog(actor) {
-  panelActionFlowService.armAutoPickFirstImproviseSkillDialog(actor);
-}
-
-function armAutoPickFirstHelpSkillDialog(actor) {
-  panelActionFlowService.armAutoPickFirstHelpSkillDialog(actor);
-}
-
-async function runPanelActorAction(actor, actionKey, { autoRoll = true } = {}) {
-  return panelActionFlowService.runPanelActorAction(actor, actionKey, { autoRoll });
-}
-
-function getCoreActionDescription(actionData) {
-  return panelActionEntriesService.getCoreActionDescription(actionData);
-}
-
-function resolveActorLatestCastingPotency(actor) {
-  return panelActionEntriesService.resolveActorLatestCastingPotency(actor);
-}
-
-function getPanelActionEntries(actor = null) {
-  return panelActionEntriesService.getPanelActionEntries(actor);
-}
-
-function getPanelManoeuvreSubActionEntries() {
-  return panelActionEntriesService.getPanelManoeuvreSubActionEntries();
-}
-
-function getPanelRecoverActionEntries() {
-  return panelActionEntriesService.getPanelRecoverActionEntries();
-}
-
-async function runPanelRecoverAction(actor, subAction, { autoRoll = true } = {}) {
-  return panelActionFlowService.runPanelRecoverAction(actor, subAction, { autoRoll });
-}
-
-async function runPanelManoeuvreAction(actor, subAction, { autoRoll = true } = {}) {
-  return panelActionFlowService.runPanelManoeuvreAction(actor, subAction, { autoRoll });
-}
-
-function resolvePanelCastingLore(actor) {
-  return panelActionFlowService.resolvePanelCastingLore(actor);
-}
-
-async function runPanelAccumulatePowerAction(actor, { autoRoll = true } = {}) {
-  return panelActionFlowService.runPanelAccumulatePowerAction(actor, { autoRoll });
-}
-
-async function invokeChatMessageActionByName(message, action, targetElement = null) {
-  return panelSpellAutoApplyService.invokeChatMessageActionByName(message, action, targetElement);
-}
-
-function spellRequiresTargetPick(spell) {
-  return panelSpellSupportService.spellRequiresTargetPick(spell);
-}
-
-function spellTargetsSelf(spell) {
-  return panelSpellSupportService.spellTargetsSelf(spell);
-}
-
-function armAutoProcessSpellApplyButtons(actor, spell, {
-  allowTargetPick = true,
-  onAfterApply = null,
-  sourceToken = null,
-  panelElement = null,
-  slotElement = null,
-  originEvent = null
-} = {}) {
-  panelSpellAutoApplyService.armAutoProcessSpellApplyButtons(actor, spell, {
-    allowTargetPick,
-    onAfterApply,
-    sourceToken,
-    panelElement,
-    slotElement,
-    originEvent
-  });
-}
-
-async function runPanelCastSpecificSpellFromAccumulatedPower(actor, spell, {
-  autoRollCastingTest = false,
-  autoProcessApply = true,
-  allowTargetPick = true,
-  sourceToken = null,
-  panelElement = null,
-  slotElement = null,
-  originEvent = null
-} = {}) {
-  return panelSpellAutoApplyService.runPanelCastSpecificSpellFromAccumulatedPower(actor, spell, {
-    autoRollCastingTest,
-    autoProcessApply,
-    allowTargetPick,
-    sourceToken,
-    panelElement,
-    slotElement,
-    originEvent
-  });
-}
-
-async function resetPanelAccumulatePowerValues(actor) {
-  return panelSpellAutoApplyService.resetPanelAccumulatePowerValues(actor);
-}
-
-function resolveActorMiscastState(actor) {
-  return panelSpellSupportService.resolveActorMiscastState(actor);
-}
-
-function getPanelStatTooltipData(statKey) {
-  return panelStatsStatusBindingsService.getPanelStatTooltipData(statKey);
-}
-
-function bindPanelStatsTooltipEvents(panelElement) {
-  panelStatsStatusBindingsService.bindPanelStatsTooltipEvents(panelElement);
-}
-
-function bindPanelWoundsStatEvents(panelElement) {
-  panelStatsStatusBindingsService.bindPanelWoundsStatEvents(panelElement);
-}
-
-function bindSelectionPanelStatEvents(selectionPanelElement) {
-  panelStatsStatusBindingsService.bindSelectionPanelStatEvents(selectionPanelElement);
-}
-
-function bindSelectionNameTooltipEvent(selectionPanelElement) {
-  panelStatsStatusBindingsService.bindSelectionNameTooltipEvent(selectionPanelElement);
-}
-
-function bindPanelStatusesTooltipEvents(panelElement) {
-  panelStatsStatusBindingsService.bindPanelStatusesTooltipEvents(panelElement);
-}
-
-function getSingleControlledActor() {
-  return panelContextAccessService.getSingleControlledActor();
-}
-
-function updateActionControlsDisplay(panelElement, token = null) {
-  panelActionControlsService.updateActionControlsDisplay(panelElement, token);
-}
-
-function bindPanelActionControls(panelElement) {
-  panelActionControlsService.bindPanelActionControls(panelElement, {
-    onUpdated: () => updateSelectionDisplay(panelElement)
-  });
-}
-
-function createPanelSlotElement(slotIndex) {
-  return panelSlotBindingService.createPanelSlotElement(slotIndex);
-}
-
-function armAutoSubmitReloadTestDialog(actor) {
-  panelAttackResourceService.armAutoSubmitReloadTestDialog(actor);
-}
-
-async function rollPanelReloadForAttack(actor, attackItem) {
-  return panelAttackResourceService.rollPanelReloadForAttack(actor, attackItem);
-}
-
-async function ensurePanelAttackResourceStateBeforeUse(actor, attackItem) {
-  return panelAttackResourceService.ensurePanelAttackResourceStateBeforeUse(actor, attackItem);
-}
-
-function updateGroupSlots(panelElement, groupKey, groupItems = [], actor = null) {
-  panelSlotRenderService.updateGroupSlots(panelElement, groupKey, groupItems, actor);
-}
-function updatePanelSlots(panelElement, token = null) {
-  panelSlotsLayoutService.updatePanelSlots(panelElement, token);
-}
-function updateStatusDisplay(panelElement, token = null) {
-  panelStatusDisplayService.updateStatusDisplay(panelElement, token);
-}
-
-function syncItemGroupsMinWidth(panelElement) {
-  panelSelectionSyncDisplayService.syncItemGroupsMinWidth(panelElement);
-}
-
-function fitSelectionNameFont(selectionNameMainElement, { minFontSizePx = 12 } = {}) {
-  panelSelectionSyncDisplayService.fitSelectionNameFont(selectionNameMainElement, { minFontSizePx });
-}
-
-function updateSelectionDisplay(panelElement) {
-  panelSelectionSyncDisplayService.updateSelectionDisplay(panelElement);
-}
-
-function bindPanelSelectionSync(controlPanelState, panelElement) {
-  panelSelectionSyncService.bindSelectionSync(controlPanelState, panelElement);
-}
 
 export async function towCombatOverlayEnsureControlPanel() {
   if (!canTowCombatOverlayUserViewControl(MODULE_SETTINGS.controlPanelMinimumRole, "all")) {

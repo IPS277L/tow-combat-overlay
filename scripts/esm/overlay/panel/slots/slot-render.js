@@ -30,6 +30,20 @@ export function createPanelSlotRenderService({
     return String(fallback ?? key ?? "");
   }
 
+  function joinTooltipBlocks(...blocks) {
+    return blocks
+      .map((entry) => String(entry ?? "").trim())
+      .filter(Boolean)
+      .join("<br><br>");
+  }
+
+  function withOptionalDescription(hint, description) {
+    const normalizedHint = String(hint ?? "").trim();
+    const normalizedDescription = String(description ?? "").trim();
+    if (normalizedHint && normalizedDescription) return `${normalizedHint}<br><br>${normalizedDescription}`;
+    return normalizedHint || normalizedDescription;
+  }
+
   function getGroupGridElement(panelElement, groupKey) {
     return panelElement.querySelector(
       `.tow-combat-overlay-control-panel__group-grid[data-item-group="${groupKey}"]`
@@ -265,53 +279,41 @@ export function createPanelSlotRenderService({
           ].join("<br>");
           actionsHint = `${actionsHint}<br><br>${statsHint}`;
         }
-        slotElement.dataset.tooltipDescription = itemDescription ? `${actionsHint}<br><br>${itemDescription}` : actionsHint;
+        slotElement.dataset.tooltipDescription = withOptionalDescription(actionsHint, itemDescription);
       } else if (resolvedGroupKey === "recover") {
         const recoverHint = includeClickBehaviorText
           ? ((itemKey === "recover")
           ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.RecoverMain", "<em>Left click: run Recover with auto flow</em>")
           : localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.Recover", "<em>Left click: run selected Recover action with auto flow · Alt+click: open manual dialogs for the selected Recover action</em>"))
           : "";
-        slotElement.dataset.tooltipDescription = itemDescription
-          ? `${recoverHint}<br><br>${itemDescription}`
-          : recoverHint;
+        slotElement.dataset.tooltipDescription = withOptionalDescription(recoverHint, itemDescription);
       } else if (resolvedGroupKey === "manoeuvre") {
         const manoeuvreHint = includeClickBehaviorText
           ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.Manoeuvre", "<em>Left click: auto-roll manoeuvre checks (no dialogs) · Alt+click: default Foundry manoeuvre flow (with dialogs)</em>")
           : "";
-        slotElement.dataset.tooltipDescription = itemDescription
-          ? `${manoeuvreHint}<br><br>${itemDescription}`
-          : manoeuvreHint;
+        slotElement.dataset.tooltipDescription = withOptionalDescription(manoeuvreHint, itemDescription);
       } else if (resolvedGroupKey === "temporaryEffects") {
         const infoHint = includeClickBehaviorText
           ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.TemporaryEffects", "<em>Right click: remove temporary effect.</em>")
           : "";
-        slotElement.dataset.tooltipDescription = itemDescription
-          ? `${infoHint}<br><br>${itemDescription}`
-          : infoHint;
+        slotElement.dataset.tooltipDescription = withOptionalDescription(infoHint, itemDescription);
       } else if (resolvedGroupKey === "abilities") {
         const abilitiesHint = includeClickBehaviorText
           ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.Abilities", "<em>Left click: show details.</em>")
           : "";
-        slotElement.dataset.tooltipDescription = itemDescription
-          ? `${abilitiesHint}<br><br>${itemDescription}`
-          : abilitiesHint;
+        slotElement.dataset.tooltipDescription = withOptionalDescription(abilitiesHint, itemDescription);
       } else if (resolvedGroupKey === "topChips") {
         const topChipType = String(item?.panelTopChipType ?? "").trim();
         if (topChipType === "temporaryEffects") {
           const infoHint = includeClickBehaviorText
             ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.TemporaryEffects", "<em>Right click: remove temporary effect.</em>")
             : "";
-          slotElement.dataset.tooltipDescription = itemDescription
-            ? `${infoHint}<br><br>${itemDescription}`
-            : infoHint;
+          slotElement.dataset.tooltipDescription = withOptionalDescription(infoHint, itemDescription);
         } else if (topChipType === "abilities") {
           const abilitiesHint = includeClickBehaviorText
             ? localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.Abilities", "<em>Left click: show details.</em>")
             : "";
-          slotElement.dataset.tooltipDescription = itemDescription
-            ? `${abilitiesHint}<br><br>${itemDescription}`
-            : abilitiesHint;
+          slotElement.dataset.tooltipDescription = withOptionalDescription(abilitiesHint, itemDescription);
         } else {
           slotElement.dataset.tooltipDescription = itemDescription;
         }
@@ -344,10 +346,7 @@ export function createPanelSlotRenderService({
           ? `<strong>${localize("TOWCOMBATOVERLAY.Tooltip.Panel.SlotHint.DurationLabel", "Duration")}:</strong> ${escapePanelHtml(durationLabel)}`
           : "";
         const magicStatsHint = [magicDamageHint, magicPotencyHint, magicTargetHint, magicDurationHint].filter(Boolean).join("<br>");
-        const magicBlock = [magicHint, magicStatsHint].filter(Boolean).join("<br><br>");
-        slotElement.dataset.tooltipDescription = magicBlock && itemDescription
-          ? `${magicBlock}<br><br>${itemDescription}`
-          : (magicBlock || itemDescription);
+        slotElement.dataset.tooltipDescription = joinTooltipBlocks(magicHint, magicStatsHint, itemDescription);
       } else {
         slotElement.dataset.tooltipDescription = itemDescription;
       }

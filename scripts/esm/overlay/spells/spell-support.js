@@ -1,3 +1,5 @@
+import { SPELL_SELF_TARGET_VALUES } from "./spell-targeting-constants.js";
+
 export function createPanelSpellSupportService({
   towCombatOverlayArmAutoSubmitDialog,
   getTowCombatOverlayActorRollModifierFields
@@ -68,8 +70,7 @@ export function createPanelSpellSupportService({
 
   function spellRequiresTargetPick(spell) {
     const targetValue = String(spell?.system?.target?.value ?? "").trim().toLowerCase();
-    const SELF_TARGET_KEYS = new Set(["self", "you"]);
-    const requiresPick = !targetValue || !SELF_TARGET_KEYS.has(targetValue);
+    const requiresPick = !targetValue || !SPELL_SELF_TARGET_VALUES.includes(targetValue);
     return requiresPick;
   }
 

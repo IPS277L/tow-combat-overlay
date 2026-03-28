@@ -41,6 +41,29 @@ import {
   applyTopPanelWorldOrderUpdate,
   writeSavedTopPanelPosition
 } from "../overlay/top-panel/top-panel-state.js";
+import {
+  collectActorReferenceSet,
+  collectPotentialApplyActors
+} from "../overlay/shared/actor-reference-helpers.js";
+import { getMessageActionsByPrefix } from "../overlay/shared/chat-message-action-helpers.js";
+import {
+  AUTO_APPLY_ACTION_DEFAULT_ATTEMPTS,
+  AUTO_APPLY_ACTION_DEFAULT_INTERVAL_MS,
+  AUTO_APPLY_ACTION_MIN_INTERVAL_MS,
+  AUTO_APPLY_ACTION_PRIORITY_ENTRIES,
+  AUTO_APPLY_ACTION_SETTLE_CHECKS_REQUIRED,
+  AUTO_APPLY_ACTION_STEP_DELAY_MS,
+  AUTO_APPLY_DIALOG_TIMEOUT_MS
+} from "../overlay/shared/auto-apply-action-constants.js";
+import {
+  collectTowCombatOverlayActorRefsFromCreateData,
+  collectTowCombatOverlayActorRefsFromTokens,
+  collectTowCombatOverlayRefsFromMessage,
+  collectTowCombatOverlayTokenRefsFromCreateData,
+  collectTowCombatOverlayTokenRefsFromTokens,
+  normalizeTowCombatOverlayRollMode,
+  resolveTowCombatOverlayMessageRefId
+} from "./relay/relay-reference-utils.js";
 
 function ensureTowCombatOverlayStylesheetLoaded() {
   const explicitHrefs = [
@@ -403,111 +426,6 @@ async function runDefaultPanelActorAction(actor, actionKey) {
   }
 }
 
-function resolveTowCombatOverlayMessageRefId(value) {
-  if (!value) return "";
-  if (typeof value === "string") return value.trim();
-  if (typeof value === "number" && Number.isFinite(value)) return String(value);
-  if (typeof value !== "object") return "";
-
-  const directId = String(value.id ?? value._id ?? "").trim();
-  if (directId) return directId;
-
-  const nestedMessage = value.message;
-  if (typeof nestedMessage === "string") return nestedMessage.trim();
-  if (nestedMessage && typeof nestedMessage === "object") {
-    const nestedId = String(nestedMessage.id ?? nestedMessage._id ?? "").trim();
-    if (nestedId) return nestedId;
-  }
-
-  const messageId = String(value.messageId ?? value.chatMessageId ?? "").trim();
-  if (messageId) return messageId;
-  return "";
-}
-
-function normalizeTowCombatOverlayRollMode(value) {
-  const mode = String(value ?? "").trim().toLowerCase();
-  return ["publicroll", "gmroll", "blindroll", "selfroll"].includes(mode) ? mode : "";
-}
-
-function collectTowCombatOverlayActorRefsFromCreateData(data = {}) {
-  const refs = new Set();
-  const add = (value) => {
-    const normalized = String(value ?? "").trim();
-    if (normalized) refs.add(normalized);
-  };
-  add(data?.speaker?.actor);
-  add(data?.system?.test?.context?.actor);
-  add(data?.system?.context?.actor);
-  add(data?.system?.actor?.id);
-  add(data?.system?.actor?.uuid);
-  return refs;
-}
-
-function collectTowCombatOverlayTokenRefsFromCreateData(data = {}) {
-  const refs = new Set();
-  const add = (value) => {
-    const normalized = String(value ?? "").trim();
-    if (normalized) refs.add(normalized);
-  };
-  add(data?.speaker?.token);
-  add(data?.system?.defender?.token);
-  add(data?.system?.attacker?.token);
-  const targetCandidates = [
-    data?.system?.test?.context?.targets,
-    data?.system?.context?.targets,
-    data?.system?.test?.targets,
-    data?.system?.targets
-  ];
-  for (const rawTargets of targetCandidates) {
-    if (Array.isArray(rawTargets)) {
-      for (const entry of rawTargets) {
-        add(entry?.token);
-        add(entry?.tokenId);
-        if (!entry?.actor && !entry?.actorId) add(entry?.id);
-      }
-      continue;
-    }
-    if (rawTargets && typeof rawTargets === "object") {
-      for (const [key, value] of Object.entries(rawTargets)) {
-        add(value?.token);
-        add(value?.tokenId);
-        if (!value?.actor && !value?.actorId) add(value?.id ?? key);
-      }
-    }
-  }
-  return refs;
-}
-
-function collectTowCombatOverlayActorRefsFromTokens(...tokens) {
-  const refs = new Set();
-  for (const token of tokens) {
-    const actor = token?.actor ?? token?.document?.actor ?? null;
-    const actorId = String(actor?.id ?? "").trim();
-    const actorUuid = String(actor?.uuid ?? "").trim();
-    if (actorId) refs.add(actorId);
-    if (actorUuid) refs.add(actorUuid);
-  }
-  return refs;
-}
-
-function collectTowCombatOverlayTokenRefsFromTokens(...tokens) {
-  const refs = new Set();
-  for (const token of tokens) {
-    const tokenId = String(token?.id ?? token?.document?.id ?? "").trim();
-    if (tokenId) refs.add(tokenId);
-  }
-  return refs;
-}
-
-function collectTowCombatOverlayRefsFromMessage(message = null) {
-  const actorRefs = new Set();
-  const tokenRefs = new Set();
-  const source = message?.toObject?.() ?? message ?? {};
-  for (const ref of collectTowCombatOverlayActorRefsFromCreateData(source)) actorRefs.add(ref);
-  for (const ref of collectTowCombatOverlayTokenRefsFromCreateData(source)) tokenRefs.add(ref);
-  return { actorRefs, tokenRefs };
-}
-
 async function withScopedTowCombatOverlayRelayVisibility(rollMode, callback, {
   actorRefs = null,
   tokenRefs = null,
@@ -617,56 +535,10 @@ function resolveOpposedMessageForRelay({ targetToken = null, opposedMessageId = 
   return latestByTarget;
 }
 
-function parseTowDatasetFromTag(tagHtml) {
-  const dataset = {};
-  const attrMatches = Array.from(String(tagHtml ?? "").matchAll(/\bdata-([a-z0-9_-]+)\s*=\s*["']([^"']*)["']/gi));
-  for (const match of attrMatches) {
-    const rawKey = String(match?.[1] ?? "").trim();
-    if (!rawKey) continue;
-    const camelKey = rawKey.replace(/-([a-z0-9])/gi, (_m, char) => String(char ?? "").toUpperCase());
-    dataset[camelKey] = String(match?.[2] ?? "");
-  }
-  return dataset;
-}
-
 function getTowMessageAutoApplyActions(message) {
-  const content = String(message?.content ?? "");
-  const buttonMatches = Array.from(content.matchAll(/<(button|a)\b[^>]*>/gi));
-  const actionsFromContent = buttonMatches
-    .map((match) => {
-      const tagHtml = String(match?.[0] ?? "");
-      const dataset = parseTowDatasetFromTag(tagHtml);
-      const action = String(dataset?.action ?? "").trim();
-      if (!action || !action.toLowerCase().startsWith("apply")) return null;
-      return { action, dataset };
-    })
-    .filter(Boolean);
-
-  const handlers = message?.system?.constructor?.actions ?? message?.system?.actions ?? {};
-  const availableHandlerNames = new Set(
-    Object.keys(handlers).map((name) => String(name ?? "").trim()).filter(Boolean)
-  );
-
-  const unique = [];
-  const seen = new Set();
-  for (const entry of actionsFromContent) {
-    const action = String(entry?.action ?? "").trim();
-    if (!availableHandlerNames.has(action)) continue;
-    const key = JSON.stringify({ action, dataset: entry?.dataset ?? {} });
-    if (seen.has(key)) continue;
-    seen.add(key);
-    unique.push({ action, dataset: entry?.dataset ?? {} });
-  }
-
-  const priority = new Map([
-    ["applydamage", 1],
-    ["applytargeteffect", 2]
-  ]);
-  return unique.sort((a, b) => {
-    const left = priority.get(String(a?.action ?? "").toLowerCase()) ?? 100;
-    const right = priority.get(String(b?.action ?? "").toLowerCase()) ?? 100;
-    if (left !== right) return left - right;
-    return String(a?.action ?? "").localeCompare(String(b?.action ?? ""));
+  return getMessageActionsByPrefix(message, {
+    actionPrefix: "apply",
+    priorityEntries: AUTO_APPLY_ACTION_PRIORITY_ENTRIES
   });
 }
 
@@ -686,90 +558,8 @@ async function invokeTowMessageActionByName(message, action, dataset = {}) {
     target: syntheticTarget
   };
 
-  const resolveActorFromReference = (reference) => {
-    const value = String(reference ?? "").trim();
-    if (!value) return null;
-    const actorById = game?.actors?.get?.(value) ?? null;
-    if (actorById) return actorById;
-    const tokenById = canvas?.tokens?.get?.(value)
-      ?? canvas?.tokens?.placeables?.find?.((token) => String(token?.id ?? "").trim() === value)
-      ?? null;
-    return tokenById?.actor ?? tokenById?.document?.actor ?? null;
-  };
-  const collectMessageTargetActors = (rawTargets) => {
-    const actors = [];
-    const add = (actor) => {
-      if (!actor) return;
-      if (actors.some((entry) => entry === actor || String(entry?.uuid ?? "") === String(actor?.uuid ?? ""))) return;
-      actors.push(actor);
-    };
-    if (Array.isArray(rawTargets)) {
-      for (const entry of rawTargets) {
-        add(resolveActorFromReference(
-          entry?.actor
-          ?? entry?.actorId
-          ?? entry?.token
-          ?? entry?.tokenId
-          ?? entry?.id
-          ?? entry
-        ));
-      }
-      return actors;
-    }
-    if (rawTargets instanceof Set) {
-      for (const entry of rawTargets) add(resolveActorFromReference(entry?.id ?? entry));
-      return actors;
-    }
-    if (rawTargets && typeof rawTargets === "object") {
-      for (const [key, value] of Object.entries(rawTargets)) {
-        add(resolveActorFromReference(
-          value?.actor
-          ?? value?.actorId
-          ?? value?.token
-          ?? value?.tokenId
-          ?? value?.id
-          ?? key
-        ));
-      }
-    }
-    return actors;
-  };
-  const affectedActors = [];
-  const addAffected = (actor) => {
-    if (!actor) return;
-    if (affectedActors.some((entry) => entry === actor || String(entry?.uuid ?? "") === String(actor?.uuid ?? ""))) return;
-    affectedActors.push(actor);
-  };
-  addAffected(resolveActorFromReference(
-    message?.speaker?.actor
-    ?? message?.system?.test?.context?.actor
-    ?? message?.system?.context?.actor
-  ));
-  const targetCandidates = [
-    message?.system?.test?.context?.targets,
-    message?.system?.context?.targets,
-    message?.system?.test?.targets,
-    message?.system?.targets
-  ];
-  for (const rawTargets of targetCandidates) {
-    for (const actor of collectMessageTargetActors(rawTargets)) addAffected(actor);
-  }
-  for (const [key, value] of Object.entries(dataset ?? {})) {
-    const lowerKey = String(key ?? "").trim().toLowerCase();
-    if (!lowerKey || lowerKey === "action") continue;
-    if (!/(actor|token|target)/i.test(lowerKey)) continue;
-    addAffected(resolveActorFromReference(value));
-  }
-  for (const token of Array.from(game?.user?.targets ?? [])) {
-    addAffected(token?.actor ?? token?.document?.actor ?? null);
-  }
-  const affectedActorRefs = new Set();
-  for (const actor of affectedActors) {
-    const actorId = String(actor?.id ?? "").trim();
-    const actorUuid = String(actor?.uuid ?? "").trim();
-    if (actorId) affectedActorRefs.add(actorId);
-    if (actorUuid) affectedActorRefs.add(actorUuid);
-  }
+  const affectedActors = collectPotentialApplyActors(message, dataset);
+  const affectedActorRefs = collectActorReferenceSet(affectedActors);
 
   const restoreAutoSubmitTestDialog = towCombatOverlayArmAutoSubmitDialog({
     hookName: "renderTestDialog",
@@ -781,7 +571,7 @@ async function invokeTowMessageActionByName(message, action, dataset = {}) {
         || (appActorUuid && affectedActorRefs.has(appActorUuid));
     },
     submitErrorMessage: "TestDialog.submit() is unavailable.",
-    timeoutMs: 2500
+    timeoutMs: AUTO_APPLY_DIALOG_TIMEOUT_MS
   });
   const restoreAutoSubmitItemDialog = towCombatOverlayArmAutoSubmitDialog({
     hookName: "renderItemDialog",
@@ -797,7 +587,7 @@ async function invokeTowMessageActionByName(message, action, dataset = {}) {
       if (!Number.isFinite(itemCount) || itemCount <= 0) return;
       app.chosen = [0];
     },
-    timeoutMs: 2500
+    timeoutMs: AUTO_APPLY_DIALOG_TIMEOUT_MS
   });
   try {
     await handler.call(system, syntheticEvent, syntheticTarget);
@@ -810,7 +600,10 @@ async function invokeTowMessageActionByName(message, action, dataset = {}) {
   }
 }
 
-async function waitAndInvokeTowAutoApplyActionsInMessage(messageId, { attempts = 16, intervalMs = 80 } = {}) {
+async function waitAndInvokeTowAutoApplyActionsInMessage(messageId, {
+  attempts = AUTO_APPLY_ACTION_DEFAULT_ATTEMPTS,
+  intervalMs = AUTO_APPLY_ACTION_DEFAULT_INTERVAL_MS
+} = {}) {
   const id = String(messageId ?? "").trim();
   if (!id) return false;
   const getActionKey = (entry) => JSON.stringify({
@@ -818,7 +611,7 @@ async function waitAndInvokeTowAutoApplyActionsInMessage(messageId, { attempts =
     dataset: entry?.dataset ?? {}
   });
   const total = Math.max(1, Math.trunc(Number(attempts) || 1));
-  const waitMs = Math.max(10, Math.trunc(Number(intervalMs) || 0));
+  const waitMs = Math.max(AUTO_APPLY_ACTION_MIN_INTERVAL_MS, Math.trunc(Number(intervalMs) || 0));
   const executedActionKeys = new Set();
   let anyInvoked = false;
   let settledNoActionsChecks = 0;
@@ -834,7 +627,7 @@ async function waitAndInvokeTowAutoApplyActionsInMessage(messageId, { attempts =
         invoked = true;
         executedActionKeys.add(getActionKey({ action, dataset }));
       }
-      await new Promise((resolve) => setTimeout(resolve, 20));
+      await new Promise((resolve) => setTimeout(resolve, AUTO_APPLY_ACTION_STEP_DELAY_MS));
     }
     anyInvoked = anyInvoked || invoked;
     const messageAfter = game?.messages?.get?.(id) ?? null;
@@ -842,7 +635,7 @@ async function waitAndInvokeTowAutoApplyActionsInMessage(messageId, { attempts =
     const hasPendingActionsAfter = actionsAfter.some((entry) => !executedActionKeys.has(getActionKey(entry)));
     if (!hasPendingActionsAfter && (invoked || hadActionsBefore || anyInvoked)) {
       settledNoActionsChecks += 1;
-      if (settledNoActionsChecks >= 2) return true;
+      if (settledNoActionsChecks >= AUTO_APPLY_ACTION_SETTLE_CHECKS_REQUIRED) return true;
     } else {
       settledNoActionsChecks = 0;
     }
