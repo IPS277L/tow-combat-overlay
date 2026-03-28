@@ -1,3 +1,14 @@
+import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
+
+const {
+  moduleId: TOW_MODULE_ID,
+  sockets: TOW_SOCKETS,
+  flags: TOW_FLAGS
+} = getTowCombatOverlayConstants();
+
+const RELAY_WAIT_NOTICE_DELAY_MS = 2500;
+const RELAY_WAIT_NOTICE_COOLDOWN_MS = 10000;
+
 export function createPanelActionExecutionService({
   getOverlayAutomationRef,
   panelStaggerPatchDurationMs,
@@ -13,8 +24,80 @@ export function createPanelActionExecutionService({
   armApplyRollModifiersToNextTestDialog,
   armAutoPickFirstHelpSkillDialog
 } = {}) {
+  let lastRelayWaitNoticeAt = 0;
+
+  function resolveCanvasTokenById(tokenId) {
+    const id = String(tokenId ?? "").trim();
+    if (!id) return null;
+    const tokenByScene = canvas?.scene?.tokens?.get?.(id)?.object ?? null;
+    if (tokenByScene) return tokenByScene;
+    const placeables = Array.isArray(canvas?.tokens?.placeables) ? canvas.tokens.placeables : [];
+    return placeables.find((token) => String(token?.id ?? "") === id) ?? null;
+  }
+
+  function shouldShowRelayWaitNotice(payload = {}) {
+    const actionType = String(payload?.actionType ?? "").trim().toLowerCase();
+    if (!actionType) return false;
+    if (actionType === "defence") {
+      const targetToken = resolveCanvasTokenById(payload?.targetTokenId);
+      const opposedId = String(targetToken?.actor?.system?.opposed?.id ?? "").trim();
+      if (!opposedId) return true;
+      const opposedMessage = game?.messages?.get?.(opposedId) ?? null;
+      if (!opposedMessage) return true;
+      const computed = opposedMessage?.system?.result?.computed === true;
+      const applied = opposedMessage?.system?.result?.damage?.applied === true;
+      return !(computed || applied);
+    }
+    return true;
+  }
+
+  function scheduleRelayWaitNotice(payload = {}) {
+    setTimeout(() => {
+      const now = Date.now();
+      if (now - lastRelayWaitNoticeAt < RELAY_WAIT_NOTICE_COOLDOWN_MS) return;
+      if (!shouldShowRelayWaitNotice(payload)) return;
+      lastRelayWaitNoticeAt = now;
+      ui?.notifications?.info?.("Waiting for an active GM client to continue this action.");
+    }, RELAY_WAIT_NOTICE_DELAY_MS);
+  }
+
+  function hasActiveGmUser() {
+    const users = game?.users ? Array.from(game.users) : [];
+    return users.some((user) => user?.isGM === true && user?.active === true);
+  }
+
+  function requestGmActionRelay(type, payload = {}) {
+    const actionType = String(type ?? "").trim();
+    if (!actionType || game?.user?.isGM === true) return false;
+    if (!hasActiveGmUser()) return false;
+    const socket = game?.socket;
+    if (!socket?.emit) return false;
+
+    const relayPayload = {
+      ...payload,
+      actionType,
+      requesterId: String(game?.user?.id ?? "").trim(),
+      timestamp: Date.now()
+    };
+
+    const currentUser = game?.user;
+    const relayFlagKey = String(TOW_FLAGS?.actionRelayRequest ?? "actionRelayRequest");
+    if (currentUser?.setFlag) {
+      void Promise.resolve(currentUser.setFlag(TOW_MODULE_ID, relayFlagKey, relayPayload)).catch(() => {});
+    }
+
+    const requestType = String(TOW_SOCKETS?.actionRelayRequest ?? "actionRelayRequest");
+    socket.emit(`module.${TOW_MODULE_ID}`, {
+      type: requestType,
+      payload: relayPayload
+    });
+    scheduleRelayWaitNotice(relayPayload);
+    return true;
+  }
+
   function armAutoEnduranceDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState } = {}) {
-    if (!sourceToken?.actor || !targetToken?.actor?.isOwner) return;
+    if (!sourceToken?.actor || !targetToken?.actor) return;
+    if (targetToken.actor.isOwner !== true && game?.user?.isGM !== true) return;
 
     let timeoutId = null;
     const cleanup = (hookId) => {
@@ -36,6 +119,16 @@ export function createPanelActionExecutionService({
       while (Date.now() - started < opposedLinkWaitMs) {
         if (targetToken.actor.system?.opposed?.id === message.id) break;
         await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+
+      if (targetToken.actor.isOwner !== true) {
+        requestGmActionRelay("defence", {
+          sourceTokenId: String(sourceToken?.id ?? ""),
+          targetTokenId: String(targetToken?.id ?? ""),
+          opposedMessageId: String(message?.id ?? ""),
+          autoRoll: true
+        });
+        return;
       }
 
       await rollSkill(targetToken.actor, "endurance", { autoRoll: true });
@@ -102,15 +195,24 @@ export function createPanelActionExecutionService({
   async function runPanelAttackOnTarget(sourceToken, targetToken, attackItem, { autoRoll = true } = {}) {
     const sourceActor = sourceToken?.actor ?? sourceToken?.document?.actor ?? null;
     if (!sourceActor || !targetToken || !attackItem) return;
+    const needsGmDefenceRelay = game?.user?.isGM !== true && targetToken?.actor?.isOwner !== true;
     const automation = getOverlayAutomationRef();
     const sourceBeforeState = automation.snapshotActorState(sourceActor);
     const restoreStaggerPrompt = automation.armDefaultStaggerChoiceWound(panelStaggerPatchDurationMs);
     automation.armAutoDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState });
 
     try {
-      await withTemporaryUserTargets(targetToken, () => setupAbilityTestWithDamage(sourceActor, attackItem, {
+      const testRef = await withTemporaryUserTargets(targetToken, () => setupAbilityTestWithDamage(sourceActor, attackItem, {
         autoRoll
       }));
+      if (needsGmDefenceRelay) {
+        requestGmActionRelay("defence", {
+          sourceTokenId: String(sourceToken?.id ?? ""),
+          targetTokenId: String(targetToken?.id ?? ""),
+          attackerMessageId: String(testRef?.context?.messageId ?? ""),
+          autoRoll: true
+        });
+      }
     } finally {
       setTimeout(() => restoreStaggerPrompt(), autoApplyWaitMs);
     }
@@ -119,15 +221,26 @@ export function createPanelActionExecutionService({
   async function runPanelUnarmedAttackOnTarget(sourceToken, targetToken, attackItem, { autoRoll = true } = {}) {
     const sourceActor = sourceToken?.actor ?? sourceToken?.document?.actor ?? null;
     if (!sourceActor || !targetToken || !attackItem) return;
+    const needsGmDefenceRelay = game?.user?.isGM !== true && targetToken?.actor?.isOwner !== true;
     const automation = getOverlayAutomationRef();
     const sourceBeforeState = automation.snapshotActorState(sourceActor);
     const restoreStaggerPrompt = automation.armDefaultStaggerChoiceWound(panelStaggerPatchDurationMs);
     armAutoEnduranceDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState });
 
     try {
-      return await withTemporaryUserTargets(targetToken, () => setupAbilityTestWithDamage(sourceActor, attackItem, {
+      const testRef = await withTemporaryUserTargets(targetToken, () => setupAbilityTestWithDamage(sourceActor, attackItem, {
         autoRoll
       }));
+      if (needsGmDefenceRelay) {
+        requestGmActionRelay("defence", {
+          sourceTokenId: String(sourceToken?.id ?? ""),
+          targetTokenId: String(targetToken?.id ?? ""),
+          attackerMessageId: String(testRef?.context?.messageId ?? ""),
+          preferredSkill: "endurance",
+          autoRoll: true
+        });
+      }
+      return testRef;
     } finally {
       setTimeout(() => restoreStaggerPrompt(), autoApplyWaitMs);
     }
@@ -158,6 +271,14 @@ export function createPanelActionExecutionService({
 
   async function runPanelHelpAction(actor, sourceToken, { autoRoll = true, targetToken = null } = {}) {
     if (!actor) return;
+    if (targetToken && game?.user?.isGM !== true && targetToken?.actor && targetToken.actor.isOwner !== true) {
+      const relayed = requestGmActionRelay("help", {
+        sourceTokenId: String(sourceToken?.id ?? ""),
+        targetTokenId: String(targetToken?.id ?? ""),
+        autoRoll: autoRoll !== false
+      });
+      if (relayed) return;
+    }
     const execute = async () => {
       armApplyRollModifiersToNextTestDialog(actor, {
         matches: (app) => String(app?.context?.action ?? "").toLowerCase() === "help"

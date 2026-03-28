@@ -14,10 +14,12 @@ const MODULE_CONSTANTS_BASE = Object.freeze({
   flags: Object.freeze({
     actorRollModifier: "actorRollModifier",
     topPanelOrderRequest: "topPanelOrderRequest",
+    actionRelayRequest: "actionRelayRequest",
     chatVisibility: "chatVisibility"
   }),
   sockets: Object.freeze({
-    topPanelOrderRequest: "topPanelOrderRequest"
+    topPanelOrderRequest: "topPanelOrderRequest",
+    actionRelayRequest: "actionRelayRequest"
   }),
   settings: Object.freeze({
     enableOverlay: "enableOverlay",

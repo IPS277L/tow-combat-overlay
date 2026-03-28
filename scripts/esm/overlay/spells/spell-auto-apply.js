@@ -1,3 +1,11 @@
+import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
+
+const {
+  moduleId: TOW_MODULE_ID,
+  sockets: TOW_SOCKETS,
+  flags: TOW_FLAGS
+} = getTowCombatOverlayConstants();
+
 export function createPanelSpellAutoApplyService({
   getOverlayAutomationRef,
   panelStaggerPatchDurationMs,
@@ -18,6 +26,34 @@ export function createPanelSpellAutoApplyService({
   let directTestPatchOriginalFromData = null;
   let directTestPatchNextContextId = 1;
   const directTestPatchContexts = new Map();
+
+  function hasActiveGmUser() {
+    const users = game?.users ? Array.from(game.users) : [];
+    return users.some((user) => user?.isGM === true && user?.active === true);
+  }
+
+  function requestGmSpellAutoApplyRelay(messageId, targetToken = null) {
+    if (game?.user?.isGM === true) return false;
+    if (!hasActiveGmUser()) return false;
+    const socket = game?.socket;
+    if (!socket?.emit) return false;
+    const relayPayload = {
+      actionType: "spellAutoApply",
+      messageId: String(messageId ?? "").trim(),
+      targetTokenId: String(targetToken?.id ?? "").trim(),
+      requesterId: String(game?.user?.id ?? "").trim(),
+      timestamp: Date.now()
+    };
+    const relayFlagKey = String(TOW_FLAGS?.actionRelayRequest ?? "actionRelayRequest");
+    if (game?.user?.setFlag) {
+      void Promise.resolve(game.user.setFlag(TOW_MODULE_ID, relayFlagKey, relayPayload)).catch(() => {});
+    }
+    socket.emit(`module.${TOW_MODULE_ID}`, {
+      type: String(TOW_SOCKETS?.actionRelayRequest ?? "actionRelayRequest"),
+      payload: relayPayload
+    });
+    return true;
+  }
 
   function resolveActorRefsFromTestData(sourceData = {}) {
     return [
@@ -430,14 +466,49 @@ export function createPanelSpellAutoApplyService({
     attempts = 16,
     intervalMs = 80
   } = {}) {
+    const getActionKey = (entry) => JSON.stringify({
+      action: String(entry?.action ?? "").trim(),
+      dataset: entry?.dataset ?? {}
+    });
     const total = Math.max(1, Math.trunc(Number(attempts) || 1));
     const waitMs = Math.max(10, Math.trunc(Number(intervalMs) || 0));
+    const executedActionKeys = new Set();
+    let anyInvoked = false;
+    let settledNoActionsChecks = 0;
     for (let i = 0; i < total; i += 1) {
-      const invoked = await invokeAutoApplyActionsInMessage(messageId);
-      if (invoked) return true;
+      const currentMessage = game?.messages?.get?.(String(messageId ?? "").trim()) ?? null;
+      const actionsBefore = getMessageAutoApplyActions(currentMessage);
+      const hadActionsBefore = actionsBefore.length > 0;
+      const pendingBefore = actionsBefore.filter((entry) => !executedActionKeys.has(getActionKey(entry)));
+      let invoked = false;
+      for (const { action, dataset } of pendingBefore) {
+        const actionKey = getActionKey({ action, dataset });
+        const syntheticTarget = { dataset: { ...dataset, action } };
+        const done = await invokeChatMessageActionByName(
+          currentMessage,
+          action,
+          syntheticTarget,
+          { visibilitySourceMessage: currentMessage }
+        );
+        if (done) {
+          invoked = true;
+          executedActionKeys.add(actionKey);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      anyInvoked = anyInvoked || invoked;
+      const latestMessage = game?.messages?.get?.(String(messageId ?? "").trim()) ?? null;
+      const actionsAfter = getMessageAutoApplyActions(latestMessage);
+      const hasPendingActionsAfter = actionsAfter.some((entry) => !executedActionKeys.has(getActionKey(entry)));
+      if (!hasPendingActionsAfter && (invoked || hadActionsBefore || anyInvoked)) {
+        settledNoActionsChecks += 1;
+        if (settledNoActionsChecks >= 2) return true;
+      } else {
+        settledNoActionsChecks = 0;
+      }
       await new Promise((resolve) => setTimeout(resolve, waitMs));
     }
-    return false;
+    return anyInvoked;
   }
 
   function messageHasExplicitTargets(message) {
@@ -453,6 +524,16 @@ export function createPanelSpellAutoApplyService({
       if (value && typeof value === "object") return Object.keys(value).length > 0;
       return false;
     });
+  }
+
+  function hasNonOwnedUserTargets() {
+    const targets = Array.from(game?.user?.targets ?? []);
+    return targets.some((token) => token?.actor && token.actor.isOwner !== true);
+  }
+
+  function messageHasNonOwnedApplyTargets(message) {
+    const actors = collectPotentialApplyActors(message, {});
+    return actors.some((actor) => actor && actor.isOwner !== true);
   }
 
   async function resetPanelAccumulatePowerValues(actor) {
@@ -533,12 +614,22 @@ export function createPanelSpellAutoApplyService({
               if (typeof onAfterApply === "function") await onAfterApply();
               return;
             }
+            if (hasNonOwnedUserTargets() || messageHasNonOwnedApplyTargets(message)) {
+              requestGmSpellAutoApplyRelay(messageId, Array.from(game?.user?.targets ?? [])[0] ?? null);
+              if (typeof onAfterApply === "function") await onAfterApply();
+              return;
+            }
             await waitAndInvokeAutoApplyActionsInMessage(messageId);
             if (typeof onAfterApply === "function") await onAfterApply();
             return;
           }
           startPanelAttackPickMode(panelElement, slotElement, sourceToken, { id: "spell-auto-apply" }, originEvent, {
             onTargetAttack: async (targetToken) => {
+              if (targetToken?.actor && targetToken.actor.isOwner !== true && game?.user?.isGM !== true) {
+                requestGmSpellAutoApplyRelay(messageId, targetToken);
+                if (typeof onAfterApply === "function") await onAfterApply();
+                return;
+              }
               await withTemporaryUserTargets(targetToken, async () => {
                 await waitAndInvokeAutoApplyActionsInMessage(messageId);
               });

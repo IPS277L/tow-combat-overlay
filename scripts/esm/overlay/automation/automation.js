@@ -84,7 +84,8 @@ export function armDefaultStaggerChoiceWound(durationMs = AUTO_STAGGER_PATCH_MS)
 
 export function armAutoDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState } = {}) {
 
-  if (!sourceToken?.actor || !targetToken?.actor?.isOwner) return;
+  if (!sourceToken?.actor || !targetToken?.actor) return;
+  if (targetToken.actor.isOwner !== true && game?.user?.isGM !== true) return;
 
   let timeoutId = null;
   const cleanup = (hookId) => {
