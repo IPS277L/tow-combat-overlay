@@ -55,6 +55,7 @@ import {
   AUTO_APPLY_ACTION_STEP_DELAY_MS,
   AUTO_APPLY_DIALOG_TIMEOUT_MS
 } from "../overlay/shared/auto-apply-action-constants.js";
+import { ACTION_RELAY_OPPOSED_DISCOVERY_WAIT_MS } from "../runtime/action-constants.js";
 import {
   collectTowCombatOverlayActorRefsFromCreateData,
   collectTowCombatOverlayActorRefsFromTokens,
@@ -64,6 +65,8 @@ import {
   normalizeTowCombatOverlayRollMode,
   resolveTowCombatOverlayMessageRefId
 } from "./relay/relay-reference-utils.js";
+
+const ACTION_RELAY_POST_DEFENCE_SETTLE_MS = ACTION_RELAY_OPPOSED_DISCOVERY_WAIT_MS;
 
 function ensureTowCombatOverlayStylesheetLoaded() {
   const explicitHrefs = [
@@ -711,7 +714,7 @@ async function handleTowCombatOverlayActionRelayPayload(payload) {
     const sourceBeforeState = towCombatOverlayAutomation.snapshotActorState(sourceToken.actor);
     const started = Date.now();
     let opposedMessage = null;
-    while ((Date.now() - started) < 5000) {
+    while ((Date.now() - started) < ACTION_RELAY_OPPOSED_DISCOVERY_WAIT_MS) {
       opposedMessage = resolveOpposedMessageForRelay({
         targetToken,
         opposedMessageId,
@@ -729,11 +732,11 @@ async function handleTowCombatOverlayActionRelayPayload(payload) {
       actorRefs: relayActorRefs,
       tokenRefs: relayTokenRefs,
       messageRefs: new Set([attackerMessageId, opposedMessageId].filter(Boolean)),
-      settleMs: 5000
+      settleMs: ACTION_RELAY_POST_DEFENCE_SETTLE_MS
     });
     if (!opposedMessage) {
       const afterDefenceStarted = Date.now();
-      while ((Date.now() - afterDefenceStarted) < 3000) {
+      while ((Date.now() - afterDefenceStarted) < ACTION_RELAY_POST_DEFENCE_SETTLE_MS) {
         opposedMessage = resolveOpposedMessageForRelay({
           targetToken,
           opposedMessageId,

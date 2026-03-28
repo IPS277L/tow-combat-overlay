@@ -1,13 +1,14 @@
 import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
+import {
+  ACTION_RELAY_WAIT_NOTICE_COOLDOWN_MS,
+  ACTION_RELAY_WAIT_NOTICE_DELAY_MS
+} from "../../runtime/action-constants.js";
 
 const {
   moduleId: TOW_MODULE_ID,
   sockets: TOW_SOCKETS,
   flags: TOW_FLAGS
 } = getTowCombatOverlayConstants();
-
-const RELAY_WAIT_NOTICE_DELAY_MS = 2500;
-const RELAY_WAIT_NOTICE_COOLDOWN_MS = 10000;
 
 export function createPanelActionExecutionService({
   getOverlayAutomationRef,
@@ -25,6 +26,33 @@ export function createPanelActionExecutionService({
   armAutoPickFirstHelpSkillDialog
 } = {}) {
   let lastRelayWaitNoticeAt = 0;
+
+  function getActionRelayFlagKey() {
+    return String(TOW_FLAGS?.actionRelayRequest ?? "actionRelayRequest");
+  }
+
+  function buildRelayPayloadFingerprint(payload = {}) {
+    return JSON.stringify({
+      requesterId: String(payload?.requesterId ?? "").trim(),
+      actionType: String(payload?.actionType ?? "").trim(),
+      sourceTokenId: String(payload?.sourceTokenId ?? "").trim(),
+      targetTokenId: String(payload?.targetTokenId ?? "").trim(),
+      attackerMessageId: String(payload?.attackerMessageId ?? "").trim(),
+      opposedMessageId: String(payload?.opposedMessageId ?? "").trim(),
+      preferredSkill: String(payload?.preferredSkill ?? "").trim(),
+      autoRoll: payload?.autoRoll === false ? false : true,
+      rollMode: String(payload?.rollMode ?? "").trim(),
+      timestamp: Number(payload?.timestamp ?? 0)
+    });
+  }
+
+  function isRelayRequestStillPending(payload = {}) {
+    const currentUser = game?.user;
+    const relayFlagKey = getActionRelayFlagKey();
+    const currentFlag = currentUser?.getFlag?.(TOW_MODULE_ID, relayFlagKey);
+    if (!currentFlag || typeof currentFlag !== "object") return false;
+    return buildRelayPayloadFingerprint(currentFlag) === buildRelayPayloadFingerprint(payload);
+  }
 
   function resolveCanvasTokenById(tokenId) {
     const id = String(tokenId ?? "").trim();
@@ -53,6 +81,7 @@ export function createPanelActionExecutionService({
 
   function scheduleRelayWaitNotice(payload = {}) {
     setTimeout(() => {
+      if (!isRelayRequestStillPending(payload)) return;
       const now = Date.now();
       if (now - lastRelayWaitNoticeAt < RELAY_WAIT_NOTICE_COOLDOWN_MS) return;
       if (!shouldShowRelayWaitNotice(payload)) return;
@@ -82,7 +111,7 @@ export function createPanelActionExecutionService({
     };
 
     const currentUser = game?.user;
-    const relayFlagKey = String(TOW_FLAGS?.actionRelayRequest ?? "actionRelayRequest");
+    const relayFlagKey = getActionRelayFlagKey();
     if (currentUser?.setFlag) {
       void Promise.resolve(currentUser.setFlag(TOW_MODULE_ID, relayFlagKey, relayPayload)).catch(() => {});
     }
