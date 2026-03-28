@@ -229,7 +229,9 @@ export function createPanelActionExecutionService({
     const automation = getOverlayAutomationRef();
     const sourceBeforeState = automation.snapshotActorState(sourceActor);
     const restoreStaggerPrompt = automation.armDefaultStaggerChoiceWound(panelStaggerPatchDurationMs);
-    automation.armAutoDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState });
+    if (autoRoll) {
+      automation.armAutoDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState });
+    }
 
     try {
       const testRef = await withTemporaryUserTargets(targetToken, () => setupAbilityTestWithDamage(sourceActor, attackItem, {
@@ -240,7 +242,7 @@ export function createPanelActionExecutionService({
           sourceTokenId: String(sourceToken?.id ?? ""),
           targetTokenId: String(targetToken?.id ?? ""),
           attackerMessageId: String(testRef?.context?.messageId ?? ""),
-          autoRoll: true
+          autoRoll: autoRoll !== false
         });
       }
     } finally {
@@ -255,7 +257,9 @@ export function createPanelActionExecutionService({
     const automation = getOverlayAutomationRef();
     const sourceBeforeState = automation.snapshotActorState(sourceActor);
     const restoreStaggerPrompt = automation.armDefaultStaggerChoiceWound(panelStaggerPatchDurationMs);
-    armAutoEnduranceDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState });
+    if (autoRoll) {
+      armAutoEnduranceDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState });
+    }
 
     try {
       const testRef = await withTemporaryUserTargets(targetToken, () => setupAbilityTestWithDamage(sourceActor, attackItem, {
@@ -267,7 +271,7 @@ export function createPanelActionExecutionService({
           targetTokenId: String(targetToken?.id ?? ""),
           attackerMessageId: String(testRef?.context?.messageId ?? ""),
           preferredSkill: "endurance",
-          autoRoll: true
+          autoRoll: autoRoll !== false
         });
       }
       return testRef;
