@@ -169,12 +169,26 @@ async function applyDamageWithWoundsFallback(defenderActor, damageValue, context
 
   system.addWound = async function wrappedAddWound(options = {}) {
     if (isActorAtWoundCap(defenderActor)) return null;
+    const woundCountBefore = getActorWoundCount(defenderActor);
     const tableId = game.settings.get("whtow", "tableSettings")?.wounds;
     const hasTable = !!(tableId && game.tables.get(tableId));
 
     if (!hasTable) return originalAddWound({ ...options, roll: false });
+    const ensureTrackedWoundItem = async (result) => {
+      if (result == null) return result;
+      if (defenderActor?.type !== "npc") return result;
+      if (defenderActor?.system?.type === "minion") return result;
+
+      const woundCountAfter = getActorWoundCount(defenderActor);
+      if (woundCountAfter > woundCountBefore) return result;
+      if (typeof defenderActor?.createEmbeddedDocuments !== "function") return result;
+
+      await defenderActor.createEmbeddedDocuments("Item", [{ type: "wound", name: "Wound" }]);
+      return result;
+    };
     try {
-      return await originalAddWound(options);
+      const result = await originalAddWound(options);
+      return ensureTrackedWoundItem(result);
     } catch (error) {
       const message = String(error?.message ?? error ?? "");
       if (message.includes("No table found for wounds")) {
@@ -189,6 +203,28 @@ async function applyDamageWithWoundsFallback(defenderActor, damageValue, context
   } finally {
     system.addWound = originalAddWound;
   }
+}
+
+function resolveOpposedDefenderActor(opposed = {}) {
+  const tokenId = String(opposed?.defender?.token ?? "").trim();
+  const sceneId = String(opposed?.defender?.scene ?? "").trim();
+  const activeSceneId = String(canvas?.scene?.id ?? "").trim();
+  const resolvedSceneId = sceneId || activeSceneId;
+
+  if (tokenId && resolvedSceneId) {
+    const scene = game.scenes?.get(resolvedSceneId);
+    const tokenDocument = scene?.tokens?.get(tokenId);
+    const tokenActor = tokenDocument?.actor ?? null;
+    if (tokenActor) return tokenActor;
+  }
+
+  if (tokenId) {
+    const canvasToken = canvas?.tokens?.placeables?.find((token) => token?.document?.id === tokenId);
+    const tokenActor = canvasToken?.actor ?? canvasToken?.document?.actor ?? null;
+    if (tokenActor) return tokenActor;
+  }
+
+  return ChatMessage.getSpeakerActor(opposed?.defender) ?? null;
 }
 
 function armAutoApplyDamageForOpposed(opposedMessage, { sourceActor = null, sourceBeforeState = null } = {}) {
@@ -260,7 +296,7 @@ function armAutoApplyDamageForOpposed(opposedMessage, { sourceActor = null, sour
         break;
       }
 
-      const defenderActor = ChatMessage.getSpeakerActor(opposed.defender);
+      const defenderActor = resolveOpposedDefenderActor(opposed);
       if (!defenderActor?.isOwner || applying) {
         await postSeparatorOnce(opposed, message);
         break;
