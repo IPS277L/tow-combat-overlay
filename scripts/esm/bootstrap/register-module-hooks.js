@@ -18,6 +18,37 @@ import {
   ensureTowCombatOverlayTopPanelOrderSocketRelay
 } from "./relay/top-panel-order-relay.js";
 
+function ensureTowCombatOverlayApplyEffectQueryRegistered() {
+  const systemId = String(game?.system?.id ?? "").trim();
+  if (!systemId) return;
+
+  const queryKey = `${systemId}.applyEffect`;
+  const queries = CONFIG?.queries;
+  if (!queries || typeof queries !== "object") return;
+  if (typeof queries[queryKey] === "function") return;
+
+  const socketHandlers = globalThis?.warhammer?.apps?.SocketHandlers;
+  const useSocketHandler = typeof socketHandlers?.applyEffect === "function";
+
+  queries[queryKey] = async (queryData = {}, options = {}) => {
+    if (useSocketHandler) return socketHandlers.applyEffect(queryData, options);
+
+    const actorUuid = String(queryData?.actorUuid ?? "").trim();
+    if (!actorUuid) return null;
+
+    let actor = null;
+    if (typeof fromUuidSync === "function") actor = fromUuidSync(actorUuid);
+    if (!actor && typeof fromUuid === "function") actor = await fromUuid(actorUuid);
+    if (!actor || typeof actor.applyEffect !== "function") return null;
+
+    return actor.applyEffect({
+      effectUuids: queryData?.effectUuids,
+      effectData: queryData?.effectData,
+      messageId: queryData?.messageId
+    });
+  };
+}
+
 function registerTowCombatOverlayRuntimeApis() {
   registerTowCombatOverlayActionsRuntimeApi();
   registerTowCombatOverlayApi();
@@ -27,6 +58,7 @@ export { syncTowCombatOverlayDisplaySettings };
 
 export function registerTowCombatOverlayModuleHooks() {
   Hooks.once("init", () => {
+    ensureTowCombatOverlayApplyEffectQueryRegistered();
     ensureTowCombatOverlayStylesheetLoaded();
     registerTowCombatOverlayDisplaySettings({
       onDisplaySettingsChanged: syncTowCombatOverlayDisplaySettings
@@ -63,6 +95,7 @@ export function registerTowCombatOverlayModuleHooks() {
   });
 
   Hooks.once("ready", () => {
+    ensureTowCombatOverlayApplyEffectQueryRegistered();
     ensureTowCombatOverlayStylesheetLoaded();
     registerTowCombatOverlayDeadWoundSyncHooks();
     ensureTowCombatOverlaySidebarObserver();
