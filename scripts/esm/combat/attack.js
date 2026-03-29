@@ -130,6 +130,30 @@ function towCombatOverlayArmAutoSubmitWeaponDialog(actor, weapon) {
   });
 }
 
+function towCombatOverlayArmAutoSubmitWeaponReloadDialog(actor, weapon) {
+  towCombatOverlayArmAutoSubmitDialog({
+    hookName: "renderTestDialog",
+    matches: (app) => {
+      if (app?.actor?.id !== actor.id) return false;
+
+      const reloadContext = app?.context?.reload;
+      const reloadContextId = String(reloadContext?.id ?? reloadContext?._id ?? "").trim();
+      const reloadContextUuid = String(reloadContext?.uuid ?? "").trim();
+      const contextItemUuid = String(app?.context?.itemUuid ?? "").trim();
+
+      const sameWeapon = reloadContextId === weapon.id
+        || reloadContextUuid === weapon.uuid
+        || contextItemUuid === weapon.uuid;
+      if (!sameWeapon) return false;
+
+      const dialogSkill = String(app?.skill ?? "").trim().toLowerCase();
+      return dialogSkill === "dexterity";
+    },
+    submitErrorMessage: "Reload TestDialog.submit() is unavailable.",
+    timeoutMs: 10000
+  });
+}
+
 export async function towCombatOverlaySetupAbilityTestWithDamage(actor, ability, { autoRoll = false, context = {} } = {}) {
   const attackItem = ability;
   const isWeaponAttack = String(attackItem?.type ?? "").trim().toLowerCase() === "weapon";
@@ -139,7 +163,10 @@ export async function towCombatOverlaySetupAbilityTestWithDamage(actor, ability,
   let testRef;
 
   if (autoRoll) {
-    if (isWeaponAttack) towCombatOverlayArmAutoSubmitWeaponDialog(actor, attackItem);
+    if (isWeaponAttack) {
+      towCombatOverlayArmAutoSubmitWeaponDialog(actor, attackItem);
+      towCombatOverlayArmAutoSubmitWeaponReloadDialog(actor, attackItem);
+    }
     else towCombatOverlayArmAutoSubmitAbilityDialog(actor, attackItem);
     testRef = isWeaponAttack
       ? await getTowCombatOverlaySystemAdapter().setupWeaponTest(actor, attackItem, rollContext)
