@@ -12,7 +12,8 @@ export function towCombatOverlayApplyRollVisibility(
   {
     sourceMessage = null,
     rollMode = null,
-    censorForUnauthorized = false
+    censorForUnauthorized = false,
+    additionalAllowedUserIds = null
   } = {}
 ) {
   if (!chatData || typeof chatData !== "object") return chatData;
@@ -95,6 +96,13 @@ export function towCombatOverlayApplyRollVisibility(
       ?? ""
     ).trim();
     if (sourceUserId) allowedUserIds.add(sourceUserId);
+    const explicitAllowed = Array.isArray(additionalAllowedUserIds)
+      ? additionalAllowedUserIds
+      : [];
+    for (const explicitUserId of explicitAllowed) {
+      const normalizedUserId = String(explicitUserId ?? "").trim();
+      if (normalizedUserId) allowedUserIds.add(normalizedUserId);
+    }
     if (visibility?.blind === true) {
       for (const gmUser of (ChatMessage?.getWhisperRecipients?.("GM") ?? [])) {
         const gmId = String(gmUser?.id ?? "").trim();

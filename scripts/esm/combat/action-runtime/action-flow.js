@@ -8,6 +8,78 @@ export function createPanelActionFlowService({
   moduleNotifications
 } = {}) {
   const notifications = moduleNotifications ?? {};
+
+  async function withTowCombatOverlaySafeApplyEffect(actor, actionKey, callback) {
+    if (!actor || typeof callback !== "function") return callback?.();
+    const originalApplyEffect = actor?.applyEffect;
+    const originalSystemApplyEffect = actor?.system?.applyEffect;
+    if (typeof originalApplyEffect !== "function" && typeof originalSystemApplyEffect !== "function") return callback();
+
+    const actionLabel = String(game?.oldworld?.config?.actions?.[actionKey]?.name ?? actionKey ?? "Action").trim() || "Action";
+    const fallbackEffectName = actionLabel;
+    const normalizeSingleEffectData = (effectData, indexLabel = "") => {
+      if (!effectData || typeof effectData !== "object") return effectData;
+      const currentName = String(effectData?.name ?? "").trim();
+      if (currentName) return effectData;
+      const labelName = String(effectData?.label ?? "").trim();
+      const clonedEffectData = foundry?.utils?.deepClone?.(effectData) ?? { ...effectData };
+      clonedEffectData.name = labelName || fallbackEffectName;
+      return clonedEffectData;
+    };
+
+    const normalizeEffectDataContainer = (value, labelPrefix = "effectData") => {
+      if (Array.isArray(value)) return value.map((entry, index) => normalizeSingleEffectData(entry, `${labelPrefix}[${index}]`));
+      if (value && typeof value === "object") return normalizeSingleEffectData(value, `${labelPrefix}[0]`);
+      return value;
+    };
+
+    const formatEffectOptions = (options) => {
+      if (!options || typeof options !== "object") return options;
+      let changed = false;
+      const normalizedOptions = { ...options };
+      if (Object.prototype.hasOwnProperty.call(options, "effectData")) {
+        const normalizedEffectData = normalizeEffectDataContainer(options.effectData, "effectData");
+        if (normalizedEffectData !== options.effectData) changed = true;
+        normalizedOptions.effectData = normalizedEffectData;
+      }
+      if (Object.prototype.hasOwnProperty.call(options, "effects")) {
+        const normalizedEffects = normalizeEffectDataContainer(options.effects, "effects");
+        if (normalizedEffects !== options.effects) changed = true;
+        normalizedOptions.effects = normalizedEffects;
+      }
+      return changed ? normalizedOptions : options;
+    };
+
+    const patchedApplyEffect = async (options = {}, ...rest) => {
+      const normalizedOptions = formatEffectOptions(options);
+      try {
+        if (typeof originalApplyEffect !== "function") return undefined;
+        return originalApplyEffect.call(actor, normalizedOptions, ...rest);
+      } catch (error) { throw error; }
+    };
+
+    const patchedSystemApplyEffect = async (options = {}, ...rest) => {
+      const normalizedOptions = formatEffectOptions(options);
+      try {
+        if (typeof originalSystemApplyEffect !== "function") return undefined;
+        return originalSystemApplyEffect.call(actor.system, normalizedOptions, ...rest);
+      } catch (error) { throw error; }
+    };
+
+    if (typeof originalApplyEffect === "function") actor.applyEffect = patchedApplyEffect;
+    if (actor?.system && typeof originalSystemApplyEffect === "function") actor.system.applyEffect = patchedSystemApplyEffect;
+    try {
+      return await callback();
+    } finally {
+      if (typeof originalApplyEffect === "function" && actor.applyEffect === patchedApplyEffect) {
+        actor.applyEffect = originalApplyEffect;
+      }
+      if (actor?.system && typeof originalSystemApplyEffect === "function" && actor.system.applyEffect === patchedSystemApplyEffect) {
+        actor.system.applyEffect = originalSystemApplyEffect;
+      }
+    }
+  }
+
   async function runDefaultPanelActorAction(actor, actionKey) {
     const key = String(actionKey ?? "").trim();
     if (!actor || !key) return;
@@ -17,20 +89,25 @@ export function createPanelActionFlowService({
     armApplyRollModifiersToNextTestDialog(actor);
 
     const runWithActionRollContext = async (callback) => withPatchedActionSkillTestContext(actor, callback);
+    const runWithSafeActionContext = async (callback) => withTowCombatOverlaySafeApplyEffect(
+      actor,
+      key,
+      () => runWithActionRollContext(callback)
+    );
     if (typeof actor?.system?.doAction === "function") {
-      await runWithActionRollContext(() => actor.system.doAction(key));
+      await runWithSafeActionContext(() => actor.system.doAction(key));
       return;
     }
 
     const actionData = game?.oldworld?.config?.actions?.[key] ?? null;
     if (actionData?.script && typeof actionData.script === "function") {
-      await runWithActionRollContext(() => actionData.script.call(actionData, actor));
+      await runWithSafeActionContext(() => actionData.script.call(actionData, actor));
       return;
     }
 
     const actionUse = game?.oldworld?.config?.rollClasses?.ActionUse;
     if (typeof actionUse?.fromAction === "function") {
-      await runWithActionRollContext(() => actionUse.fromAction(key, actor));
+      await runWithSafeActionContext(() => actionUse.fromAction(key, actor));
     }
   }
 

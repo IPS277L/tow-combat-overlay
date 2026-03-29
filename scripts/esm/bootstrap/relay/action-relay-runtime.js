@@ -86,7 +86,8 @@ export async function withScopedTowCombatOverlayRelayVisibility(rollMode, callba
   actorRefs = null,
   tokenRefs = null,
   messageRefs = null,
-  settleMs = 0
+  settleMs = 0,
+  requesterUserId = ""
 } = {}) {
   if (typeof callback !== "function") return callback?.();
   const requestedMode = normalizeTowCombatOverlayRollMode(rollMode);
@@ -100,6 +101,7 @@ export async function withScopedTowCombatOverlayRelayVisibility(rollMode, callba
   const messageRefSet = messageRefs instanceof Set
     ? messageRefs
     : new Set(Array.isArray(messageRefs) ? messageRefs : []);
+  const requesterId = String(requesterUserId ?? "").trim();
   if (actorRefSet.size === 0 && tokenRefSet.size === 0 && messageRefSet.size === 0) {
     return callback();
   }
@@ -126,7 +128,11 @@ export async function withScopedTowCombatOverlayRelayVisibility(rollMode, callba
       : false;
     if (!matchesActor && !matchesToken && !matchesMessage) return;
     const updateData = {};
-    towCombatOverlayApplyRollVisibility(updateData, { rollMode: requestedMode });
+    towCombatOverlayApplyRollVisibility(updateData, {
+      rollMode: requestedMode,
+      censorForUnauthorized: true,
+      additionalAllowedUserIds: requesterId ? [requesterId] : []
+    });
     if (!Object.keys(updateData).length) return;
     messageDoc.updateSource(updateData);
   });
@@ -197,6 +203,7 @@ async function handleTowCombatOverlayActionRelayPayload(payload) {
   const sourceToken = resolveCanvasTokenById(payload?.sourceTokenId);
   const targetToken = resolveCanvasTokenById(payload?.targetTokenId);
   const requestedRollMode = normalizeTowCombatOverlayRollMode(payload?.rollMode);
+  const requesterUserId = String(payload?.requesterId ?? "").trim();
   const relayActorRefs = collectTowCombatOverlayActorRefsFromTokens(sourceToken, targetToken);
   const relayTokenRefs = collectTowCombatOverlayTokenRefsFromTokens(sourceToken, targetToken);
 
@@ -218,7 +225,8 @@ async function handleTowCombatOverlayActionRelayPayload(payload) {
         actorRefs: relayActorRefs,
         tokenRefs: relayTokenRefs,
         messageRefs,
-        settleMs: 2500
+        settleMs: 2500,
+        requesterUserId
       });
       return true;
     }
@@ -230,7 +238,8 @@ async function handleTowCombatOverlayActionRelayPayload(payload) {
       actorRefs: relayActorRefs,
       tokenRefs: relayTokenRefs,
       messageRefs,
-      settleMs: 2500
+      settleMs: 2500,
+      requesterUserId
     });
     return true;
   }
@@ -246,7 +255,8 @@ async function handleTowCombatOverlayActionRelayPayload(payload) {
     }, {
       actorRefs: relayActorRefs,
       tokenRefs: relayTokenRefs,
-      settleMs: 1200
+      settleMs: 1200,
+      requesterUserId
     });
     return true;
   }
@@ -276,7 +286,8 @@ async function handleTowCombatOverlayActionRelayPayload(payload) {
       actorRefs: relayActorRefs,
       tokenRefs: relayTokenRefs,
       messageRefs: new Set([attackerMessageId, opposedMessageId].filter(Boolean)),
-      settleMs: ACTION_RELAY_POST_DEFENCE_SETTLE_MS
+      settleMs: ACTION_RELAY_POST_DEFENCE_SETTLE_MS,
+      requesterUserId
     });
     if (!opposedMessage) {
       const afterDefenceStarted = Date.now();
