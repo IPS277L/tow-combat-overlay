@@ -87,6 +87,32 @@
     }
   }
 
+  async function rollWoundTableForActor(actor) {
+    const rollTable = game?.oldworld?.tables?.rollTable;
+    if (typeof rollTable !== "function") return;
+    const untreatedWounds = Array.isArray(actor?.itemTypes?.wound)
+      ? actor.itemTypes.wound.filter((item) => item?.system?.treated !== true).length
+      : towCombatOverlayGetActorWoundItemCount(actor);
+    const diceCount = Math.max(0, Number(untreatedWounds) || 0);
+    if (diceCount <= 0) return;
+    const formula = `${diceCount}d10`;
+    await rollTable("wounds", formula, {
+      chatData: { speaker: { alias: String(actor?.name ?? "").trim() || "-" } }
+    });
+  }
+
+  async function applyShiftWoundRoll(actor) {
+    if (!actor) return;
+    const isNpc = actor?.type === "npc";
+    if (!isNpc) {
+      await towCombatOverlayAddActorWound(actor, { roll: true });
+      return;
+    }
+
+    // For every NPC type (minion/champion/brute/monstrosity/etc.), shift+click should roll only.
+    await rollWoundTableForActor(actor);
+  }
+
   function bindPanelWoundsStatEvents(panelElement) {
     const woundsRow = panelElement.querySelector(".tow-combat-overlay-control-panel__stat-row[data-stat-row='wounds']");
     if (!(woundsRow instanceof HTMLElement)) return;
@@ -106,7 +132,7 @@
       const actor = token?.actor ?? token?.document?.actor ?? null;
       if (!actor) return;
       if (towCombatOverlayIsShiftModifier(event)) {
-        await towCombatOverlayAddActorWound(actor, { roll: true });
+        await applyShiftWoundRoll(actor);
         updateSelectionDisplay(panelElement);
         return;
       }
@@ -164,7 +190,7 @@
         const actor = token?.actor ?? token?.document?.actor ?? null;
         if (!actor) return;
         if (towCombatOverlayIsShiftModifier(event)) {
-          await towCombatOverlayAddActorWound(actor, { roll: true });
+          await applyShiftWoundRoll(actor);
           const panelElement = getControlPanelState()?.element;
           if (panelElement instanceof HTMLElement) updateSelectionDisplay(panelElement);
           return;

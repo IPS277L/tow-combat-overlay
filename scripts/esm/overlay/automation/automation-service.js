@@ -109,12 +109,10 @@ export function armAutoDefenceForOpposed(sourceToken, targetToken, { sourceBefor
     const attackerActorUuid = attackerMessage?.system?.test?.actor;
     if (attackerActorUuid && attackerActorUuid !== sourceToken.actor.uuid) return;
 
-    const state = game[MODULE_KEY];
-    if (state) {
-      if (!state.autoDefenceHandled) state.autoDefenceHandled = new Set();
-      if (state.autoDefenceHandled.has(message.id)) return;
-      state.autoDefenceHandled.add(message.id);
-    }
+    const state = getTowAutomationStateBucket();
+    if (!state.autoDefenceHandled) state.autoDefenceHandled = new Set();
+    if (state.autoDefenceHandled.has(message.id)) return;
+    state.autoDefenceHandled.add(message.id);
 
     cleanup(hookId);
     if (!(await towCombatOverlayEnsureActionsApi())) return;
@@ -146,6 +144,22 @@ async function applyDamageWithWoundsFallback(defenderActor, damageValue, context
     if (Array.isArray(actor?.itemTypes?.wound)) return actor.itemTypes.wound.length;
     return 0;
   };
+  const getActorUntreatedWoundCount = (actor) => {
+    const typedWounds = Array.isArray(actor?.itemTypes?.wound) ? actor.itemTypes.wound : [];
+    if (typedWounds.length) {
+      return typedWounds.filter((item) => item?.type === "wound" && item?.system?.treated !== true).length;
+    }
+    const liveItems = Array.isArray(actor?.items?.contents) ? actor.items.contents : [];
+    return liveItems.filter((item) => item?.type === "wound" && item?.system?.treated !== true).length;
+  };
+  const rollNpcWoundTable = async (actor, diceCount) => {
+    const rollTable = game?.oldworld?.tables?.rollTable;
+    if (typeof rollTable !== "function") return null;
+    const dice = Math.max(1, Math.trunc(Number(diceCount) || 1));
+    return rollTable("wounds", `${dice}d10`, {
+      chatData: { speaker: { alias: String(actor?.name ?? "").trim() || "-" } }
+    });
+  };
   const getActorWoundCap = (actor) => {
     if (!actor) return null;
     if (actor.type !== "npc") return null;
@@ -170,6 +184,7 @@ async function applyDamageWithWoundsFallback(defenderActor, damageValue, context
   system.addWound = async function wrappedAddWound(options = {}) {
     if (isActorAtWoundCap(defenderActor)) return null;
     const woundCountBefore = getActorWoundCount(defenderActor);
+    const untreatedWoundsBefore = getActorUntreatedWoundCount(defenderActor);
     const tableId = game.settings.get("whtow", "tableSettings")?.wounds;
     const hasTable = !!(tableId && game.tables.get(tableId));
 
@@ -188,7 +203,13 @@ async function applyDamageWithWoundsFallback(defenderActor, damageValue, context
     };
     try {
       const result = await originalAddWound(options);
-      return ensureTrackedWoundItem(result);
+      await ensureTrackedWoundItem(result);
+
+      const shouldForceNpcRoll = defenderActor?.type === "npc" && result == null;
+      if (shouldForceNpcRoll) {
+        await rollNpcWoundTable(defenderActor, untreatedWoundsBefore + 1);
+      }
+      return result;
     } catch (error) {
       const message = String(error?.message ?? error ?? "");
       if (message.includes("No table found for wounds")) {
@@ -230,12 +251,10 @@ function resolveOpposedDefenderActor(opposed = {}) {
 function armAutoApplyDamageForOpposed(opposedMessage, { sourceActor = null, sourceBeforeState = null } = {}) {
 
   if (!opposedMessage?.id) return;
-  const state = game[MODULE_KEY];
-  if (state) {
-    if (!state.autoApplyArmed) state.autoApplyArmed = new Set();
-    if (state.autoApplyArmed.has(opposedMessage.id)) return;
-    state.autoApplyArmed.add(opposedMessage.id);
-  }
+  const state = getTowAutomationStateBucket();
+  if (!state.autoApplyArmed) state.autoApplyArmed = new Set();
+  if (state.autoApplyArmed.has(opposedMessage.id)) return;
+  state.autoApplyArmed.add(opposedMessage.id);
 
   const cleanup = () => {
     state?.autoApplyArmed?.delete(opposedMessage.id);
