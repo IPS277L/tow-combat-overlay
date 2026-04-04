@@ -1,79 +1,97 @@
-# The Old World Combat Overlay
+![FoundryVTT Compatibility](https://img.shields.io/badge/FoundryVTT-v13-orange) ![OldWorld-FoundryVTT Compatibility](https://img.shields.io/badge/OldWorld--FoundryVTT-v1.0.5-1f6feb)
+
+# Warhammer: The Old World - Combat Overlay
 
 FoundryVTT module for combat overlay and automation helpers for Warhammer: The Old World Roleplaying Game.
 
-## Layout
+![Combat Overlay Screenshot](assets/readme/overview.jpg)
 
-- Repository root is the FoundryVTT package root:
-  - `module.json`
-  - `scripts/`
-  - `styles/`
-  - `templates/`
-  - `packs/`
-  - `lang/`
+## Top Panel
 
-- `oldworld-foundryvtt/`
-  - Local WHTOW system reference checkout used by this module for API/source-of-truth checks.
-  - Ignored by git and not included in this repository release artifacts.
-  - Optional local setup:
-    - `git clone git@github.com:IPS277L/OldWorld-FoundryVTT.git oldworld-foundryvtt`
+![Top Panel](assets/readme/top-panel.png)
 
-- `docs/`
-  - Local project notes and migration records.
+Functionality:
+- Shows scene tokens as portrait cards for fast battlefield overview.
+- Click a card to select/control its token on canvas.
+- Shift/Ctrl-click keeps current multi-selection behavior.
+- Double-click a card opens the actor/token sheet (when permitted).
+- Supports drag-and-drop card reordering with per-scene saved order.
+- Supports panel dragging/position memory (or locked/centered modes via settings).
+- Displays contextual chip and portrait tooltips.
 
-## Runtime
+## Token Overlay
 
-- Module API:
-  - `game.modules.get("tow-combat-overlay")?.api`
+![Token Overlay](assets/readme/token-overlay.png)
 
-Current note:
-- the module API is the only live integration entrypoint exposed by the module runtime
-- use the module API at your own risk
-- public API versioning and compatibility guarantees are not supported at the moment
-- the legacy `game.towActions` / `game.towOverlay` globals are no longer exposed
-- the current module API keys are `combatOverlayActions` and `combatOverlay`
+Functionality:
+- Draws overlay labels directly on tokens, including configurable custom name labels.
+- Supports top/bottom name placement with automatic scaling and hit-area updates.
+- Provides token name/type tooltip support when enabled.
+- Adds configurable hover/selection token border styling.
+- Supports dead-token visual treatment when the `dead` condition is active.
+- Keeps token interactivity aligned with overlay bounds for reliable hover/click behavior.
 
-## Notes
+## Control Panel
 
-- Legacy macro source, generated macro bundles, and macro build tooling have been removed.
-- The runtime is native ESM and is bootstrapped from `scripts/main.js`.
-- The ESM runtime is now grouped by concern:
-  - `scripts/esm/bootstrap/`
-  - `scripts/esm/api/`
-  - `scripts/esm/combat/`
-  - `scripts/esm/runtime/`
-  - `scripts/esm/overlay/`
-  - `scripts/esm/system-adapter/`
-- The overlay runtime is also grouped internally by concern:
-  - `scripts/esm/overlay/controls/`
-  - `scripts/esm/overlay/layout/`
-  - `scripts/esm/overlay/lifecycle/`
-  - `scripts/esm/overlay/panel/actions/`
-  - `scripts/esm/overlay/panel/core/`
-  - `scripts/esm/overlay/panel/lifecycle/`
-  - `scripts/esm/overlay/panel/selection/`
-  - `scripts/esm/overlay/panel/shared/`
-  - `scripts/esm/overlay/panel/slots/`
-  - `scripts/esm/overlay/spells/`
-  - `scripts/esm/overlay/status/`
-  - `scripts/esm/combat/action-runtime/`
-  - `scripts/esm/combat/resources/`
-  - `scripts/esm/combat/unarmed/`
-  - `scripts/esm/overlay/status/`
-  - `scripts/esm/overlay/shared/`
-  - `scripts/esm/overlay/automation/`
-- The overlay/action runtime is registered through the module API only, but that API should currently be treated as provisional and unsupported for compatibility purposes.
-- Repo-only files such as `.gitignore` and `docs/` remain outside runtime logic.
-- The package manifest at `module.json` is the only supported runtime entrypoint.
-- The top-level overlay barrels are still the stable overlay import surface:
-  - `scripts/esm/overlay/controls.js`
-  - `scripts/esm/overlay/overlay.js`
-  - `scripts/esm/overlay/layout-state.js`
-- Runtime naming is now standardized around `towCombatOverlay` and shared constants:
-  - module API keys use `combatOverlayActions` and `combatOverlay`
-  - common notifications, dialog labels, and tooltip copy are centralized in `scripts/esm/runtime/module-constants.js`
-  - internal overlay expando keys are centralized in `scripts/esm/runtime/overlay-constants.js`
-- Foundry 13 dialog dismiss handling is patched so wrapped system dialogs return a promise from `close()`.
-- Overlay tooltip text now reflects actual WHTOW behavior more accurately, including explicit champion wording and threshold-based NPC handling derived from system state.
-- The main remaining technical debt is overlay behavior complexity rather than file layout or naming consistency.
+![Control Panel](assets/readme/control-panel.png)
 
+Functionality:
+- Shows focused data for the currently selected token/actor, including name, type, stats, and statuses.
+- Provides one-click condition toggling from the status row.
+- Supports wound controls: left-click adds wound, right-click removes wound, Shift+click rolls wound handling, Ctrl+click resets wounds to 0.
+- Supports miscast dice controls: left-click +1, right-click -1, Shift+click rolls miscast (when available), Ctrl+click resets to 0.
+- Provides action entries for combat flow, including `Defence`, manoeuvre/recover actions, and magic `Accumulate Power` flow when applicable.
+- Includes tooltips and optional drag/drop customization for panel buttons, based on module settings.
+
+## Settings
+
+![Settings](assets/readme/settings.png)
+
+### Top Panel Settings
+
+| Setting | Explanation |
+| --- | --- |
+| Enable Top Panel | Turns the top panel on/off globally. |
+| Minimum Role | Limits who can see/use the top panel. |
+| Card Drag/Drop Minimum Role | Controls who can reorder top-panel token cards. |
+| Position Mode | Chooses panel behavior: free, locked, or always centered. |
+| Drag Handle Side | Chooses drag handle placement (left/right) when free mode is used. |
+| Status Row | Shows/hides status chip row on top-panel cards. |
+| Statuses / Wounds / Temporary Effects Chips | Toggles each chip category shown on cards. |
+| Show Dead Visual | Enables dead-state visuals in the panel. |
+| Tooltips | Master toggle for top-panel tooltips. |
+| Cards / Statuses / Wounds / Temporary Effects / Overflow Tooltips | Fine-grained tooltip toggles per top-panel content type. |
+
+### Token Overlay Settings
+
+| Setting | Explanation |
+| --- | --- |
+| Enable Overlay | Master toggle for token overlay features. |
+| Minimum Role | Limits who can see/use token overlay enhancements. |
+| Show Border | Enables hover/selection border styling on tokens. |
+| Status Row | Shows/hides token status row. |
+| Statuses / Wounds / Temporary Effects | Toggles each overlay chip category on tokens. |
+| Show Custom Name | Enables overlay name label on token. |
+| Name Position | Places overlay name label at top or bottom. |
+| Show Dead Visuals | Enables dead-state token visual treatment. |
+| Tooltips | Master toggle for token overlay tooltips. |
+| Name / Statuses / Wounds / Temporary Effects / Overflow Tooltips | Fine-grained tooltip toggles for token overlay elements. |
+
+### Control Panel Settings
+
+| Setting | Explanation |
+| --- | --- |
+| Enable Control Panel | Turns the control panel on/off globally. |
+| Minimum Role | Limits who can see/use the control panel. |
+| Position Mode | Chooses panel behavior: free, locked, or always centered. |
+| Enable Buttons Drag/Drop | Allows manual reordering of control panel buttons. |
+| Status Row | Shows/hides status row in control panel. |
+| Statuses / Abilities / Wounds / Temporary Effects | Toggles each status-row category in panel. |
+| Portrait Block | Enables/disables portrait area. |
+| Name / Image / Stats (Portrait Subsections) | Toggles each portrait subsection visibility. |
+| Show Dead Portrait Status | Shows dead-state visual indicator on portrait. |
+| Grid Buttons | Enables/disables action button grid. |
+| Action / Weapons / Magic / Item Rarity Buttons | Toggles each grid button group. |
+| Tooltips | Master toggle for control panel tooltips. |
+| Show Tooltip Click Behavior Text | Shows/hides click-hint instructions inside tooltips. |
+| Name / Stats / Statuses / Abilities / Wounds / Temporary Effects / Buttons Tooltips | Fine-grained tooltip toggles per panel element. |
