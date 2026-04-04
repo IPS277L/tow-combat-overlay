@@ -1,4 +1,4 @@
-![FoundryVTT Compatibility](https://img.shields.io/badge/FoundryVTT-v13-orange) ![OldWorld-FoundryVTT Compatibility](https://img.shields.io/badge/OldWorld--FoundryVTT-v1.0.5-1f6feb)
+![FoundryVTT Compatibility](https://img.shields.io/badge/FoundryVTT-v13-orange) ![OldWorld-FoundryVTT Compatibility](https://img.shields.io/badge/OldWorld--FoundryVTT-v1.0.5-1f6feb) ![Latest Version](https://img.shields.io/github/v/release/IPS277L/tow-combat-overlay?label=Latest%20Version&color=2f81f7) 
 
 # Warhammer: The Old World - Combat Overlay
 
@@ -6,24 +6,24 @@ A FoundryVTT module that adds a combat overlay and automation helpers for Warham
 
 ![Combat Overlay Screenshot](assets/readme/overview.jpg)
 
-## Important Note
+> Most features have been tested in GM mode, with more limited testing on the player side.
+> Issues may still happen outside GM workflows. Please report any problems through GitHub Issues.
 
-Most features have been tested in GM mode, with more limited testing on the player side.  
-You may still run into issues outside GM workflows. If you do, please report them through GitHub Issues.
+## Controls
 
-## Tokens Panel
+### Tokens Panel
 
 ![Tokens Panel](assets/readme/tokens-panel.png)
 
 The Tokens Panel provides a quick, readable view of everyone in the scene at the top of the screen. It makes switching between tokens much faster, and it can be arranged with saved order and panel position.
 
-## Token Layout
+### Token Layout
 
 ![Token Layout](assets/readme/token-layout.png)
 
 Token Layout adds lightweight visuals directly on tokens, so key information stays in place. Names, borders, and status elements are easier to read in busy scenes, and dead-state visuals help make the scene state clear at a glance.
 
-## Control Panel
+### Control Panel
 
 ![Control Panel](assets/readme/control-panel.png)
 
@@ -80,3 +80,7 @@ The Control Panel keeps commonly used actor actions, attacks, and info in one pl
 | Show Magic Buttons | Enables magic-related buttons in the control panel grid, including special magic and miscast actions. |
 | Show Items Rarity | Shows rarity-based visual accents on control panel item slots. |
 | Tooltips Group | Controls tooltips visibility for cards, statuses, wounds, temporary effects, and overflow indicators. |
+
+## License
+
+This project is licensed under the [Apache License 2.0](https://choosealicense.com/licenses/apache-2.0/)
