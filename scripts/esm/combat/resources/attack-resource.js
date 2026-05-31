@@ -9,27 +9,39 @@ export function createPanelAttackResourceService({
 } = {}) {
   function armAutoSubmitReloadTestDialog(actor) {
     towCombatOverlayArmAutoSubmitDialog({
-      hookName: "renderTestDialog",
-      matches: (app) => app?.actor?.id === actor?.id && String(app?.skill ?? "").trim().toLowerCase() === "dexterity",
-      submitErrorMessage: "Reload test submit() is unavailable."
+      hookName: 'renderTestDialog',
+      matches: (app) =>
+        app?.actor?.id === actor?.id &&
+        String(app?.skill ?? '')
+          .trim()
+          .toLowerCase() === 'dexterity',
+      submitErrorMessage: 'Reload test submit() is unavailable.'
     });
   }
 
   async function rollPanelReloadForAttack(actor, attackItem) {
     if (!actor || !attackItem) return 0;
     armApplyRollModifiersToNextTestDialog(actor, {
-      matches: (app) => app?.actor?.id === actor?.id && String(app?.skill ?? "").trim().toLowerCase() === "dexterity"
+      matches: (app) =>
+        app?.actor?.id === actor?.id &&
+        String(app?.skill ?? '')
+          .trim()
+          .toLowerCase() === 'dexterity'
     });
     armAutoSubmitReloadTestDialog(actor);
 
     let test = null;
-    if (typeof attackItem?.system?.rollReloadTest === "function") {
-      test = await withPatchedActionSkillTestContext(actor, () => attackItem.system.rollReloadTest(actor));
+    if (typeof attackItem?.system?.rollReloadTest === 'function') {
+      test = await withPatchedActionSkillTestContext(actor, () =>
+        attackItem.system.rollReloadTest(actor)
+      );
     } else {
       test = await getTowCombatOverlaySystemAdapter().setupSkillTest(
         actor,
-        "dexterity",
-        createTowCombatOverlayRollContext(actor, { appendTitle: ` - Reloading ${String(attackItem?.name ?? "Weapon")}` })
+        'dexterity',
+        createTowCombatOverlayRollContext(actor, {
+          appendTitle: ` - Reloading ${String(attackItem?.name ?? 'Weapon')}`
+        })
       );
     }
 
@@ -47,7 +59,10 @@ export function createPanelAttackResourceService({
     }
 
     const gainedSuccesses = await rollPanelReloadForAttack(actor, attackItem);
-    const newProgress = Math.max(0, Math.min(state.reloadTarget, state.reloadProgress + gainedSuccesses));
+    const newProgress = Math.max(
+      0,
+      Math.min(state.reloadTarget, state.reloadProgress + gainedSuccesses)
+    );
     const completedReload = newProgress >= state.reloadTarget;
     if (completedReload) {
       await writePanelAttackAmmoState(attackItem, {
@@ -78,4 +93,3 @@ export function createPanelAttackResourceService({
     ensurePanelAttackResourceStateBeforeUse
   };
 }
-

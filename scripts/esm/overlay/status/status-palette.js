@@ -1,1 +1,1 @@
-export * from "./status-palette-service.js";
+export * from './status-palette-service.js';

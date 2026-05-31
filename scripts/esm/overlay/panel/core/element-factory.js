@@ -1,5 +1,5 @@
-import { getTowCombatOverlayConstants } from "../../../runtime/module-constants.js";
-import { isTowCombatOverlayDisplaySettingEnabled } from "../../../bootstrap/register-settings.js";
+import { getTowCombatOverlayConstants } from '../../../runtime/module-constants.js';
+import { isTowCombatOverlayDisplaySettingEnabled } from '../../../bootstrap/register-settings.js';
 
 export function createPanelElementFactoryService({
   panelTemplatePath,
@@ -17,23 +17,35 @@ export function createPanelElementFactoryService({
   function getPanelTemplateData() {
     const { settings } = getTowCombatOverlayConstants();
     const statuses = getAllConditionEntries();
-    const showPortrait = isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnablePortrait, true);
-    const showStats = showPortrait
-      && isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStats, true);
-    const showStatusRow = isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStatusRow, true);
+    const showPortrait = isTowCombatOverlayDisplaySettingEnabled(
+      settings.controlPanelEnablePortrait,
+      true
+    );
+    const showStats =
+      showPortrait &&
+      isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStats, true);
+    const showStatusRow = isTowCombatOverlayDisplaySettingEnabled(
+      settings.controlPanelEnableStatusRow,
+      true
+    );
     return {
       statuses,
-      showStatusIcons: showStatusRow
-        && isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStatuses, true),
+      showStatusIcons:
+        showStatusRow &&
+        isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStatuses, true),
       roundLeftWhenStatsDisabled: !showStats
     };
   }
 
   function getSelectionPanelTemplateData() {
     const { settings } = getTowCombatOverlayConstants();
-    const showPortrait = isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnablePortrait, true);
-    const showStats = showPortrait
-      && isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStats, true);
+    const showPortrait = isTowCombatOverlayDisplaySettingEnabled(
+      settings.controlPanelEnablePortrait,
+      true
+    );
+    const showStats =
+      showPortrait &&
+      isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableStats, true);
     return {
       icons: {
         wound: iconSrcWound,
@@ -42,34 +54,39 @@ export function createPanelElementFactoryService({
         roll: panelRollIcon,
         dice: panelDiceIcon
       },
-      showName: showPortrait
-        && isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableName, true),
+      showName:
+        showPortrait &&
+        isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableName, true),
       showStats,
-      showImage: showPortrait
-        && isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableImage, true),
+      showImage:
+        showPortrait &&
+        isTowCombatOverlayDisplaySettingEnabled(settings.controlPanelEnableImage, true),
       showActionButtons: true,
       showSelectionSideStack: showStats
     };
   }
 
   async function createSelectionPanelElement() {
-    const html = await towCombatOverlayRenderTemplate(panelSelectionTemplatePath, getSelectionPanelTemplateData());
-    const wrapper = document.createElement("div");
-    wrapper.innerHTML = String(html ?? "").trim();
+    const html = await towCombatOverlayRenderTemplate(
+      panelSelectionTemplatePath,
+      getSelectionPanelTemplateData()
+    );
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = String(html ?? '').trim();
     const selectionPanel = wrapper.firstElementChild;
     if (!(selectionPanel instanceof HTMLElement) || selectionPanel.id !== panelSelectionId) {
-      throw new Error("[tow-combat-overlay] Failed to render selection panel template.");
+      throw new Error('[tow-combat-overlay] Failed to render selection panel template.');
     }
     return selectionPanel;
   }
 
   async function createControlPanelElement() {
     const html = await towCombatOverlayRenderTemplate(panelTemplatePath, getPanelTemplateData());
-    const wrapper = document.createElement("div");
-    wrapper.innerHTML = String(html ?? "").trim();
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = String(html ?? '').trim();
     const panelElement = wrapper.firstElementChild;
     if (!(panelElement instanceof HTMLElement) || panelElement.id !== panelId) {
-      throw new Error("[tow-combat-overlay] Failed to render control panel template.");
+      throw new Error('[tow-combat-overlay] Failed to render control panel template.');
     }
     return { panelElement, selectionPanelElement: await createSelectionPanelElement() };
   }

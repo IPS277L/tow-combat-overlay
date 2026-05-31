@@ -1,20 +1,20 @@
-import { towCombatOverlayRenderTemplate } from "../../combat/core.js";
+import { towCombatOverlayRenderTemplate } from '../../combat/core.js';
 import {
   getPrimaryTokenName,
   getPrimaryTokenTypeLabel
-} from "../panel/selection/selection-display.js";
+} from '../panel/selection/selection-display.js';
 import {
   TOP_PANEL_CHIP_MAX_PER_ROW,
   TOP_PANEL_ID,
   TOP_PANEL_TEMPLATE_PATH
-} from "./top-panel-constants.js";
+} from './top-panel-constants.js';
 import {
   createTopPanelChipGroup,
   getActiveConditionChips,
   getWoundsAbilityChip,
   getTemporaryEffectChips,
   limitChipList
-} from "./top-panel-chips.js";
+} from './top-panel-chips.js';
 import {
   applyDefaultTopPanelPosition,
   getOrderedSceneTokens,
@@ -22,69 +22,78 @@ import {
   isTopPanelLockedEnabled,
   syncTopPanelListBottomPadding,
   syncTopPanelWidth
-} from "./top-panel-layout.js";
+} from './top-panel-layout.js';
 import {
   applyTopPanelHoveredCardHighlight,
   clearLinkedTopPanelHover
-} from "./top-panel-interactions.js";
-import { formatMaybe, getTopPanelState, localizeMaybe } from "./top-panel-shared.js";
-import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
+} from './top-panel-interactions.js';
+import { formatMaybe, getTopPanelState, localizeMaybe } from './top-panel-shared.js';
+import { getTowCombatOverlayConstants } from '../../runtime/module-constants.js';
 import {
   canTowCombatOverlayUserViewControl,
   getTowCombatOverlayDisplaySetting,
   isTowCombatOverlayDisplaySettingEnabled
-} from "../../bootstrap/register-settings.js";
+} from '../../bootstrap/register-settings.js';
 
 export function getTokenPortraitSrc(token) {
-  const textureSrc = String(token?.document?.texture?.src ?? "").trim();
+  const textureSrc = String(token?.document?.texture?.src ?? '').trim();
   if (textureSrc) return textureSrc;
-  return String(token?.actor?.img ?? token?.document?.actor?.img ?? "icons/svg/mystery-man.svg").trim();
+  return String(
+    token?.actor?.img ?? token?.document?.actor?.img ?? 'icons/svg/mystery-man.svg'
+  ).trim();
 }
 
 function resolveTokenDispositionClass(token) {
   const disposition = Number(token?.document?.disposition ?? 0);
   const secretDisposition = Number(globalThis?.CONST?.TOKEN_DISPOSITIONS?.SECRET);
-  if (Number.isFinite(secretDisposition) && disposition === secretDisposition) return "is-secret";
-  if (disposition > 0) return "is-friendly";
-  if (disposition < 0) return "is-hostile";
-  return "is-neutral";
+  if (Number.isFinite(secretDisposition) && disposition === secretDisposition) return 'is-secret';
+  if (disposition > 0) return 'is-friendly';
+  if (disposition < 0) return 'is-hostile';
+  return 'is-neutral';
 }
 
-function buildPortraitElement(token, {
-  enableStatuses = true,
-  enableWounds = true,
-  enableTemporaryEffects = true,
-  showDeadVisual = true,
-  canDragReorder = true,
-  enableCardTooltip = true,
-  enableChipTooltipByType = {}
-} = {}) {
-  const portrait = document.createElement("button");
-  portrait.type = "button";
-  portrait.classList.add("tow-combat-overlay-top-panel__portrait", resolveTokenDispositionClass(token));
-  if (token.controlled === true) portrait.classList.add("is-controlled");
-  if (showDeadVisual && token.actor?.hasCondition?.("dead")) portrait.classList.add("is-dead");
+function buildPortraitElement(
+  token,
+  {
+    enableStatuses = true,
+    enableWounds = true,
+    enableTemporaryEffects = true,
+    showDeadVisual = true,
+    canDragReorder = true,
+    enableCardTooltip = true,
+    enableChipTooltipByType = {}
+  } = {}
+) {
+  const portrait = document.createElement('button');
+  portrait.type = 'button';
+  portrait.classList.add(
+    'tow-combat-overlay-top-panel__portrait',
+    resolveTokenDispositionClass(token)
+  );
+  if (token.controlled === true) portrait.classList.add('is-controlled');
+  if (showDeadVisual && token.actor?.hasCondition?.('dead')) portrait.classList.add('is-dead');
 
-  portrait.dataset.tokenId = String(token.id ?? "").trim();
-  const tokenName = getPrimaryTokenName(token)
-    || localizeMaybe("TOWCOMBATOVERLAY.Tooltip.Panel.SelectionTokenFallbackName", "Token");
-  const typeLabel = getPrimaryTokenTypeLabel(token) || "-";
+  portrait.dataset.tokenId = String(token.id ?? '').trim();
+  const tokenName =
+    getPrimaryTokenName(token) ||
+    localizeMaybe('TOWCOMBATOVERLAY.Tooltip.Panel.SelectionTokenFallbackName', 'Token');
+  const typeLabel = getPrimaryTokenTypeLabel(token) || '-';
   if (enableCardTooltip) {
     portrait.dataset.tooltipTitle = tokenName;
     portrait.dataset.tooltipDescription = formatMaybe(
-      "TOWCOMBATOVERLAY.Tooltip.Panel.SelectionTypeDescription",
+      'TOWCOMBATOVERLAY.Tooltip.Panel.SelectionTypeDescription',
       { type: typeLabel },
       `Type: ${typeLabel}`
     );
   } else {
-    portrait.removeAttribute("data-tooltip-title");
-    portrait.removeAttribute("data-tooltip-description");
+    portrait.removeAttribute('data-tooltip-title');
+    portrait.removeAttribute('data-tooltip-description');
   }
-  portrait.setAttribute("aria-label", tokenName);
+  portrait.setAttribute('aria-label', tokenName);
   portrait.draggable = !!canDragReorder;
 
-  const image = document.createElement("img");
-  image.classList.add("tow-combat-overlay-top-panel__portrait-image");
+  const image = document.createElement('img');
+  image.classList.add('tow-combat-overlay-top-panel__portrait-image');
   image.src = getTokenPortraitSrc(token);
   image.alt = tokenName;
   portrait.appendChild(image);
@@ -95,21 +104,19 @@ function buildPortraitElement(token, {
     const woundAbilityChip = enableWounds ? getWoundsAbilityChip(actor) : null;
     const temporaryEffectChips = enableTemporaryEffects ? getTemporaryEffectChips(actor) : [];
     const allChips = limitChipList(
-      [
-        ...conditionChips,
-        ...(woundAbilityChip ? [woundAbilityChip] : []),
-        ...temporaryEffectChips
-      ],
+      [...conditionChips, ...(woundAbilityChip ? [woundAbilityChip] : []), ...temporaryEffectChips],
       TOP_PANEL_CHIP_MAX_PER_ROW,
-      "row-overflow"
+      'row-overflow'
     );
     if (allChips.length) {
-      const chipsLayer = document.createElement("div");
-      chipsLayer.classList.add("tow-combat-overlay-top-panel__chips");
-      chipsLayer.appendChild(createTopPanelChipGroup("status-effects", allChips, {
-        defaultEnabled: true,
-        enabledByType: enableChipTooltipByType
-      }));
+      const chipsLayer = document.createElement('div');
+      chipsLayer.classList.add('tow-combat-overlay-top-panel__chips');
+      chipsLayer.appendChild(
+        createTopPanelChipGroup('status-effects', allChips, {
+          defaultEnabled: true,
+          enabledByType: enableChipTooltipByType
+        })
+      );
       portrait.appendChild(chipsLayer);
     }
   }
@@ -119,11 +126,11 @@ function buildPortraitElement(token, {
 
 export async function createTopPanelElement(bindTopPanelElementEvents) {
   const html = await towCombatOverlayRenderTemplate(TOP_PANEL_TEMPLATE_PATH, {});
-  const wrapper = document.createElement("div");
-  wrapper.innerHTML = String(html ?? "").trim();
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = String(html ?? '').trim();
   const topPanel = wrapper.firstElementChild;
   if (!(topPanel instanceof HTMLElement) || topPanel.id !== TOP_PANEL_ID) {
-    throw new Error("[tow-combat-overlay] Failed to render top panel template.");
+    throw new Error('[tow-combat-overlay] Failed to render top panel template.');
   }
   bindTopPanelElementEvents(topPanel);
   return topPanel;
@@ -135,69 +142,104 @@ export async function renderTopPanelContent() {
   if (!(panelElement instanceof HTMLElement) || !panelElement.isConnected) return;
   if (state) clearLinkedTopPanelHover(state, { panelElement });
   const { settings } = getTowCombatOverlayConstants();
-  const enableStatusRow = isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableStatusRow, true);
-  const enableStatuses = enableStatusRow
-    && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableStatuses, true);
-  const enableWounds = enableStatusRow
-    && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableWounds, true);
-  const enableTemporaryEffects = enableStatusRow
-    && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableTemporaryEffects, true);
-  const showDeadVisual = isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelShowDeadVisual, true);
+  const enableStatusRow = isTowCombatOverlayDisplaySettingEnabled(
+    settings.tokensPanelEnableStatusRow,
+    true
+  );
+  const enableStatuses =
+    enableStatusRow &&
+    isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableStatuses, true);
+  const enableWounds =
+    enableStatusRow &&
+    isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableWounds, true);
+  const enableTemporaryEffects =
+    enableStatusRow &&
+    isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableTemporaryEffects, true);
+  const showDeadVisual = isTowCombatOverlayDisplaySettingEnabled(
+    settings.tokensPanelShowDeadVisual,
+    true
+  );
   const alwaysCentered = isTopPanelAlwaysCenteredEnabled();
   const locked = isTopPanelLockedEnabled();
-  const enableTooltips = isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableTooltips, true);
-  const canDragReorder = canTowCombatOverlayUserViewControl(settings.tokensPanelCardsDragDropMinimumRole, "all");
-  const enableCardTooltip = enableTooltips
-    && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableCardsTooltip, true);
+  const enableTooltips = isTowCombatOverlayDisplaySettingEnabled(
+    settings.tokensPanelEnableTooltips,
+    true
+  );
+  const canDragReorder = canTowCombatOverlayUserViewControl(
+    settings.tokensPanelCardsDragDropMinimumRole,
+    'all'
+  );
+  const enableCardTooltip =
+    enableTooltips &&
+    isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableCardsTooltip, true);
   const enableChipTooltipByType = {
-    condition: enableTooltips && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableStatusesTooltip, true),
-    ability: enableTooltips && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableWoundsTooltip, true),
-    effect: enableTooltips && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableTemporaryEffectsTooltip, true),
-    overflow: enableTooltips && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableOverflowTooltip, true),
-    "row-overflow": enableTooltips && isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableOverflowTooltip, true)
+    condition:
+      enableTooltips &&
+      isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableStatusesTooltip, true),
+    ability:
+      enableTooltips &&
+      isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableWoundsTooltip, true),
+    effect:
+      enableTooltips &&
+      isTowCombatOverlayDisplaySettingEnabled(
+        settings.tokensPanelEnableTemporaryEffectsTooltip,
+        true
+      ),
+    overflow:
+      enableTooltips &&
+      isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableOverflowTooltip, true),
+    'row-overflow':
+      enableTooltips &&
+      isTowCombatOverlayDisplaySettingEnabled(settings.tokensPanelEnableOverflowTooltip, true)
   };
   const handlePositionRaw = String(
-    getTowCombatOverlayDisplaySetting(settings.tokensPanelDragButtonPosition, "right")
-  ).trim().toLowerCase();
-  const handlePosition = handlePositionRaw === "right" ? "right" : "left";
+    getTowCombatOverlayDisplaySetting(settings.tokensPanelDragButtonPosition, 'right')
+  )
+    .trim()
+    .toLowerCase();
+  const handlePosition = handlePositionRaw === 'right' ? 'right' : 'left';
   syncTopPanelWidth(panelElement, undefined, { includeSidebarOffset: alwaysCentered });
-  const controlsElement = panelElement.querySelector(".tow-combat-overlay-top-panel__controls");
+  const controlsElement = panelElement.querySelector('.tow-combat-overlay-top-panel__controls');
   if (controlsElement instanceof HTMLElement) controlsElement.hidden = alwaysCentered || locked;
-  panelElement.classList.toggle("is-drag-locked", alwaysCentered || locked);
-  panelElement.dataset.alwaysCentered = alwaysCentered ? "true" : "false";
+  panelElement.classList.toggle('is-drag-locked', alwaysCentered || locked);
+  panelElement.dataset.alwaysCentered = alwaysCentered ? 'true' : 'false';
   panelElement.dataset.handlePosition = handlePosition;
-  if (alwaysCentered) applyDefaultTopPanelPosition(panelElement, undefined, { includeSidebarOffset: true });
+  if (alwaysCentered)
+    applyDefaultTopPanelPosition(panelElement, undefined, { includeSidebarOffset: true });
 
-  const listElement = panelElement.querySelector(".tow-combat-overlay-top-panel__list");
+  const listElement = panelElement.querySelector('.tow-combat-overlay-top-panel__list');
   if (!(listElement instanceof HTMLElement)) return;
 
   const tokens = getOrderedSceneTokens();
-  listElement.innerHTML = "";
+  listElement.innerHTML = '';
 
   if (!tokens.length) {
-    panelElement.dataset.hasTokens = "false";
-    listElement.style.paddingBottom = "0px";
-    applyTopPanelHoveredCardHighlight(panelElement, "");
+    panelElement.dataset.hasTokens = 'false';
+    listElement.style.paddingBottom = '0px';
+    applyTopPanelHoveredCardHighlight(panelElement, '');
     return;
   }
 
-  panelElement.dataset.hasTokens = "true";
+  panelElement.dataset.hasTokens = 'true';
   const fragment = document.createDocumentFragment();
   for (const token of tokens) {
-    fragment.appendChild(buildPortraitElement(token, {
-      enableStatuses,
-      enableWounds,
-      enableTemporaryEffects,
-      showDeadVisual,
-      canDragReorder,
-      enableCardTooltip,
-      enableChipTooltipByType
-    }));
+    fragment.appendChild(
+      buildPortraitElement(token, {
+        enableStatuses,
+        enableWounds,
+        enableTemporaryEffects,
+        showDeadVisual,
+        canDragReorder,
+        enableCardTooltip,
+        enableChipTooltipByType
+      })
+    );
   }
   listElement.appendChild(fragment);
   syncTopPanelListBottomPadding(panelElement);
-  if (alwaysCentered) applyDefaultTopPanelPosition(panelElement, undefined, { includeSidebarOffset: true });
-  applyTopPanelHoveredCardHighlight(panelElement, state?.hoveredCanvasTokenId ?? "");
+  if (alwaysCentered)
+    applyDefaultTopPanelPosition(panelElement, undefined, { includeSidebarOffset: true });
+  applyTopPanelHoveredCardHighlight(panelElement, state?.hoveredCanvasTokenId ?? '');
 }
 
 export function queueTopPanelRender() {

@@ -1,5 +1,5 @@
-import { getTowCombatOverlayConstants } from "../../../runtime/module-constants.js";
-import { collectPotentialApplyActors } from "../../shared/actor-reference-helpers.js";
+import { getTowCombatOverlayConstants } from '../../../runtime/module-constants.js';
+import { collectPotentialApplyActors } from '../../shared/actor-reference-helpers.js';
 
 const {
   moduleId: TOW_MODULE_ID,
@@ -18,19 +18,21 @@ export function requestGmSpellAutoApplyRelay(messageId, targetToken = null) {
   const socket = game?.socket;
   if (!socket?.emit) return false;
   const relayPayload = {
-    actionType: "spellAutoApply",
-    messageId: String(messageId ?? "").trim(),
-    targetTokenId: String(targetToken?.id ?? "").trim(),
-    rollMode: String(game?.settings?.get?.("core", "rollMode") ?? "").trim(),
-    requesterId: String(game?.user?.id ?? "").trim(),
+    actionType: 'spellAutoApply',
+    messageId: String(messageId ?? '').trim(),
+    targetTokenId: String(targetToken?.id ?? '').trim(),
+    rollMode: String(game?.settings?.get?.('core', 'rollMode') ?? '').trim(),
+    requesterId: String(game?.user?.id ?? '').trim(),
     timestamp: Date.now()
   };
-  const relayFlagKey = String(TOW_FLAGS?.actionRelayRequest ?? "actionRelayRequest");
+  const relayFlagKey = String(TOW_FLAGS?.actionRelayRequest ?? 'actionRelayRequest');
   if (game?.user?.setFlag) {
-    void Promise.resolve(game.user.setFlag(TOW_MODULE_ID, relayFlagKey, relayPayload)).catch(() => {});
+    void Promise.resolve(game.user.setFlag(TOW_MODULE_ID, relayFlagKey, relayPayload)).catch(
+      () => {}
+    );
   }
   socket.emit(`module.${TOW_MODULE_ID}`, {
-    type: String(TOW_SOCKETS?.actionRelayRequest ?? "actionRelayRequest"),
+    type: String(TOW_SOCKETS?.actionRelayRequest ?? 'actionRelayRequest'),
     payload: relayPayload
   });
   return true;

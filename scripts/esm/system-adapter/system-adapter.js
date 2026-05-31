@@ -1,11 +1,11 @@
-import { getTowCombatOverlayConstants } from "../runtime/module-constants.js";
+import { getTowCombatOverlayConstants } from '../runtime/module-constants.js';
 
 const { notifications: MODULE_NOTIFICATIONS } = getTowCombatOverlayConstants();
 
 function createTowCombatOverlaySystemAdapter() {
   return {
     setupAbilityTest(actor, ability, context = {}, options = {}) {
-      if (!actor || typeof actor.setupAbilityTest !== "function") {
+      if (!actor || typeof actor.setupAbilityTest !== 'function') {
         ui.notifications.error(MODULE_NOTIFICATIONS.apiUnavailable.abilityTest);
         return null;
       }
@@ -13,7 +13,7 @@ function createTowCombatOverlaySystemAdapter() {
     },
 
     setupWeaponTest(actor, weapon, context = {}, options = {}) {
-      if (!actor || typeof actor.setupWeaponTest !== "function") {
+      if (!actor || typeof actor.setupWeaponTest !== 'function') {
         ui.notifications.error(MODULE_NOTIFICATIONS.apiUnavailable.weaponTest);
         return null;
       }
@@ -21,7 +21,7 @@ function createTowCombatOverlaySystemAdapter() {
     },
 
     setupSkillTest(actor, skill, context = {}) {
-      if (!actor || typeof actor.setupSkillTest !== "function") {
+      if (!actor || typeof actor.setupSkillTest !== 'function') {
         ui.notifications.error(MODULE_NOTIFICATIONS.apiUnavailable.skillTest);
         return null;
       }
@@ -33,7 +33,7 @@ function createTowCombatOverlaySystemAdapter() {
     },
 
     addCondition(actor, condition, options = {}) {
-      if (!actor || typeof actor.addCondition !== "function") {
+      if (!actor || typeof actor.addCondition !== 'function') {
         ui.notifications.error(MODULE_NOTIFICATIONS.apiUnavailable.addCondition);
         return null;
       }
@@ -41,7 +41,7 @@ function createTowCombatOverlaySystemAdapter() {
     },
 
     removeCondition(actor, condition) {
-      if (!actor || typeof actor.removeCondition !== "function") {
+      if (!actor || typeof actor.removeCondition !== 'function') {
         ui.notifications.error(MODULE_NOTIFICATIONS.apiUnavailable.removeCondition);
         return null;
       }
@@ -49,7 +49,7 @@ function createTowCombatOverlaySystemAdapter() {
     },
 
     applyDamage(actor, damage, context = {}) {
-      if (!actor?.system || typeof actor.system.applyDamage !== "function") {
+      if (!actor?.system || typeof actor.system.applyDamage !== 'function') {
         ui.notifications.error(MODULE_NOTIFICATIONS.apiUnavailable.applyDamage);
         return null;
       }
@@ -57,7 +57,7 @@ function createTowCombatOverlaySystemAdapter() {
     },
 
     addWound(actor, options = {}) {
-      if (!actor?.system || typeof actor.system.addWound !== "function") {
+      if (!actor?.system || typeof actor.system.addWound !== 'function') {
         ui.notifications.error(MODULE_NOTIFICATIONS.apiUnavailable.wound);
         return null;
       }
@@ -65,7 +65,7 @@ function createTowCombatOverlaySystemAdapter() {
     },
 
     promptStaggeredChoice(actor, options = {}) {
-      if (!actor?.system || typeof actor.system.promptStaggeredChoice !== "function") {
+      if (!actor?.system || typeof actor.system.promptStaggeredChoice !== 'function') {
         ui.notifications.error(MODULE_NOTIFICATIONS.apiUnavailable.staggerChoice);
         return null;
       }
@@ -82,4 +82,3 @@ export function getTowCombatOverlaySystemAdapter() {
   }
   return systemAdapterSingleton;
 }
-

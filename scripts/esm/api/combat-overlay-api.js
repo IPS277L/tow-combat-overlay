@@ -1,6 +1,6 @@
-import { registerTowCombatOverlayPublicApis } from "./module-api-registry.js";
-import { getTowCombatOverlayConstants } from "../runtime/module-constants.js";
-import { COMBAT_OVERLAY_API_VERSION } from "../runtime/overlay-constants.js";
+import { registerTowCombatOverlayPublicApis } from './module-api-registry.js';
+import { getTowCombatOverlayConstants } from '../runtime/module-constants.js';
+import { COMBAT_OVERLAY_API_VERSION } from '../runtime/overlay-constants.js';
 import {
   towCombatOverlayDisable,
   towCombatOverlayEnable,
@@ -9,7 +9,7 @@ import {
   towCombatOverlayRefreshAllOverlays,
   towCombatOverlayRefreshTokenOverlay,
   towCombatOverlayToggle
-} from "../overlay/overlay.js";
+} from '../overlay/overlay.js';
 
 const { apiKeys: COMBAT_OVERLAY_API_KEYS } = getTowCombatOverlayConstants();
 
@@ -42,11 +42,10 @@ export function createTowCombatOverlayApi(overrides = {}) {
 
 export function registerTowCombatOverlayApi(apiOverrides = {}) {
   const nextApi = createTowCombatOverlayApi(apiOverrides);
-  const targetApi = registerTowCombatOverlayPublicApis({
-    overlayApi: nextApi
-  })?.[COMBAT_OVERLAY_API_KEYS.overlay] ?? nextApi;
+  const targetApi =
+    registerTowCombatOverlayPublicApis({
+      overlayApi: nextApi
+    })?.[COMBAT_OVERLAY_API_KEYS.overlay] ?? nextApi;
 
   return targetApi;
 }
-
-

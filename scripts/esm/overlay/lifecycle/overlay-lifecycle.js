@@ -2,18 +2,18 @@ import {
   ACTOR_OVERLAY_RESYNC_DELAYS_MS,
   KEYS,
   MODULE_KEY
-} from "../../runtime/overlay-constants.js";
-import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
+} from '../../runtime/overlay-constants.js';
+import { getTowCombatOverlayConstants } from '../../runtime/module-constants.js';
 import {
   registerTowCombatOverlayHooks,
   unregisterTowCombatOverlayHooks
-} from "../../bootstrap/register-overlay-hooks.js";
-import { isTowCombatOverlayDisplaySettingEnabled } from "../../bootstrap/register-settings.js";
+} from '../../bootstrap/register-overlay-hooks.js';
+import { isTowCombatOverlayDisplaySettingEnabled } from '../../bootstrap/register-settings.js';
 import {
   towCombatOverlayForEachSceneToken,
   towCombatOverlayGetActorFromToken,
   towCombatOverlayGetActorTokenObjects
-} from "../shared/core-helpers.js";
+} from '../shared/core-helpers.js';
 import {
   towCombatOverlayEnsureDeadVisual,
   towCombatOverlayEnsureTokenOverlayInteractivity,
@@ -21,17 +21,17 @@ import {
   towCombatOverlayQueueWoundSyncFromDeadState,
   towCombatOverlayUpdateCustomLayoutBorderVisibility,
   towCombatOverlayUpdateTokenOverlayHitArea
-} from "../layout-state.js";
+} from '../layout-state.js';
 import {
   towCombatOverlayClearAllNameLabels,
   towCombatOverlayUpdateNameLabel
-} from "../controls/control-style.js";
+} from '../controls/control-style.js';
 import {
   clearAllStatusOverlays,
   hideDefaultStatusPanelForOverlay,
   setupStatusPalette,
   towCombatOverlayHideCoreTokenHoverVisuals
-} from "../status/status-palette.js";
+} from '../status/status-palette.js';
 
 const { notifications: MODULE_NOTIFICATIONS } = getTowCombatOverlayConstants();
 
@@ -61,7 +61,9 @@ function clearTowCombatOverlayTokenNameLabel(tokenObject) {
 function hasTowCombatOverlayPreviewClone(tokenObject) {
   const previewChildren = tokenObject?.layer?.preview?.children;
   if (!Array.isArray(previewChildren) || previewChildren.length === 0) return false;
-  return previewChildren.some((previewToken) => previewToken?._original === tokenObject && !previewToken?.destroyed);
+  return previewChildren.some(
+    (previewToken) => previewToken?._original === tokenObject && !previewToken?.destroyed
+  );
 }
 
 function scheduleTowCombatOverlayPreviewRestore(tokenObject) {
@@ -76,7 +78,8 @@ function scheduleTowCombatOverlayPreviewRestore(tokenObject) {
   const timer = setTimeout(() => {
     const liveState = game[MODULE_KEY];
     liveState?.previewRestoreTimers?.delete?.(key);
-    if (!tokenObject || tokenObject.destroyed || hasTowCombatOverlayPreviewClone(tokenObject)) return;
+    if (!tokenObject || tokenObject.destroyed || hasTowCombatOverlayPreviewClone(tokenObject))
+      return;
     setTowCombatOverlayTokenVisualVisibility(tokenObject, tokenObject.visible !== false);
     towCombatOverlayRefreshTokenOverlay(tokenObject);
   }, 140);
@@ -96,7 +99,10 @@ export function towCombatOverlayRefreshTokenOverlay(tokenObject) {
   towCombatOverlayHideCoreTokenHoverVisuals(tokenObject);
   setupStatusPalette(tokenObject);
   const { settings } = getTowCombatOverlayConstants();
-  const showCustomName = isTowCombatOverlayDisplaySettingEnabled(settings.tokenLayoutShowCustomName, true);
+  const showCustomName = isTowCombatOverlayDisplaySettingEnabled(
+    settings.tokenLayoutShowCustomName,
+    true
+  );
   if (showCustomName) towCombatOverlayUpdateNameLabel(tokenObject);
   else clearTowCombatOverlayTokenNameLabel(tokenObject);
   towCombatOverlayUpdateTokenOverlayHitArea(tokenObject);
@@ -126,16 +132,18 @@ export function towCombatOverlayQueueActorOverlayResync(actor) {
     for (const timer of existing) clearTimeout(timer);
   }
 
-  const timers = ACTOR_OVERLAY_RESYNC_DELAYS_MS.map((delayMs, index) => setTimeout(() => {
-    towCombatOverlayRefreshActorOverlays(actor);
-    const liveState = game[MODULE_KEY];
-    const liveTimers = liveState?.actorOverlayResyncTimers?.get?.(key);
-    if (!Array.isArray(liveTimers)) return;
-    liveTimers[index] = null;
-    if (liveTimers.every((timer) => timer == null)) {
-      liveState.actorOverlayResyncTimers.delete(key);
-    }
-  }, delayMs));
+  const timers = ACTOR_OVERLAY_RESYNC_DELAYS_MS.map((delayMs, index) =>
+    setTimeout(() => {
+      towCombatOverlayRefreshActorOverlays(actor);
+      const liveState = game[MODULE_KEY];
+      const liveTimers = liveState?.actorOverlayResyncTimers?.get?.(key);
+      if (!Array.isArray(liveTimers)) return;
+      liveTimers[index] = null;
+      if (liveTimers.every((timer) => timer == null)) {
+        liveState.actorOverlayResyncTimers.delete(key);
+      }
+    }, delayMs)
+  );
   state.actorOverlayResyncTimers.set(key, timers);
 }
 
@@ -189,14 +197,14 @@ export function towCombatOverlayDisable() {
   }
   if (state?.deadSyncTimers instanceof Map) {
     for (const entry of state.deadSyncTimers.values()) {
-      if (typeof entry?.cancel === "function") entry.cancel();
+      if (typeof entry?.cancel === 'function') entry.cancel();
       else clearTimeout(entry);
     }
     state.deadSyncTimers.clear();
   }
   if (state?.deadToWoundSyncTimers instanceof Map) {
     for (const entry of state.deadToWoundSyncTimers.values()) {
-      if (typeof entry?.cancel === "function") entry.cancel();
+      if (typeof entry?.cancel === 'function') entry.cancel();
       else clearTimeout(entry);
     }
     state.deadToWoundSyncTimers.clear();
@@ -205,7 +213,7 @@ export function towCombatOverlayDisable() {
   if (state?.deadSyncInFlight instanceof Set) state.deadSyncInFlight.clear();
   if (state?.statusRemoveInFlight instanceof Set) state.statusRemoveInFlight.clear();
   if (state?.statusRemoveQueue instanceof Map) state.statusRemoveQueue.clear();
-  if (state?.staggerWaitPatch && typeof foundry.applications?.api?.Dialog?.wait === "function") {
+  if (state?.staggerWaitPatch && typeof foundry.applications?.api?.Dialog?.wait === 'function') {
     foundry.applications.api.Dialog.wait = state.staggerWaitPatch.originalWait;
   }
   delete game[MODULE_KEY];
@@ -218,4 +226,3 @@ export function towCombatOverlayDisable() {
 export function towCombatOverlayToggle() {
   return towCombatOverlayIsEnabled() ? towCombatOverlayDisable() : towCombatOverlayEnable();
 }
-

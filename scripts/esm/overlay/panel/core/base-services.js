@@ -1,9 +1,9 @@
-import { createControlPanelSlotMetaService } from "../slots/slot-meta.js";
-import { createPanelContextAccessService } from "./context-access.js";
-import { createPanelUnarmedLifecycleService } from "../../../combat/unarmed/unarmed-lifecycle.js";
-import { createPanelConditionToggleService } from "../../status/condition-toggle.js";
-import { createPanelElementFactoryService } from "./element-factory.js";
-import { createPanelSpellSupportService } from "../../spells/spell-support.js";
+import { createControlPanelSlotMetaService } from '../slots/slot-meta.js';
+import { createPanelContextAccessService } from './context-access.js';
+import { createPanelUnarmedLifecycleService } from '../../../combat/unarmed/unarmed-lifecycle.js';
+import { createPanelConditionToggleService } from '../../status/condition-toggle.js';
+import { createPanelElementFactoryService } from './element-factory.js';
+import { createPanelSpellSupportService } from '../../spells/spell-support.js';
 
 export function createPanelBaseServices({
   moduleId,
@@ -96,5 +96,3 @@ export function createPanelBaseServices({
     panelSpellSupportService
   };
 }
-
-

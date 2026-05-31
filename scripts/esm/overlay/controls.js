@@ -9,4 +9,4 @@ export {
   towCombatOverlayTuneOverlayText,
   towCombatOverlayUpdateNameLabel,
   towCombatOverlayClearAllNameLabels
-} from "./controls/control-style.js";
+} from './controls/control-style.js';

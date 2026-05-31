@@ -1,1 +1,1 @@
-export * from "./automation-service.js";
+export * from './automation-service.js';

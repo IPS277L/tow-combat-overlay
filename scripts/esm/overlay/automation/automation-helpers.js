@@ -1,7 +1,9 @@
 export function getDialogButtonTokens(config) {
   const tokens = [];
   const add = (value) => {
-    const token = String(value ?? "").trim().toLowerCase();
+    const token = String(value ?? '')
+      .trim()
+      .toLowerCase();
     if (!token) return;
     if (!tokens.includes(token)) tokens.push(token);
   };
@@ -30,14 +32,14 @@ export function getDialogButtonTokens(config) {
 }
 
 export function isLikelyStaggerChoiceDialog(config) {
-  const title = String(config?.window?.title ?? "").toLowerCase();
-  const content = String(config?.content ?? "").toLowerCase();
+  const title = String(config?.window?.title ?? '').toLowerCase();
+  const content = String(config?.content ?? '').toLowerCase();
   const buttonTokens = getDialogButtonTokens(config);
-  const mentionsStagger = title.includes("stagger") || content.includes("stagger");
-  const mentionsChoicePrompt = content.includes("choose from the following options");
-  const hasWoundChoice = buttonTokens.some((token) => token.includes("wound"));
-  const hasProneChoice = buttonTokens.some((token) => token.includes("prone"));
-  const hasGiveChoice = buttonTokens.some((token) => token.includes("give"));
+  const mentionsStagger = title.includes('stagger') || content.includes('stagger');
+  const mentionsChoicePrompt = content.includes('choose from the following options');
+  const hasWoundChoice = buttonTokens.some((token) => token.includes('wound'));
+  const hasProneChoice = buttonTokens.some((token) => token.includes('prone'));
+  const hasGiveChoice = buttonTokens.some((token) => token.includes('give'));
   const hasExpectedChoices = hasWoundChoice && (hasProneChoice || hasGiveChoice);
 
   if (hasExpectedChoices && (mentionsStagger || mentionsChoicePrompt)) return true;
@@ -45,10 +47,7 @@ export function isLikelyStaggerChoiceDialog(config) {
   return false;
 }
 
-export function deriveAppliedStatusLabels(before, after, {
-  localize,
-  resolveConditionLabel
-} = {}) {
+export function deriveAppliedStatusLabels(before, after, { localize, resolveConditionLabel } = {}) {
   const labels = [];
   const add = (label) => {
     if (!label) return;
@@ -56,14 +55,14 @@ export function deriveAppliedStatusLabels(before, after, {
   };
 
   if ((after?.wounds ?? 0) > (before?.wounds ?? 0)) {
-    add(localize?.("TOWCOMBATOVERLAY.Status.Wound", "Wound") ?? "Wound");
+    add(localize?.('TOWCOMBATOVERLAY.Status.Wound', 'Wound') ?? 'Wound');
   }
 
   const beforeStatuses = before?.statuses ?? new Set();
   const afterStatuses = after?.statuses ?? new Set();
   for (const statusId of afterStatuses) {
     if (beforeStatuses.has(statusId)) continue;
-    const label = resolveConditionLabel?.(statusId) ?? String(statusId ?? "");
+    const label = resolveConditionLabel?.(statusId) ?? String(statusId ?? '');
     add(label);
   }
   return labels;

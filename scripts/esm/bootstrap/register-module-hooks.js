@@ -1,45 +1,45 @@
-import { towCombatOverlayEnsurePromiseClose } from "../combat/attack.js";
-import { towCombatOverlayApplyChatMessageCensorship } from "../combat/core.js";
-import { registerTowCombatOverlayApi } from "../api/combat-overlay-api.js";
-import { registerTowCombatOverlayActionsRuntimeApi } from "./register-actions-api.js";
-import { registerTowCombatOverlayDeadWoundSyncHooks } from "./register-dead-wound-sync-hooks.js";
-import { registerTowCombatOverlayDisplaySettings } from "./register-settings.js";
-import { towCombatOverlayApplyTableVisibilityRelay } from "../chat/table-visibility-relay.js";
+import { towCombatOverlayEnsurePromiseClose } from '../combat/attack.js';
+import { towCombatOverlayApplyChatMessageCensorship } from '../combat/core.js';
+import { registerTowCombatOverlayApi } from '../api/combat-overlay-api.js';
+import { registerTowCombatOverlayActionsRuntimeApi } from './register-actions-api.js';
+import { registerTowCombatOverlayDeadWoundSyncHooks } from './register-dead-wound-sync-hooks.js';
+import { registerTowCombatOverlayDisplaySettings } from './register-settings.js';
+import { towCombatOverlayApplyTableVisibilityRelay } from '../chat/table-visibility-relay.js';
 import {
   ensureTowCombatOverlayStylesheetLoaded,
   ensureTowCombatOverlaySidebarObserver,
   requestTowCombatOverlayViewportSync
-} from "./ui-bootstrap.js";
-import { syncTowCombatOverlayDisplaySettings } from "./display-settings-sync.js";
-import { ensureTowCombatOverlayActionRelayFlagHook } from "./relay/action-relay-runtime.js";
+} from './ui-bootstrap.js';
+import { syncTowCombatOverlayDisplaySettings } from './display-settings-sync.js';
+import { ensureTowCombatOverlayActionRelayFlagHook } from './relay/action-relay-runtime.js';
 import {
   ensureTowCombatOverlayTopPanelOrderBackoffSweeps,
   ensureTowCombatOverlayTopPanelOrderRelayHook,
   ensureTowCombatOverlayTopPanelOrderSocketRelay
-} from "./relay/top-panel-order-relay.js";
+} from './relay/top-panel-order-relay.js';
 
 function ensureTowCombatOverlayApplyEffectQueryRegistered() {
-  const systemId = String(game?.system?.id ?? "").trim();
+  const systemId = String(game?.system?.id ?? '').trim();
   if (!systemId) return;
 
   const queryKey = `${systemId}.applyEffect`;
   const queries = CONFIG?.queries;
-  if (!queries || typeof queries !== "object") return;
-  if (typeof queries[queryKey] === "function") return;
+  if (!queries || typeof queries !== 'object') return;
+  if (typeof queries[queryKey] === 'function') return;
 
   const socketHandlers = globalThis?.warhammer?.apps?.SocketHandlers;
-  const useSocketHandler = typeof socketHandlers?.applyEffect === "function";
+  const useSocketHandler = typeof socketHandlers?.applyEffect === 'function';
 
   queries[queryKey] = async (queryData = {}, options = {}) => {
     if (useSocketHandler) return socketHandlers.applyEffect(queryData, options);
 
-    const actorUuid = String(queryData?.actorUuid ?? "").trim();
+    const actorUuid = String(queryData?.actorUuid ?? '').trim();
     if (!actorUuid) return null;
 
     let actor = null;
-    if (typeof fromUuidSync === "function") actor = fromUuidSync(actorUuid);
-    if (!actor && typeof fromUuid === "function") actor = await fromUuid(actorUuid);
-    if (!actor || typeof actor.applyEffect !== "function") return null;
+    if (typeof fromUuidSync === 'function') actor = fromUuidSync(actorUuid);
+    if (!actor && typeof fromUuid === 'function') actor = await fromUuid(actorUuid);
+    if (!actor || typeof actor.applyEffect !== 'function') return null;
 
     return actor.applyEffect({
       effectUuids: queryData?.effectUuids,
@@ -57,7 +57,7 @@ function registerTowCombatOverlayRuntimeApis() {
 export { syncTowCombatOverlayDisplaySettings };
 
 export function registerTowCombatOverlayModuleHooks() {
-  Hooks.once("init", () => {
+  Hooks.once('init', () => {
     ensureTowCombatOverlayApplyEffectQueryRegistered();
     ensureTowCombatOverlayStylesheetLoaded();
     registerTowCombatOverlayDisplaySettings({
@@ -66,35 +66,35 @@ export function registerTowCombatOverlayModuleHooks() {
     registerTowCombatOverlayRuntimeApis();
   });
 
-  Hooks.on("renderAbilityAttackDialog", (app) => {
+  Hooks.on('renderAbilityAttackDialog', (app) => {
     towCombatOverlayEnsurePromiseClose(app);
   });
 
-  Hooks.on("renderTestDialog", (app) => {
+  Hooks.on('renderTestDialog', (app) => {
     towCombatOverlayEnsurePromiseClose(app);
   });
 
-  Hooks.on("renderWeaponDialog", (app) => {
+  Hooks.on('renderWeaponDialog', (app) => {
     towCombatOverlayEnsurePromiseClose(app);
   });
 
-  Hooks.on("preCreateChatMessage", (messageDoc, createData, _options, userId) => {
+  Hooks.on('preCreateChatMessage', (messageDoc, createData, _options, userId) => {
     towCombatOverlayApplyTableVisibilityRelay(messageDoc, createData, userId);
   });
 
-  Hooks.on("renderChatMessage", (message, html) => {
+  Hooks.on('renderChatMessage', (message, html) => {
     towCombatOverlayApplyChatMessageCensorship(message, html);
   });
 
-  Hooks.on("collapseSidebar", () => {
+  Hooks.on('collapseSidebar', () => {
     requestTowCombatOverlayViewportSync();
   });
 
-  Hooks.on("renderSidebar", () => {
+  Hooks.on('renderSidebar', () => {
     ensureTowCombatOverlaySidebarObserver();
   });
 
-  Hooks.once("ready", () => {
+  Hooks.once('ready', () => {
     ensureTowCombatOverlayApplyEffectQueryRegistered();
     ensureTowCombatOverlayStylesheetLoaded();
     registerTowCombatOverlayDeadWoundSyncHooks();

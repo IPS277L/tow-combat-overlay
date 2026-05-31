@@ -1,0 +1,4 @@
+node_modules/
+oldworld-foundryvtt/
+packs/
+templates/**/*.hbs

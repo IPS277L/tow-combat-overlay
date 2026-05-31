@@ -1,32 +1,32 @@
-import { ICON_SRC_WOUND } from "../../runtime/overlay-constants.js";
+import { ICON_SRC_WOUND } from '../../runtime/overlay-constants.js';
 
-const WOUND_STATE_KEYS = Object.freeze(["unwounded", "wounded", "defeated"]);
+const WOUND_STATE_KEYS = Object.freeze(['unwounded', 'wounded', 'defeated']);
 const WOUND_STATE_LABELS = Object.freeze({
-  unwounded: localizeMaybe("TOWCOMBATOVERLAY.Label.WoundState.Unwounded", "Unwounded"),
-  wounded: localizeMaybe("TOWCOMBATOVERLAY.Label.WoundState.Wounded", "Wounded"),
-  defeated: localizeMaybe("TOWCOMBATOVERLAY.Label.WoundState.Defeated", "Defeated")
+  unwounded: localizeMaybe('TOWCOMBATOVERLAY.Label.WoundState.Unwounded', 'Unwounded'),
+  wounded: localizeMaybe('TOWCOMBATOVERLAY.Label.WoundState.Wounded', 'Wounded'),
+  defeated: localizeMaybe('TOWCOMBATOVERLAY.Label.WoundState.Defeated', 'Defeated')
 });
 
-function localizeMaybe(key, fallback = "") {
-  const localized = game?.i18n?.localize?.(String(key ?? ""));
-  if (typeof localized === "string" && localized !== key) return localized;
-  return String(fallback ?? key ?? "");
+function localizeMaybe(key, fallback = '') {
+  const localized = game?.i18n?.localize?.(String(key ?? ''));
+  if (typeof localized === 'string' && localized !== key) return localized;
+  return String(fallback ?? key ?? '');
 }
 
 function getActorWoundItems(actor) {
   if (!actor) return [];
   const fromCollection = Array.isArray(actor.items?.contents)
-    ? actor.items.contents.filter((item) => item?.type === "wound")
+    ? actor.items.contents.filter((item) => item?.type === 'wound')
     : [];
   const fromTyped = Array.isArray(actor.itemTypes?.wound)
-    ? actor.itemTypes.wound.filter((item) => item?.type === "wound")
+    ? actor.itemTypes.wound.filter((item) => item?.type === 'wound')
     : [];
   if (!fromCollection.length) return fromTyped;
   if (!fromTyped.length) return fromCollection;
   const seen = new Set();
   const merged = [];
   for (const wound of [...fromCollection, ...fromTyped]) {
-    const key = String(wound?.id ?? wound?._id ?? "");
+    const key = String(wound?.id ?? wound?._id ?? '');
     if (!key || seen.has(key)) continue;
     seen.add(key);
     merged.push(wound);
@@ -39,34 +39,32 @@ function getActorWoundCount(actor) {
 }
 
 function getWoundStateActionText(actor, stateData) {
-  const description = String(stateData?.description ?? "").trim();
+  const description = String(stateData?.description ?? '').trim();
   if (description) return description;
   const effectName = String(
-    stateData?.effect?.document?.name
-    ?? actor?.effects?.get?.(stateData?.effect?.id)?.name
-    ?? ""
+    stateData?.effect?.document?.name ?? actor?.effects?.get?.(stateData?.effect?.id)?.name ?? ''
   ).trim();
   if (effectName) return effectName;
-  return "";
+  return '';
 }
 
 function getWoundStateImage(actor, stateData, woundIconSrc) {
   const directImage = String(
-    stateData?.effect?.document?.img
-    ?? stateData?.effect?.document?.icon
-    ?? stateData?.img
-    ?? stateData?.icon
-    ?? ""
+    stateData?.effect?.document?.img ??
+      stateData?.effect?.document?.icon ??
+      stateData?.img ??
+      stateData?.icon ??
+      ''
   ).trim();
   if (directImage) return directImage;
-  const effectId = String(stateData?.effect?.id ?? "").trim();
-  const liveImage = String(actor?.effects?.get?.(effectId)?.img ?? "").trim();
+  const effectId = String(stateData?.effect?.id ?? '').trim();
+  const liveImage = String(actor?.effects?.get?.(effectId)?.img ?? '').trim();
   if (liveImage) return liveImage;
   return woundIconSrc;
 }
 
 function getWoundStateEntries(actor, woundIconSrc) {
-  if (!actor || actor.type !== "npc" || actor.system?.hasThresholds !== true) return [];
+  if (!actor || actor.type !== 'npc' || actor.system?.hasThresholds !== true) return [];
   const woundsData = actor.system?.wounds ?? {};
   return WOUND_STATE_KEYS.map((key) => {
     const stateData = woundsData?.[key] ?? {};
@@ -87,7 +85,7 @@ function getWoundStateEntries(actor, woundIconSrc) {
 }
 
 function resolveCurrentWoundStateKey(actor, woundCount, entries) {
-  const thresholdKey = String(actor?.system?.thresholdAtWounds?.(woundCount) ?? "").trim();
+  const thresholdKey = String(actor?.system?.thresholdAtWounds?.(woundCount) ?? '').trim();
   if (WOUND_STATE_KEYS.includes(thresholdKey)) return thresholdKey;
   for (const entry of entries) {
     if (!Number.isFinite(entry.min) || !Number.isFinite(entry.max)) continue;
@@ -97,36 +95,38 @@ function resolveCurrentWoundStateKey(actor, woundCount, entries) {
 }
 
 function formatWoundRangeText(entry) {
-  if (!entry) return "";
+  if (!entry) return '';
   if (Number.isFinite(entry.min) && Number.isFinite(entry.max)) {
     if (entry.min === entry.max) return `${entry.min}`;
     return `${entry.min}-${entry.max}`;
   }
-  return localizeMaybe("TOWCOMBATOVERLAY.Label.WoundRange.Any", "any");
+  return localizeMaybe('TOWCOMBATOVERLAY.Label.WoundRange.Any', 'any');
 }
 
 export function getOverlayWoundIndicatorData(actor, { woundIconSrc, escapeHtml } = {}) {
-  const resolvedWoundIconSrc = String(woundIconSrc ?? "").trim() || ICON_SRC_WOUND;
-  const htmlEscape = (typeof escapeHtml === "function") ? escapeHtml : (value) => String(value ?? "");
-  const entries = getWoundStateEntries(actor, resolvedWoundIconSrc).filter((entry) => !!entry.action);
+  const resolvedWoundIconSrc = String(woundIconSrc ?? '').trim() || ICON_SRC_WOUND;
+  const htmlEscape = typeof escapeHtml === 'function' ? escapeHtml : (value) => String(value ?? '');
+  const entries = getWoundStateEntries(actor, resolvedWoundIconSrc).filter(
+    (entry) => !!entry.action
+  );
   if (!entries.length) return null;
 
   const woundCount = getActorWoundCount(actor);
   const currentKey = resolveCurrentWoundStateKey(actor, woundCount, entries);
   const currentEntry = entries.find((entry) => entry.key === currentKey) ?? entries[0];
-  const title = localizeMaybe("TOWCOMBATOVERLAY.Tooltip.Panel.WoundActions.Title", "Wound Actions");
+  const title = localizeMaybe('TOWCOMBATOVERLAY.Tooltip.Panel.WoundActions.Title', 'Wound Actions');
   const label = String(currentEntry?.label ?? title).trim();
   const lines = entries.map((entry) => {
     const range = formatWoundRangeText(entry);
-    const prefix = entry.key === currentKey ? "<strong>&#9656; </strong>" : "";
+    const prefix = entry.key === currentKey ? '<strong>&#9656; </strong>' : '';
     return `${prefix}<strong>${htmlEscape(entry.label)}</strong> (${htmlEscape(range)}): ${htmlEscape(entry.action)}`;
   });
 
   return {
     title,
-    description: lines.join("<br>"),
+    description: lines.join('<br>'),
     image: String(currentEntry?.image ?? resolvedWoundIconSrc).trim(),
     label,
-    isActive: currentKey !== "unwounded"
+    isActive: currentKey !== 'unwounded'
   };
 }

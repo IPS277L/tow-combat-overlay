@@ -1,6 +1,6 @@
-import { DAMAGE_RENDER_DEDUPE_MS } from "../runtime/action-constants.js";
-import { towCombatOverlayApplyRollVisibility } from "./chat-visibility.js";
-import { towCombatOverlayLocalize, towCombatOverlayRenderTemplate } from "./dialog-utils.js";
+import { DAMAGE_RENDER_DEDUPE_MS } from '../runtime/action-constants.js';
+import { towCombatOverlayApplyRollVisibility } from './chat-visibility.js';
+import { towCombatOverlayLocalize, towCombatOverlayRenderTemplate } from './dialog-utils.js';
 
 const damageRenderDeduper = new Map();
 
@@ -17,12 +17,12 @@ export async function towCombatOverlayWaitForChatMessage(messageId, timeoutMs = 
     const finish = () => {
       if (settled) return;
       settled = true;
-      if (hookId) Hooks.off("createChatMessage", hookId);
+      if (hookId) Hooks.off('createChatMessage', hookId);
       if (timeoutId) clearTimeout(timeoutId);
       resolve(game.messages.get(messageId) ?? null);
     };
 
-    hookId = Hooks.on("createChatMessage", (message) => {
+    hookId = Hooks.on('createChatMessage', (message) => {
       if (message?.id !== messageId) return;
       finish();
     });
@@ -59,10 +59,13 @@ async function towCombatOverlayPostSeparateDamageMessage(message, damage) {
   const dedupeKey = `separate:${message.id}`;
   if (!towCombatOverlayMarkDamageRender(dedupe, dedupeKey)) return;
 
-  const content = await towCombatOverlayRenderTemplate("modules/tow-combat-overlay/templates/chat/damage-display.hbs", {
-    damageLabel: towCombatOverlayLocalize("TOWCOMBATOVERLAY.Chat.Damage", "Damage"),
-    damage: Number(damage ?? 0)
-  });
+  const content = await towCombatOverlayRenderTemplate(
+    'modules/tow-combat-overlay/templates/chat/damage-display.hbs',
+    {
+      damageLabel: towCombatOverlayLocalize('TOWCOMBATOVERLAY.Chat.Damage', 'Damage'),
+      damage: Number(damage ?? 0)
+    }
+  );
 
   const chatData = {
     content,

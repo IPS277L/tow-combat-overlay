@@ -2,9 +2,9 @@ import {
   KEYS,
   getLayoutBorderColor,
   getLayoutBorderStyle
-} from "../../runtime/overlay-constants.js";
-import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
-import { isTowCombatOverlayDisplaySettingEnabled } from "../../bootstrap/register-settings.js";
+} from '../../runtime/overlay-constants.js';
+import { getTowCombatOverlayConstants } from '../../runtime/module-constants.js';
+import { isTowCombatOverlayDisplaySettingEnabled } from '../../bootstrap/register-settings.js';
 
 function isTokenLayoutBorderEnabled() {
   const { settings } = getTowCombatOverlayConstants();
@@ -24,10 +24,10 @@ export function towCombatOverlayClearDisplayObject(displayObject) {
 
 export function towCombatOverlayEnsureTokenOverlayInteractivity(tokenObject) {
   if (!tokenObject || tokenObject.destroyed) return;
-  if (typeof tokenObject[KEYS.tokenInteractiveChildrenOriginal] === "undefined") {
+  if (typeof tokenObject[KEYS.tokenInteractiveChildrenOriginal] === 'undefined') {
     tokenObject[KEYS.tokenInteractiveChildrenOriginal] = tokenObject.interactiveChildren === true;
   }
-  if (typeof tokenObject[KEYS.tokenHitAreaOriginal] === "undefined") {
+  if (typeof tokenObject[KEYS.tokenHitAreaOriginal] === 'undefined') {
     tokenObject[KEYS.tokenHitAreaOriginal] = tokenObject.hitArea ?? null;
   }
   tokenObject.interactiveChildren = true;
@@ -72,7 +72,13 @@ export function towCombatOverlayUpdateTokenOverlayHitArea(tokenObject) {
     maxX = Math.max(maxX, p.x);
     maxY = Math.max(maxY, p.y);
   }
-  if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) return;
+  if (
+    !Number.isFinite(minX) ||
+    !Number.isFinite(minY) ||
+    !Number.isFinite(maxX) ||
+    !Number.isFinite(maxY)
+  )
+    return;
 
   // Keep overlay zone/border horizontally symmetric around token center.
   const centerX = Number(tokenObject.w ?? 0) / 2;
@@ -86,10 +92,15 @@ export function towCombatOverlayUpdateTokenOverlayHitArea(tokenObject) {
   const hitBounds = {
     x: minX - pad,
     y: minY - pad,
-    width: Math.max(1, (maxX - minX) + (pad * 2)),
-    height: Math.max(1, (maxY - minY) + (pad * 2))
+    width: Math.max(1, maxX - minX + pad * 2),
+    height: Math.max(1, maxY - minY + pad * 2)
   };
-  tokenObject.hitArea = new PIXI.Rectangle(hitBounds.x, hitBounds.y, hitBounds.width, hitBounds.height);
+  tokenObject.hitArea = new PIXI.Rectangle(
+    hitBounds.x,
+    hitBounds.y,
+    hitBounds.width,
+    hitBounds.height
+  );
   // Border is always drawn around the token image; hit area may still extend to overlay children.
   towCombatOverlayDrawCustomLayoutBorder(tokenObject);
 }
@@ -97,7 +108,7 @@ export function towCombatOverlayUpdateTokenOverlayHitArea(tokenObject) {
 export function towCombatOverlayRestoreTokenOverlayInteractivity(tokenObject) {
   if (!tokenObject || tokenObject.destroyed) return;
   const prior = tokenObject[KEYS.tokenInteractiveChildrenOriginal];
-  if (typeof prior !== "boolean") return;
+  if (typeof prior !== 'boolean') return;
   tokenObject.interactiveChildren = prior;
   delete tokenObject[KEYS.tokenInteractiveChildrenOriginal];
   if (KEYS.tokenHitAreaOriginal in tokenObject) {
@@ -112,7 +123,7 @@ export function towCombatOverlayEnsureCustomLayoutBorder(tokenObject) {
   if (!border || border.destroyed || border.parent !== tokenObject) {
     if (border && !border.destroyed) towCombatOverlayClearDisplayObject(border);
     border = new PIXI.Graphics();
-    border.eventMode = "none";
+    border.eventMode = 'none';
     tokenObject.addChild(border);
     tokenObject[KEYS.layoutBorder] = border;
   }
@@ -134,13 +145,16 @@ export function towCombatOverlayDrawCustomLayoutBorder(tokenObject) {
     color: borderColor,
     alpha: borderStyle.alpha,
     alignment: 0.5,
-    cap: "round",
-    join: "round"
+    cap: 'round',
+    join: 'round'
   });
   border.drawRoundedRect(0, 0, tokenWidth, tokenHeight, borderStyle.radius);
 }
 
-export function towCombatOverlayUpdateCustomLayoutBorderVisibility(tokenObject, { hovered = null, controlled = null } = {}) {
+export function towCombatOverlayUpdateCustomLayoutBorderVisibility(
+  tokenObject,
+  { hovered = null, controlled = null } = {}
+) {
   if (!tokenObject || tokenObject.destroyed) return;
   const border = towCombatOverlayEnsureCustomLayoutBorder(tokenObject);
   if (!border) return;
@@ -148,8 +162,14 @@ export function towCombatOverlayUpdateCustomLayoutBorderVisibility(tokenObject, 
     border.visible = false;
     return;
   }
-  const isHovered = (typeof hovered === "boolean") ? hovered : (tokenObject.hover === true || tokenObject._hover === true);
-  const isControlled = (typeof controlled === "boolean") ? controlled : (tokenObject.controlled === true || tokenObject._controlled === true);
+  const isHovered =
+    typeof hovered === 'boolean'
+      ? hovered
+      : tokenObject.hover === true || tokenObject._hover === true;
+  const isControlled =
+    typeof controlled === 'boolean'
+      ? controlled
+      : tokenObject.controlled === true || tokenObject._controlled === true;
   border.visible = tokenObject.visible && (isHovered || isControlled);
 }
 
@@ -162,7 +182,7 @@ export function towCombatOverlayClearCustomLayoutBorder(tokenObject) {
 export async function towCombatOverlayBringTokenToFront(tokenObject) {
   if (!tokenObject || tokenObject.destroyed) return;
   const tokenDocument = tokenObject.document ?? null;
-  if (tokenDocument?.isOwner && typeof tokenDocument.update === "function") {
+  if (tokenDocument?.isOwner && typeof tokenDocument.update === 'function') {
     const sorts = (canvas?.tokens?.placeables ?? [])
       .map((token) => Number(token?.document?.sort ?? NaN))
       .filter((value) => Number.isFinite(value));
@@ -175,19 +195,21 @@ export async function towCombatOverlayBringTokenToFront(tokenObject) {
   }
 
   const layer = tokenObject.layer ?? canvas?.tokens;
-  if (typeof layer?.bringToFront === "function") {
+  if (typeof layer?.bringToFront === 'function') {
     layer.bringToFront(tokenObject);
     return;
   }
-  if (typeof tokenObject.bringToFront === "function") {
+  if (typeof tokenObject.bringToFront === 'function') {
     tokenObject.bringToFront();
     return;
   }
 
   const parent = tokenObject.parent;
-  if (!parent || typeof parent.setChildIndex !== "function" || !Array.isArray(parent.children)) return;
+  if (!parent || typeof parent.setChildIndex !== 'function' || !Array.isArray(parent.children))
+    return;
   const topIndex = Math.max(0, parent.children.length - 1);
-  const currentIndex = typeof parent.getChildIndex === "function" ? parent.getChildIndex(tokenObject) : -1;
+  const currentIndex =
+    typeof parent.getChildIndex === 'function' ? parent.getChildIndex(tokenObject) : -1;
   if (currentIndex === topIndex) return;
   parent.setChildIndex(tokenObject, topIndex);
 }
@@ -202,7 +224,7 @@ export function towCombatOverlayEnsureDeadVisual(tokenObject) {
     towCombatOverlayClearDeadVisual(tokenObject);
     return;
   }
-  const hasDead = !!tokenObject.document?.actor?.hasCondition?.("dead");
+  const hasDead = !!tokenObject.document?.actor?.hasCondition?.('dead');
   if (!hasDead) {
     towCombatOverlayClearDeadVisual(tokenObject);
     return;
@@ -214,7 +236,7 @@ export function towCombatOverlayEnsureDeadVisual(tokenObject) {
   for (const displayObject of targets) {
     const originalFilters = Array.isArray(displayObject.filters) ? [...displayObject.filters] : [];
     const originalAlpha = Number(displayObject.alpha ?? 1);
-    const originalTint = Number(displayObject.tint ?? 0xFFFFFF);
+    const originalTint = Number(displayObject.tint ?? 0xffffff);
     const deadFilter = new PIXI.ColorMatrixFilter();
     deadFilter.reset();
     // Use a single explicit grayscale+darken matrix to avoid renderer/API color casts.
@@ -222,14 +244,9 @@ export function towCombatOverlayEnsureDeadVisual(tokenObject) {
     const lr = 0.2126 * deadLuma;
     const lg = 0.7152 * deadLuma;
     const lb = 0.0722 * deadLuma;
-    deadFilter.matrix = [
-      lr, lg, lb, 0, 0,
-      lr, lg, lb, 0, 0,
-      lr, lg, lb, 0, 0,
-      0, 0, 0, 1, 0
-    ];
+    deadFilter.matrix = [lr, lg, lb, 0, 0, lr, lg, lb, 0, 0, lr, lg, lb, 0, 0, 0, 0, 0, 1, 0];
     displayObject.alpha = Math.max(0.18, originalAlpha * 0.92);
-    if ("tint" in displayObject) displayObject.tint = 0xFFFFFF;
+    if ('tint' in displayObject) displayObject.tint = 0xffffff;
     displayObject.filters = [...originalFilters, deadFilter];
     entries.push({ displayObject, originalFilters, deadFilter, originalAlpha, originalTint });
   }
@@ -245,10 +262,10 @@ export function towCombatOverlayClearDeadVisual(tokenObject) {
     const displayObject = entry?.displayObject;
     if (!displayObject || displayObject.destroyed) continue;
     displayObject.filters = Array.isArray(entry.originalFilters) ? entry.originalFilters : null;
-    if (typeof entry.originalAlpha === "number") displayObject.alpha = entry.originalAlpha;
-    if (typeof entry.originalTint === "number" && "tint" in displayObject) displayObject.tint = entry.originalTint;
+    if (typeof entry.originalAlpha === 'number') displayObject.alpha = entry.originalAlpha;
+    if (typeof entry.originalTint === 'number' && 'tint' in displayObject)
+      displayObject.tint = entry.originalTint;
   }
 
   delete tokenObject[KEYS.deadVisualState];
 }
-

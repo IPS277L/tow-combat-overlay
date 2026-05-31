@@ -1,39 +1,43 @@
-import { getTowCombatOverlayConstants } from "../runtime/module-constants.js";
-import { buildDisplaySettingsGroups } from "./settings/display-settings-groups.js";
+import { getTowCombatOverlayConstants } from '../runtime/module-constants.js';
+import { buildDisplaySettingsGroups } from './settings/display-settings-groups.js';
 
-const SETTINGS_GROUP_TEMPLATE_PATH = "modules/tow-combat-overlay/templates/settings/display-settings-group.hbs";
+const SETTINGS_GROUP_TEMPLATE_PATH =
+  'modules/tow-combat-overlay/templates/settings/display-settings-group.hbs';
 
-function localizeMaybe(key, fallback = "") {
-  const localized = game?.i18n?.localize?.(String(key ?? ""));
-  if (typeof localized === "string" && localized !== key) return localized;
-  return String(fallback ?? key ?? "");
+function localizeMaybe(key, fallback = '') {
+  const localized = game?.i18n?.localize?.(String(key ?? ''));
+  if (typeof localized === 'string' && localized !== key) return localized;
+  return String(fallback ?? key ?? '');
 }
 
 function getSettingsGroupNameFallback(menuKey) {
-  const normalized = String(menuKey ?? "").trim();
-  if (normalized === "tokensPanel") return "Tokens Panel";
-  if (normalized === "tokenLayout") return "Token Layout";
-  if (normalized === "controlPanel") return "Control Panel";
-  return normalized || "Settings";
+  const normalized = String(menuKey ?? '').trim();
+  if (normalized === 'tokensPanel') return 'Tokens Panel';
+  if (normalized === 'tokenLayout') return 'Token Layout';
+  if (normalized === 'controlPanel') return 'Control Panel';
+  return normalized || 'Settings';
 }
 
 function humanizeSettingKey(settingKey) {
-  return String(settingKey ?? "")
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .replace(/[_\-.]+/g, " ")
+  return String(settingKey ?? '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_\-.]+/g, ' ')
     .trim()
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function normalizeSelectSettingValue(settingDefinition, value) {
-  const choices = (settingDefinition && typeof settingDefinition.choices === "object" && settingDefinition.choices !== null)
-    ? settingDefinition.choices
-    : {};
+  const choices =
+    settingDefinition &&
+    typeof settingDefinition.choices === 'object' &&
+    settingDefinition.choices !== null
+      ? settingDefinition.choices
+      : {};
   const allowedValues = Object.keys(choices);
-  if (!allowedValues.length) return String(settingDefinition?.defaultValue ?? "");
-  const normalized = String(value ?? "").trim();
+  if (!allowedValues.length) return String(settingDefinition?.defaultValue ?? '');
+  const normalized = String(value ?? '').trim();
   if (allowedValues.includes(normalized)) return normalized;
-  return String(settingDefinition?.defaultValue ?? allowedValues[0] ?? "").trim();
+  return String(settingDefinition?.defaultValue ?? allowedValues[0] ?? '').trim();
 }
 
 function normalizeRangeSettingValue(settingDefinition, value) {
@@ -49,15 +53,15 @@ function normalizeRangeSettingValue(settingDefinition, value) {
   const bounded = Number.isFinite(parsed) ? parsed : safeFallback;
   const clamped = Math.max(safeMin, Math.min(safeMax, bounded));
   const steps = Math.round((clamped - safeMin) / safeStep);
-  return Number((safeMin + (steps * safeStep)).toFixed(6));
+  return Number((safeMin + steps * safeStep).toFixed(6));
 }
 
 function getFoundryUserRoleEntries() {
   const source = CONST?.USER_ROLES;
-  if (!source || typeof source !== "object") return [];
+  if (!source || typeof source !== 'object') return [];
   return Object.entries(source)
     .map(([roleName, roleValue]) => ({
-      roleName: String(roleName ?? "").trim(),
+      roleName: String(roleName ?? '').trim(),
       roleValue: Number(roleValue)
     }))
     .filter((entry) => entry.roleName && Number.isFinite(entry.roleValue))
@@ -65,15 +69,17 @@ function getFoundryUserRoleEntries() {
 }
 
 function getRoleLabelLocalizationKey(roleName) {
-  const normalized = String(roleName ?? "").trim().toUpperCase();
-  if (!normalized) return "";
+  const normalized = String(roleName ?? '')
+    .trim()
+    .toUpperCase();
+  if (!normalized) return '';
   const sentenceCase = normalized.charAt(0) + normalized.slice(1).toLowerCase();
   return `USER.Role${sentenceCase}`;
 }
 
 function buildMinimumRoleSettingChoices() {
   const choices = {
-    all: "TOWCOMBATOVERLAY.Setting.VisibilityRole.OptionAllUsers"
+    all: 'TOWCOMBATOVERLAY.Setting.VisibilityRole.OptionAllUsers'
   };
   for (const entry of getFoundryUserRoleEntries()) {
     choices[String(entry.roleValue)] = getRoleLabelLocalizationKey(entry.roleName);
@@ -88,21 +94,24 @@ function isUserInMinimumRole(minimumRoleValue) {
   return currentRole >= requiredRole;
 }
 
-export function canTowCombatOverlayUserViewControl(settingKey, fallbackValue = "all") {
-  const selectedRole = String(getTowCombatOverlayDisplaySetting(settingKey, fallbackValue) ?? "").trim().toLowerCase();
-  if (!selectedRole || selectedRole === "all") return true;
-  if (selectedRole === "none" || selectedRole === "0") return false;
+export function canTowCombatOverlayUserViewControl(settingKey, fallbackValue = 'all') {
+  const selectedRole = String(getTowCombatOverlayDisplaySetting(settingKey, fallbackValue) ?? '')
+    .trim()
+    .toLowerCase();
+  if (!selectedRole || selectedRole === 'all') return true;
+  if (selectedRole === 'none' || selectedRole === '0') return false;
   const minimumRole = Number(selectedRole);
   if (!Number.isFinite(minimumRole)) return true;
   return isUserInMinimumRole(minimumRole);
 }
 
 function resolveSettingsFormBaseClass() {
-  const baseClass = globalThis.FormApplication
-    ?? foundry?.applications?.apps?.FormApplication
-    ?? foundry?.applications?.api?.FormApplication;
-  if (typeof baseClass === "function") return baseClass;
-  throw new Error("[tow-combat-overlay] Unable to resolve FormApplication for settings menus.");
+  const baseClass =
+    globalThis.FormApplication ??
+    foundry?.applications?.apps?.FormApplication ??
+    foundry?.applications?.api?.FormApplication;
+  if (typeof baseClass === 'function') return baseClass;
+  throw new Error('[tow-combat-overlay] Unable to resolve FormApplication for settings menus.');
 }
 
 function createGroupFormClass(group) {
@@ -122,8 +131,8 @@ function createGroupFormClass(group) {
         width: 560,
         classes: [
           ...inheritedClasses,
-          "tow-combat-overlay-dialog",
-          "tow-combat-overlay-settings-window"
+          'tow-combat-overlay-dialog',
+          'tow-combat-overlay-settings-window'
         ],
         closeOnSubmit: true,
         submitOnClose: false,
@@ -133,33 +142,38 @@ function createGroupFormClass(group) {
 
     getData() {
       const { moduleId, settings } = getTowCombatOverlayConstants();
-      const groupMasterKey = group.menuKey === "tokensPanel"
-        ? String(settings.enableTopPanel ?? "").trim()
-        : (group.menuKey === "tokenLayout"
-            ? String(settings.enableOverlay ?? "").trim()
-            : (group.menuKey === "controlPanel"
-                ? String(settings.enableControlPanel ?? "").trim()
-                : ""));
+      const groupMasterKey =
+        group.menuKey === 'tokensPanel'
+          ? String(settings.enableTopPanel ?? '').trim()
+          : group.menuKey === 'tokenLayout'
+            ? String(settings.enableOverlay ?? '').trim()
+            : group.menuKey === 'controlPanel'
+              ? String(settings.enableControlPanel ?? '').trim()
+              : '';
       const settingDefinitionByKey = new Map(
-        group.settings.map((entry) => [String(entry?.key ?? ""), entry])
+        group.settings.map((entry) => [String(entry?.key ?? ''), entry])
       );
       const currentValueByKey = new Map(
-        group.settings.map((entry) => [entry.key, getTowCombatOverlayDisplaySetting(entry.key, entry.defaultValue)])
+        group.settings.map((entry) => [
+          entry.key,
+          getTowCombatOverlayDisplaySetting(entry.key, entry.defaultValue)
+        ])
       );
       const fields = group.settings.map((entry) => {
-        const isSelect = String(entry?.type ?? "boolean").trim() === "select";
-        const isRange = String(entry?.type ?? "boolean").trim() === "range";
+        const isSelect = String(entry?.type ?? 'boolean').trim() === 'select';
+        const isRange = String(entry?.type ?? 'boolean').trim() === 'range';
         const rawValue = currentValueByKey.get(entry.key);
         const normalizedValue = isSelect
           ? normalizeSelectSettingValue(entry, rawValue)
-          : (isRange ? normalizeRangeSettingValue(entry, rawValue) : !!rawValue);
+          : isRange
+            ? normalizeRangeSettingValue(entry, rawValue)
+            : !!rawValue;
         const visibilityRule = entry?.visibleWhen;
-        const visibleWhenKey = String(visibilityRule?.key ?? "").trim();
-        const visibleWhenValue = String(visibilityRule?.equals ?? "").trim();
-        const requiresEnabledKey = groupMasterKey && entry.key !== groupMasterKey
-          ? groupMasterKey
-          : "";
-        const requiresEnabledValue = requiresEnabledKey ? "true" : "";
+        const visibleWhenKey = String(visibilityRule?.key ?? '').trim();
+        const visibleWhenValue = String(visibilityRule?.equals ?? '').trim();
+        const requiresEnabledKey =
+          groupMasterKey && entry.key !== groupMasterKey ? groupMasterKey : '';
+        const requiresEnabledValue = requiresEnabledKey ? 'true' : '';
         let isVisible = true;
         if (requiresEnabledKey) {
           const requiredRawValue = currentValueByKey.get(requiresEnabledKey);
@@ -168,24 +182,25 @@ function createGroupFormClass(group) {
         if (visibleWhenKey) {
           const dependentDefinition = settingDefinitionByKey.get(visibleWhenKey) ?? null;
           const dependentRawValue = currentValueByKey.get(visibleWhenKey);
-          const dependentIsSelect = String(dependentDefinition?.type ?? "boolean").trim() === "select";
+          const dependentIsSelect =
+            String(dependentDefinition?.type ?? 'boolean').trim() === 'select';
           const dependentValue = dependentIsSelect
             ? normalizeSelectSettingValue(dependentDefinition, dependentRawValue)
             : String(!!dependentRawValue);
-          isVisible = isVisible && (dependentValue === visibleWhenValue);
+          isVisible = isVisible && dependentValue === visibleWhenValue;
         }
         const choices = isSelect
           ? Object.entries(entry?.choices ?? {}).map(([value, labelKey]) => ({
-            value: String(value ?? ""),
-            label: localizeMaybe(labelKey, humanizeSettingKey(value)),
-            selected: String(value ?? "") === normalizedValue
-          }))
+              value: String(value ?? ''),
+              label: localizeMaybe(labelKey, humanizeSettingKey(value)),
+              selected: String(value ?? '') === normalizedValue
+            }))
           : [];
         return {
           key: entry.key,
           id: `tow-combat-overlay-setting-${entry.key}`,
           name: localizeMaybe(entry.nameKey, humanizeSettingKey(entry.key)),
-          hint: localizeMaybe(entry.hintKey, ""),
+          hint: localizeMaybe(entry.hintKey, ''),
           value: normalizedValue,
           isSelect,
           isRange,
@@ -203,26 +218,27 @@ function createGroupFormClass(group) {
       });
       const fieldByKey = new Map(fields.map((field) => [field.key, field]));
       const sections = Array.isArray(group.sections)
-        ? group.sections.map((section) => ({
-          title: localizeMaybe(section.titleKey, ""),
-          fields: (Array.isArray(section.settingKeys) ? section.settingKeys : [])
-            .map((key) => fieldByKey.get(String(key ?? "")))
-            .filter(Boolean)
-        })).filter((section) => section.fields.length > 0)
+        ? group.sections
+            .map((section) => ({
+              title: localizeMaybe(section.titleKey, ''),
+              fields: (Array.isArray(section.settingKeys) ? section.settingKeys : [])
+                .map((key) => fieldByKey.get(String(key ?? '')))
+                .filter(Boolean)
+            }))
+            .filter((section) => section.fields.length > 0)
         : [];
       return {
         sections,
         fields,
-        saveLabel: localizeMaybe("SETTINGS.Save", "Save"),
+        saveLabel: localizeMaybe('SETTINGS.Save', 'Save'),
         moduleId
       };
     }
 
     activateListeners(html) {
       super.activateListeners(html);
-      const rootElement = html?.[0] instanceof HTMLElement
-        ? html[0]
-        : (html instanceof HTMLElement ? html : null);
+      const rootElement =
+        html?.[0] instanceof HTMLElement ? html[0] : html instanceof HTMLElement ? html : null;
       if (!(rootElement instanceof HTMLElement)) return;
       let resizeFrameId = 0;
 
@@ -230,26 +246,29 @@ function createGroupFormClass(group) {
         if (resizeFrameId) window.cancelAnimationFrame(resizeFrameId);
         resizeFrameId = window.requestAnimationFrame(() => {
           resizeFrameId = 0;
-          if (typeof this.setPosition === "function") this.setPosition({ height: "auto" });
+          if (typeof this.setPosition === 'function') this.setPosition({ height: 'auto' });
         });
       };
 
       const syncSelectFieldWidths = () => {
-        const selectElements = Array.from(rootElement.querySelectorAll("select"));
+        const selectElements = Array.from(rootElement.querySelectorAll('select'));
         if (!selectElements.length) return;
         const longestLabelLength = selectElements.reduce((maxLength, selectElement) => {
           if (!(selectElement instanceof HTMLSelectElement)) return maxLength;
-          const optionLength = Array.from(selectElement.options).reduce((optionMaxLength, optionElement) => {
-            const labelLength = String(optionElement?.textContent ?? "").trim().length;
-            return Math.max(optionMaxLength, labelLength);
-          }, 0);
+          const optionLength = Array.from(selectElement.options).reduce(
+            (optionMaxLength, optionElement) => {
+              const labelLength = String(optionElement?.textContent ?? '').trim().length;
+              return Math.max(optionMaxLength, labelLength);
+            },
+            0
+          );
           return Math.max(maxLength, optionLength);
         }, 0);
         const widthCh = Math.max(12, longestLabelLength + 4);
         for (const selectElement of selectElements) {
           if (!(selectElement instanceof HTMLSelectElement)) continue;
           selectElement.style.width = `${widthCh}ch`;
-          selectElement.style.maxWidth = "100%";
+          selectElement.style.maxWidth = '100%';
         }
       };
 
@@ -257,67 +276,73 @@ function createGroupFormClass(group) {
         const rangeElements = Array.from(rootElement.querySelectorAll("input[type='range']"));
         for (const rangeElement of rangeElements) {
           if (!(rangeElement instanceof HTMLInputElement)) continue;
-          const targetId = String(rangeElement.id ?? "").trim();
+          const targetId = String(rangeElement.id ?? '').trim();
           if (!targetId) continue;
           const valueElement = rootElement.querySelector(`[data-range-value-for="${targetId}"]`);
           if (!(valueElement instanceof HTMLElement)) continue;
-          valueElement.textContent = String(rangeElement.value ?? "");
+          valueElement.textContent = String(rangeElement.value ?? '');
         }
       };
 
       const applyConditionalVisibility = () => {
-        const allFields = rootElement.querySelectorAll(".form-group");
+        const allFields = rootElement.querySelectorAll('.form-group');
         for (const fieldElement of allFields) {
           if (!(fieldElement instanceof HTMLElement)) continue;
           let isVisible = true;
-          const requiresEnabledKey = String(fieldElement.dataset.requiresEnabledKey ?? "").trim();
-          const requiresEnabledValue = String(fieldElement.dataset.requiresEnabledValue ?? "").trim();
+          const requiresEnabledKey = String(fieldElement.dataset.requiresEnabledKey ?? '').trim();
+          const requiresEnabledValue = String(
+            fieldElement.dataset.requiresEnabledValue ?? ''
+          ).trim();
           if (requiresEnabledKey) {
             const requiredInput = rootElement.querySelector(`[name="${requiresEnabledKey}"]`);
-            if (requiredInput instanceof HTMLInputElement && requiredInput.type === "checkbox") {
-              const requiredCurrentValue = requiredInput.checked ? "true" : "false";
+            if (requiredInput instanceof HTMLInputElement && requiredInput.type === 'checkbox') {
+              const requiredCurrentValue = requiredInput.checked ? 'true' : 'false';
               isVisible = requiredCurrentValue === requiresEnabledValue;
             }
           }
-          const dependsOnKey = String(fieldElement.dataset.visibleWhenKey ?? "").trim();
-          const equalsValue = String(fieldElement.dataset.visibleWhenValue ?? "").trim();
+          const dependsOnKey = String(fieldElement.dataset.visibleWhenKey ?? '').trim();
+          const equalsValue = String(fieldElement.dataset.visibleWhenValue ?? '').trim();
           if (!dependsOnKey) {
-            fieldElement.style.display = isVisible ? "" : "none";
+            fieldElement.style.display = isVisible ? '' : 'none';
             continue;
           }
           const dependentInput = rootElement.querySelector(`[name="${dependsOnKey}"]`);
           if (!(dependentInput instanceof HTMLElement)) {
-            fieldElement.style.display = isVisible ? "" : "none";
+            fieldElement.style.display = isVisible ? '' : 'none';
             continue;
           }
-          let currentValue = "";
-          if (dependentInput instanceof HTMLInputElement && dependentInput.type === "checkbox") {
-            currentValue = dependentInput.checked ? "true" : "false";
+          let currentValue = '';
+          if (dependentInput instanceof HTMLInputElement && dependentInput.type === 'checkbox') {
+            currentValue = dependentInput.checked ? 'true' : 'false';
           } else if (dependentInput instanceof HTMLSelectElement) {
-            currentValue = String(dependentInput.value ?? "").trim();
+            currentValue = String(dependentInput.value ?? '').trim();
           } else {
-            currentValue = String(dependentInput.getAttribute("value") ?? "").trim();
+            currentValue = String(dependentInput.getAttribute('value') ?? '').trim();
           }
-          fieldElement.style.display = (isVisible && currentValue === equalsValue) ? "" : "none";
+          fieldElement.style.display = isVisible && currentValue === equalsValue ? '' : 'none';
         }
-        const sections = rootElement.querySelectorAll(".tow-combat-overlay-settings-group-form__section");
+        const sections = rootElement.querySelectorAll(
+          '.tow-combat-overlay-settings-group-form__section'
+        );
         for (const sectionElement of sections) {
           if (!(sectionElement instanceof HTMLElement)) continue;
-          const visibleFields = Array.from(sectionElement.querySelectorAll(".form-group"))
-            .filter((field) => field instanceof HTMLElement && field.style.display !== "none");
-          sectionElement.style.display = visibleFields.length > 0 ? "" : "none";
+          const visibleFields = Array.from(sectionElement.querySelectorAll('.form-group')).filter(
+            (field) => field instanceof HTMLElement && field.style.display !== 'none'
+          );
+          sectionElement.style.display = visibleFields.length > 0 ? '' : 'none';
         }
         syncSelectFieldWidths();
         syncRangeValueDisplays();
         syncWindowHeight();
       };
 
-      rootElement.addEventListener("change", applyConditionalVisibility);
-      rootElement.addEventListener("input", (event) => {
+      rootElement.addEventListener('change', applyConditionalVisibility);
+      rootElement.addEventListener('input', (event) => {
         const target = event?.target;
-        if (!(target instanceof HTMLInputElement) || target.type !== "range") return;
+        if (!(target instanceof HTMLInputElement) || target.type !== 'range') return;
         const valueElement = rootElement.querySelector(`[data-range-value-for="${target.id}"]`);
-        if (valueElement instanceof HTMLElement) valueElement.textContent = String(target.value ?? "");
+        if (valueElement instanceof HTMLElement)
+          valueElement.textContent = String(target.value ?? '');
       });
       applyConditionalVisibility();
     }
@@ -327,13 +352,13 @@ function createGroupFormClass(group) {
       const { moduleId } = getTowCombatOverlayConstants();
       for (const entry of group.settings) {
         const rawValue = expanded?.[entry.key];
-        const isSelect = String(entry?.type ?? "boolean").trim() === "select";
-        const isRange = String(entry?.type ?? "boolean").trim() === "range";
+        const isSelect = String(entry?.type ?? 'boolean').trim() === 'select';
+        const isRange = String(entry?.type ?? 'boolean').trim() === 'range';
         const nextValue = isSelect
           ? normalizeSelectSettingValue(entry, rawValue)
-          : (isRange
-              ? normalizeRangeSettingValue(entry, rawValue)
-              : (rawValue === true || rawValue === "true" || rawValue === "on"));
+          : isRange
+            ? normalizeRangeSettingValue(entry, rawValue)
+            : rawValue === true || rawValue === 'true' || rawValue === 'on';
         await game.settings.set(moduleId, entry.key, nextValue);
       }
     }
@@ -352,29 +377,32 @@ function registerDisplaySettingsGroupMenu(moduleId, group) {
   );
   const localizedLabel = localizeMaybe(
     `TOWCOMBATOVERLAY.SettingsGroup.${group.menuKey}.Label`,
-    "Open"
+    'Open'
   );
   game.settings.registerMenu(moduleId, `settingsGroup.${group.menuKey}`, {
     name: localizedName,
     hint: localizedHint,
     label: localizedLabel,
-    icon: "fas fa-sliders-h",
+    icon: 'fas fa-sliders-h',
     type: createGroupFormClass(group),
     restricted: true
   });
 }
 
 function registerDisplaySetting(moduleId, settingDefinition, onChange) {
-  const isSelect = String(settingDefinition?.type ?? "boolean").trim() === "select";
-  const isRange = String(settingDefinition?.type ?? "boolean").trim() === "range";
+  const isSelect = String(settingDefinition?.type ?? 'boolean').trim() === 'select';
+  const isRange = String(settingDefinition?.type ?? 'boolean').trim() === 'range';
   if (isSelect) {
-    const defaultValue = normalizeSelectSettingValue(settingDefinition, settingDefinition.defaultValue);
+    const defaultValue = normalizeSelectSettingValue(
+      settingDefinition,
+      settingDefinition.defaultValue
+    );
     const choices = {};
     for (const [value, labelKey] of Object.entries(settingDefinition?.choices ?? {})) {
-      choices[String(value ?? "")] = localizeMaybe(labelKey, humanizeSettingKey(value));
+      choices[String(value ?? '')] = localizeMaybe(labelKey, humanizeSettingKey(value));
     }
     game.settings.register(moduleId, settingDefinition.key, {
-      scope: "world",
+      scope: 'world',
       config: false,
       type: String,
       choices,
@@ -387,9 +415,12 @@ function registerDisplaySetting(moduleId, settingDefinition, onChange) {
   }
 
   if (isRange) {
-    const defaultValue = normalizeRangeSettingValue(settingDefinition, settingDefinition.defaultValue);
+    const defaultValue = normalizeRangeSettingValue(
+      settingDefinition,
+      settingDefinition.defaultValue
+    );
     game.settings.register(moduleId, settingDefinition.key, {
-      scope: "world",
+      scope: 'world',
       config: false,
       type: Number,
       default: defaultValue,
@@ -401,7 +432,7 @@ function registerDisplaySetting(moduleId, settingDefinition, onChange) {
   }
 
   game.settings.register(moduleId, settingDefinition.key, {
-    scope: "world",
+    scope: 'world',
     config: false,
     type: Boolean,
     default: !!settingDefinition.defaultValue,
@@ -413,7 +444,7 @@ function registerDisplaySetting(moduleId, settingDefinition, onChange) {
 
 function registerWorldObjectSetting(moduleId, settingKey, defaultValue, onChange) {
   game.settings.register(moduleId, settingKey, {
-    scope: "world",
+    scope: 'world',
     config: false,
     type: Object,
     default: defaultValue,
@@ -436,9 +467,8 @@ export function isTowCombatOverlayDisplaySettingEnabled(settingKey, fallbackValu
 
 export function registerTowCombatOverlayDisplaySettings({ onDisplaySettingsChanged = null } = {}) {
   const { moduleId, settings: settingKeys } = getTowCombatOverlayConstants();
-  const handleDisplaySettingChange = (typeof onDisplaySettingsChanged === "function")
-    ? onDisplaySettingsChanged
-    : () => {};
+  const handleDisplaySettingChange =
+    typeof onDisplaySettingsChanged === 'function' ? onDisplaySettingsChanged : () => {};
   const minimumRoleChoices = buildMinimumRoleSettingChoices();
   const groups = buildDisplaySettingsGroups(settingKeys, minimumRoleChoices);
 

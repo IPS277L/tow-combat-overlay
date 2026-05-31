@@ -3,13 +3,13 @@ import {
   normalizeStringList,
   readSavedPosition,
   writeSavedPosition
-} from "../../shared/storage-utils.js";
+} from '../../shared/storage-utils.js';
 
-const PANEL_LOCAL_STORAGE_KEY = "tow-combat-overlay.control-panel-position.v1";
-const PANEL_BUTTON_ORDER_LOCAL_STORAGE_KEY = "tow-combat-overlay.control-panel-button-order.v1";
+const PANEL_LOCAL_STORAGE_KEY = 'tow-combat-overlay.control-panel-position.v1';
+const PANEL_BUTTON_ORDER_LOCAL_STORAGE_KEY = 'tow-combat-overlay.control-panel-button-order.v1';
 
-function getPanelButtonOrderStorageKey(scope = "global") {
-  const rawScope = String(scope ?? "global").trim() || "global";
+function getPanelButtonOrderStorageKey(scope = 'global') {
+  const rawScope = String(scope ?? 'global').trim() || 'global';
   return `${PANEL_BUTTON_ORDER_LOCAL_STORAGE_KEY}:${rawScope}`;
 }
 
@@ -26,16 +26,16 @@ export function writeSavedPanelPosition(panelElement) {
 }
 
 export function toPanelButtonKey(groupKey, itemId) {
-  const group = String(groupKey ?? "").trim();
-  const id = String(itemId ?? "").trim();
-  if (!group || !id) return "";
+  const group = String(groupKey ?? '').trim();
+  const id = String(itemId ?? '').trim();
+  if (!group || !id) return '';
   return `${group}:${id}`;
 }
 
 export function parsePanelButtonKey(value) {
-  const raw = String(value ?? "").trim();
+  const raw = String(value ?? '').trim();
   if (!raw) return null;
-  const separatorIndex = raw.indexOf(":");
+  const separatorIndex = raw.indexOf(':');
   if (separatorIndex <= 0 || separatorIndex >= raw.length - 1) return null;
   const groupKey = raw.slice(0, separatorIndex).trim();
   const itemId = raw.slice(separatorIndex + 1).trim();
@@ -46,10 +46,10 @@ export function parsePanelButtonKey(value) {
 export function isSyntheticEmptySlotKey(value) {
   const parsed = parsePanelButtonKey(value);
   if (!parsed) return false;
-  return String(parsed.itemId ?? "").startsWith("empty-slot-");
+  return String(parsed.itemId ?? '').startsWith('empty-slot-');
 }
 
-export function readSavedPanelButtonKeyOrder(scope = "global") {
+export function readSavedPanelButtonKeyOrder(scope = 'global') {
   try {
     const raw = window.localStorage.getItem(getPanelButtonOrderStorageKey(scope));
     if (!raw) return null;
@@ -63,7 +63,7 @@ export function readSavedPanelButtonKeyOrder(scope = "global") {
   }
 }
 
-export function writeSavedPanelButtonKeyOrder(buttonKeys, scope = "global") {
+export function writeSavedPanelButtonKeyOrder(buttonKeys, scope = 'global') {
   const keys = normalizeStringList(buttonKeys, {
     predicate: (entry) => !!parsePanelButtonKey(entry)
   });
@@ -75,7 +75,7 @@ export function writeSavedPanelButtonKeyOrder(buttonKeys, scope = "global") {
   }
 }
 
-export function clearSavedPanelButtonKeyOrder(scope = "global") {
+export function clearSavedPanelButtonKeyOrder(scope = 'global') {
   try {
     window.localStorage.removeItem(getPanelButtonOrderStorageKey(scope));
   } catch (_error) {
@@ -84,9 +84,9 @@ export function clearSavedPanelButtonKeyOrder(scope = "global") {
 }
 
 export function resolvePanelButtonOrderScope(token = null) {
-  const tokenUuid = String(token?.document?.uuid ?? token?.document?.id ?? token?.id ?? "").trim();
+  const tokenUuid = String(token?.document?.uuid ?? token?.document?.id ?? token?.id ?? '').trim();
   if (tokenUuid) return `token:${tokenUuid}`;
-  const actorUuid = String(token?.actor?.uuid ?? token?.document?.actor?.uuid ?? "").trim();
+  const actorUuid = String(token?.actor?.uuid ?? token?.document?.actor?.uuid ?? '').trim();
   if (actorUuid) return `actor:${actorUuid}`;
-  return "global";
+  return 'global';
 }

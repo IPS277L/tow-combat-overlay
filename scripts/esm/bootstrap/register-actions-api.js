@@ -1,5 +1,5 @@
-import { registerTowCombatOverlayActionsApi } from "../api/combat-overlay-actions-api.js";
-import { getTowCombatOverlayActionServices } from "../combat/action-runtime/action-services.js";
+import { registerTowCombatOverlayActionsApi } from '../api/combat-overlay-actions-api.js';
+import { getTowCombatOverlayActionServices } from '../combat/action-runtime/action-services.js';
 
 export function registerTowCombatOverlayActionsRuntimeApi() {
   const services = getTowCombatOverlayActionServices();
@@ -12,4 +12,3 @@ export function registerTowCombatOverlayActionsRuntimeApi() {
 }
 
 export const registerTowCombatOverlayActionsFromGlobals = registerTowCombatOverlayActionsRuntimeApi;
-

@@ -1,7 +1,4 @@
-import {
-  ATTACK_CALL_DEDUPE_MS,
-  SHIFT_KEY
-} from "../runtime/action-constants.js";
+import { ATTACK_CALL_DEDUPE_MS, SHIFT_KEY } from '../runtime/action-constants.js';
 
 const attackCallDeduper = new Map();
 
@@ -12,7 +9,7 @@ export function towCombatOverlayIsShiftHeld() {
 export function towCombatOverlayShouldExecuteAttack(actor, { manual = false } = {}) {
   if (!actor) return false;
 
-  const key = `${game.user.id}:${actor.id}:${manual ? "manual" : "auto"}`;
+  const key = `${game.user.id}:${actor.id}:${manual ? 'manual' : 'auto'}`;
   const now = Date.now();
   const last = Number(attackCallDeduper.get(key) ?? 0);
   if (now - last < ATTACK_CALL_DEDUPE_MS) return false;
@@ -37,20 +34,20 @@ export {
   towCombatOverlayEscapeHtml,
   towCombatOverlayLocalize,
   towCombatOverlayRenderTemplate
-} from "./dialog-utils.js";
+} from './dialog-utils.js';
 
 export {
   towCombatOverlayApplyRollVisibility,
   towCombatOverlayApplyChatMessageCensorship
-} from "./chat-visibility.js";
+} from './chat-visibility.js';
 
 export {
   towCombatOverlayGetSortedWeaponAttacks,
   towCombatOverlayGetAttackMeta,
   towCombatOverlayRenderSelectorRowButton
-} from "./attack-meta.js";
+} from './attack-meta.js';
 
 export {
   towCombatOverlayWaitForChatMessage,
   towCombatOverlayRenderDamageDisplay
-} from "./damage-chat.js";
+} from './damage-chat.js';

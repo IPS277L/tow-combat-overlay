@@ -2,10 +2,10 @@ import {
   clampTopPanelCoordinate,
   readSavedTopPanelPosition,
   readSavedTopPanelTokenOrder
-} from "./top-panel-state.js";
-import { TOP_PANEL_VIEWPORT_MARGIN_PX } from "./top-panel-constants.js";
-import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
-import { getTowCombatOverlayDisplaySetting } from "../../bootstrap/register-settings.js";
+} from './top-panel-state.js';
+import { TOP_PANEL_VIEWPORT_MARGIN_PX } from './top-panel-constants.js';
+import { getTowCombatOverlayConstants } from '../../runtime/module-constants.js';
+import { getTowCombatOverlayDisplaySetting } from '../../bootstrap/register-settings.js';
 
 function getRectHorizontalOverlapPx(leftA, rightA, leftB, rightB) {
   const left = Math.max(leftA, leftB);
@@ -14,13 +14,13 @@ function getRectHorizontalOverlapPx(leftA, rightA, leftB, rightB) {
 }
 
 function getOpenedSidebarWidthPx() {
-  const sidebarElement = document.getElementById("sidebar");
+  const sidebarElement = document.getElementById('sidebar');
   if (!(sidebarElement instanceof HTMLElement)) return 0;
   const computedStyle = window.getComputedStyle(sidebarElement);
   if (
-    sidebarElement.hidden === true
-    || computedStyle.display === "none"
-    || computedStyle.visibility === "hidden"
+    sidebarElement.hidden === true ||
+    computedStyle.display === 'none' ||
+    computedStyle.visibility === 'hidden'
   ) {
     return 0;
   }
@@ -35,13 +35,13 @@ function getOpenedSidebarWidthPx() {
     viewportRight
   );
 
-  const rightUiElement = document.getElementById("ui-right");
+  const rightUiElement = document.getElementById('ui-right');
   if (rightUiElement instanceof HTMLElement) {
     const rightUiStyle = window.getComputedStyle(rightUiElement);
     if (
-      rightUiElement.hidden !== true
-      && rightUiStyle.display !== "none"
-      && rightUiStyle.visibility !== "hidden"
+      rightUiElement.hidden !== true &&
+      rightUiStyle.display !== 'none' &&
+      rightUiStyle.visibility !== 'hidden'
     ) {
       const rightUiRect = rightUiElement.getBoundingClientRect();
       const overlapInsideUiRight = getRectHorizontalOverlapPx(
@@ -62,9 +62,7 @@ export function getCanvasClientBounds(
   { includeSidebarOffset = false } = {}
 ) {
   const canvasView = canvas?.app?.view;
-  const rect = (canvasView instanceof HTMLElement)
-    ? canvasView.getBoundingClientRect()
-    : null;
+  const rect = canvasView instanceof HTMLElement ? canvasView.getBoundingClientRect() : null;
   const rightUiOccupiedWidthPx = includeSidebarOffset ? getOpenedSidebarWidthPx() : 0;
   const viewportRight = Math.max(
     viewportMarginPx + 1,
@@ -78,14 +76,17 @@ export function getCanvasClientBounds(
       right: viewportRight,
       bottom: window.innerHeight - viewportMarginPx,
       width: Math.max(1, viewportRight - viewportMarginPx),
-      height: Math.max(1, window.innerHeight - (viewportMarginPx * 2))
+      height: Math.max(1, window.innerHeight - viewportMarginPx * 2)
     };
   }
 
   const left = Math.max(viewportMarginPx, Math.round(rect.left + viewportMarginPx));
   const top = Math.max(viewportMarginPx, Math.round(rect.top + viewportMarginPx));
   const right = Math.min(viewportRight, Math.round(rect.right - viewportMarginPx));
-  const bottom = Math.min(window.innerHeight - viewportMarginPx, Math.round(rect.bottom - viewportMarginPx));
+  const bottom = Math.min(
+    window.innerHeight - viewportMarginPx,
+    Math.round(rect.bottom - viewportMarginPx)
+  );
   return {
     left,
     top,
@@ -108,14 +109,16 @@ export function syncTopPanelWidth(
 
 export function syncTopPanelListBottomPadding(panelElement) {
   if (!(panelElement instanceof HTMLElement)) return;
-  const listElement = panelElement.querySelector(".tow-combat-overlay-top-panel__list");
+  const listElement = panelElement.querySelector('.tow-combat-overlay-top-panel__list');
   if (!(listElement instanceof HTMLElement)) return;
 
   let maxExtraBottom = 0;
-  const portraits = Array.from(listElement.querySelectorAll(".tow-combat-overlay-top-panel__portrait"));
+  const portraits = Array.from(
+    listElement.querySelectorAll('.tow-combat-overlay-top-panel__portrait')
+  );
   for (const portrait of portraits) {
     if (!(portrait instanceof HTMLElement)) continue;
-    const chips = portrait.querySelector(".tow-combat-overlay-top-panel__chips");
+    const chips = portrait.querySelector('.tow-combat-overlay-top-panel__chips');
     if (!(chips instanceof HTMLElement)) continue;
     const portraitRect = portrait.getBoundingClientRect();
     const chipsRect = chips.getBoundingClientRect();
@@ -165,11 +168,16 @@ export function applyDefaultTopPanelPosition(
   const rect = panelElement.getBoundingClientRect();
   const canvasBounds = getCanvasClientBounds(viewportMarginPx, { includeSidebarOffset });
   const panelWidth = Math.max(1, Math.round(rect.width || panelElement.offsetWidth || 1));
-  const defaultLeft = Math.round(canvasBounds.left + ((canvasBounds.width - panelWidth) / 2));
-  applyTopPanelPosition(panelElement, defaultLeft, canvasBounds.top, viewportMarginPx, { includeSidebarOffset });
+  const defaultLeft = Math.round(canvasBounds.left + (canvasBounds.width - panelWidth) / 2);
+  applyTopPanelPosition(panelElement, defaultLeft, canvasBounds.top, viewportMarginPx, {
+    includeSidebarOffset
+  });
 }
 
-export function applyInitialTopPanelPosition(panelElement, viewportMarginPx = TOP_PANEL_VIEWPORT_MARGIN_PX) {
+export function applyInitialTopPanelPosition(
+  panelElement,
+  viewportMarginPx = TOP_PANEL_VIEWPORT_MARGIN_PX
+) {
   if (isTopPanelAlwaysCenteredEnabled()) {
     syncTopPanelWidth(panelElement, viewportMarginPx, { includeSidebarOffset: true });
     applyDefaultTopPanelPosition(panelElement, viewportMarginPx, { includeSidebarOffset: true });
@@ -186,14 +194,12 @@ export function applyInitialTopPanelPosition(panelElement, viewportMarginPx = TO
 }
 
 export function getSceneTokens() {
-  const placeables = Array.isArray(canvas?.tokens?.placeables)
-    ? canvas.tokens.placeables
-    : [];
+  const placeables = Array.isArray(canvas?.tokens?.placeables) ? canvas.tokens.placeables : [];
 
   return placeables
     .filter((token) => token && !token.destroyed)
     .filter((token) => {
-      const tokenId = String(token.id ?? "").trim();
+      const tokenId = String(token.id ?? '').trim();
       if (!tokenId) return false;
       const actor = token.actor ?? token.document?.actor;
       if (!actor) return false;
@@ -203,16 +209,22 @@ export function getSceneTokens() {
 
 export function isTopPanelAlwaysCenteredEnabled() {
   const { settings } = getTowCombatOverlayConstants();
-  return String(getTowCombatOverlayDisplaySetting(settings.tokensPanelPositionMode, "free")).trim() === "alwaysCentered";
+  return (
+    String(getTowCombatOverlayDisplaySetting(settings.tokensPanelPositionMode, 'free')).trim() ===
+    'alwaysCentered'
+  );
 }
 
 export function isTopPanelLockedEnabled() {
   const { settings } = getTowCombatOverlayConstants();
-  return String(getTowCombatOverlayDisplaySetting(settings.tokensPanelPositionMode, "free")).trim() === "locked";
+  return (
+    String(getTowCombatOverlayDisplaySetting(settings.tokensPanelPositionMode, 'free')).trim() ===
+    'locked'
+  );
 }
 
 export function getCurrentSceneId() {
-  return String(canvas?.scene?.id ?? "").trim();
+  return String(canvas?.scene?.id ?? '').trim();
 }
 
 export function getOrderedSceneTokens() {
@@ -231,19 +243,25 @@ export function getOrderedSceneTokens() {
     byId.delete(String(tokenId));
   }
 
-  const remaining = Array.from(byId.values())
-    .sort((left, right) => Number(left?.document?.sort ?? 0) - Number(right?.document?.sort ?? 0));
+  const remaining = Array.from(byId.values()).sort(
+    (left, right) => Number(left?.document?.sort ?? 0) - Number(right?.document?.sort ?? 0)
+  );
 
   return [...ordered, ...remaining];
 }
 
-export function moveTokenRelativeToTarget(tokenIds, sourceId, targetId, { placeAfter = true } = {}) {
-  const source = String(sourceId ?? "").trim();
-  const target = String(targetId ?? "").trim();
+export function moveTokenRelativeToTarget(
+  tokenIds,
+  sourceId,
+  targetId,
+  { placeAfter = true } = {}
+) {
+  const source = String(sourceId ?? '').trim();
+  const target = String(targetId ?? '').trim();
   if (!source || !target || source === target) return tokenIds;
 
   const ids = Array.isArray(tokenIds)
-    ? tokenIds.map((entry) => String(entry ?? "").trim()).filter(Boolean)
+    ? tokenIds.map((entry) => String(entry ?? '').trim()).filter(Boolean)
     : [];
   const sourceIndex = ids.indexOf(source);
   const targetIndex = ids.indexOf(target);
@@ -252,7 +270,7 @@ export function moveTokenRelativeToTarget(tokenIds, sourceId, targetId, { placeA
   const [dragged] = ids.splice(sourceIndex, 1);
   const nextTargetIndex = ids.indexOf(target);
   if (nextTargetIndex < 0) return ids;
-  const insertIndex = placeAfter ? (nextTargetIndex + 1) : nextTargetIndex;
+  const insertIndex = placeAfter ? nextTargetIndex + 1 : nextTargetIndex;
   ids.splice(Math.max(0, insertIndex), 0, dragged);
   return ids;
 }
@@ -260,6 +278,6 @@ export function moveTokenRelativeToTarget(tokenIds, sourceId, targetId, { placeA
 export function shouldDropAfterTarget(event, targetPortrait) {
   if (!(targetPortrait instanceof HTMLElement)) return true;
   const rect = targetPortrait.getBoundingClientRect();
-  const midpointX = rect.left + (rect.width / 2);
+  const midpointX = rect.left + rect.width / 2;
   return Number(event?.clientX ?? midpointX) >= midpointX;
 }

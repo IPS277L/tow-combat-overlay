@@ -4,31 +4,31 @@ import {
   AUTO_STAGGER_PATCH_MS,
   MODULE_KEY,
   OPPOSED_LINK_WAIT_MS
-} from "../../runtime/overlay-constants.js";
-import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
-import { getTowCombatOverlayActionsApi } from "../../api/module-api-registry.js";
+} from '../../runtime/overlay-constants.js';
+import { getTowCombatOverlayConstants } from '../../runtime/module-constants.js';
+import { getTowCombatOverlayActionsApi } from '../../api/module-api-registry.js';
 import {
   towCombatOverlayApplyActorDamage,
   towCombatOverlayEnsureActionsApi
-} from "../shared/actions-bridge.js";
+} from '../shared/actions-bridge.js';
 import {
   towCombatOverlayApplyRollVisibility,
   towCombatOverlayLocalize,
   towCombatOverlayRenderTemplate
-} from "../../combat/core.js";
-import { towCombatOverlayResolveConditionLabel } from "../shared/shared.js";
+} from '../../combat/core.js';
+import { towCombatOverlayResolveConditionLabel } from '../shared/shared.js';
 import {
   deriveAppliedStatusLabels,
   getFlowNamesModel,
   isLikelyStaggerChoiceDialog
-} from "./automation-helpers.js";
+} from './automation-helpers.js';
 import {
   captureSettledActorState,
   deriveSourceStatusHints,
   snapshotActorState
-} from "./internal/automation-actor-state.js";
-import { resolveFlowVisibilitySourceMessage } from "./internal/automation-chat-visibility.js";
-import { postFlowSeparatorCard } from "./internal/automation-flow-separator.js";
+} from './internal/automation-actor-state.js';
+import { resolveFlowVisibilitySourceMessage } from './internal/automation-chat-visibility.js';
+import { postFlowSeparatorCard } from './internal/automation-flow-separator.js';
 
 const TOW_AUTOMATION_LOCAL_STATE = {};
 const {
@@ -38,18 +38,16 @@ const {
 
 function getTowAutomationStateBucket() {
   const runtimeState = game?.[MODULE_KEY];
-  if (runtimeState && typeof runtimeState === "object") return runtimeState;
+  if (runtimeState && typeof runtimeState === 'object') return runtimeState;
   return TOW_AUTOMATION_LOCAL_STATE;
 }
 
-
 export function armDefaultStaggerChoiceWound(durationMs = AUTO_STAGGER_PATCH_MS) {
-
   // Use runtime overlay state when available; otherwise use local automation state.
   // Do not initialize game[MODULE_KEY] here because it breaks overlay lifecycle bootstrap.
   const state = getTowAutomationStateBucket();
   const DialogApi = foundry.applications?.api?.Dialog;
-  if (typeof DialogApi?.wait !== "function") return () => {};
+  if (typeof DialogApi?.wait !== 'function') return () => {};
 
   if (!state.staggerWaitPatch) {
     const originalWait = DialogApi.wait.bind(DialogApi);
@@ -60,7 +58,7 @@ export function armDefaultStaggerChoiceWound(durationMs = AUTO_STAGGER_PATCH_MS)
       if (!patchState || patchState.refs <= 0 || Date.now() > Number(patchState.activeUntil ?? 0)) {
         return originalWait(config, options);
       }
-      if (isLikelyStaggerChoiceDialog(config)) return "wound";
+      if (isLikelyStaggerChoiceDialog(config)) return 'wound';
       return state.staggerWaitPatch.originalWait(config, options);
     };
   }
@@ -90,19 +88,18 @@ export function armDefaultStaggerChoiceWound(durationMs = AUTO_STAGGER_PATCH_MS)
 }
 
 export function armAutoDefenceForOpposed(sourceToken, targetToken, { sourceBeforeState } = {}) {
-
   if (!sourceToken?.actor || !targetToken?.actor) return;
   if (targetToken.actor.isOwner !== true && game?.user?.isGM !== true) return;
 
   let timeoutId = null;
   const cleanup = (hookId) => {
-    Hooks.off("createChatMessage", hookId);
+    Hooks.off('createChatMessage', hookId);
     if (timeoutId) clearTimeout(timeoutId);
     timeoutId = null;
   };
 
-  const hookId = Hooks.on("createChatMessage", async (message) => {
-    if (message?.type !== "opposed") return;
+  const hookId = Hooks.on('createChatMessage', async (message) => {
+    if (message?.type !== 'opposed') return;
     if (message.system?.defender?.token !== targetToken.id) return;
 
     const attackerMessage = game.messages.get(message.system?.attackerMessage);
@@ -136,34 +133,36 @@ export function armAutoDefenceForOpposed(sourceToken, targetToken, { sourceBefor
 
 async function applyDamageWithWoundsFallback(defenderActor, damageValue, context) {
   const system = defenderActor?.system;
-  if (!system || typeof system.applyDamage !== "function") return;
+  if (!system || typeof system.applyDamage !== 'function') return;
 
   const getActorWoundCount = (actor) => {
     const liveItems = actor?.items?.contents ?? [];
-    if (Array.isArray(liveItems)) return liveItems.filter((item) => item?.type === "wound").length;
+    if (Array.isArray(liveItems)) return liveItems.filter((item) => item?.type === 'wound').length;
     if (Array.isArray(actor?.itemTypes?.wound)) return actor.itemTypes.wound.length;
     return 0;
   };
   const getActorUntreatedWoundCount = (actor) => {
     const typedWounds = Array.isArray(actor?.itemTypes?.wound) ? actor.itemTypes.wound : [];
     if (typedWounds.length) {
-      return typedWounds.filter((item) => item?.type === "wound" && item?.system?.treated !== true).length;
+      return typedWounds.filter((item) => item?.type === 'wound' && item?.system?.treated !== true)
+        .length;
     }
     const liveItems = Array.isArray(actor?.items?.contents) ? actor.items.contents : [];
-    return liveItems.filter((item) => item?.type === "wound" && item?.system?.treated !== true).length;
+    return liveItems.filter((item) => item?.type === 'wound' && item?.system?.treated !== true)
+      .length;
   };
   const rollNpcWoundTable = async (actor, diceCount) => {
     const rollTable = game?.oldworld?.tables?.rollTable;
-    if (typeof rollTable !== "function") return null;
+    if (typeof rollTable !== 'function') return null;
     const dice = Math.max(1, Math.trunc(Number(diceCount) || 1));
-    return rollTable("wounds", `${dice}d10`, {
-      chatData: { speaker: { alias: String(actor?.name ?? "").trim() || "-" } }
+    return rollTable('wounds', `${dice}d10`, {
+      chatData: { speaker: { alias: String(actor?.name ?? '').trim() || '-' } }
     });
   };
   const getActorWoundCap = (actor) => {
     if (!actor) return null;
-    if (actor.type !== "npc") return null;
-    if (actor.system?.type === "minion") return 1;
+    if (actor.type !== 'npc') return null;
+    if (actor.system?.type === 'minion') return 1;
     if (!actor.system?.hasThresholds) return null;
     const defeatedThreshold = Number(actor.system?.wounds?.defeated?.threshold ?? NaN);
     if (!Number.isFinite(defeatedThreshold) || defeatedThreshold <= 0) return null;
@@ -175,7 +174,8 @@ async function applyDamageWithWoundsFallback(defenderActor, damageValue, context
     return getActorWoundCount(actor) >= cap;
   };
 
-  const originalAddWound = (typeof system.addWound === "function") ? system.addWound.bind(system) : null;
+  const originalAddWound =
+    typeof system.addWound === 'function' ? system.addWound.bind(system) : null;
   if (!originalAddWound) {
     await towCombatOverlayApplyActorDamage(defenderActor, damageValue, context);
     return;
@@ -185,34 +185,34 @@ async function applyDamageWithWoundsFallback(defenderActor, damageValue, context
     if (isActorAtWoundCap(defenderActor)) return null;
     const woundCountBefore = getActorWoundCount(defenderActor);
     const untreatedWoundsBefore = getActorUntreatedWoundCount(defenderActor);
-    const tableId = game.settings.get("whtow", "tableSettings")?.wounds;
+    const tableId = game.settings.get('whtow', 'tableSettings')?.wounds;
     const hasTable = !!(tableId && game.tables.get(tableId));
 
     if (!hasTable) return originalAddWound({ ...options, roll: false });
     const ensureTrackedWoundItem = async (result) => {
       if (result == null) return result;
-      if (defenderActor?.type !== "npc") return result;
-      if (defenderActor?.system?.type === "minion") return result;
+      if (defenderActor?.type !== 'npc') return result;
+      if (defenderActor?.system?.type === 'minion') return result;
 
       const woundCountAfter = getActorWoundCount(defenderActor);
       if (woundCountAfter > woundCountBefore) return result;
-      if (typeof defenderActor?.createEmbeddedDocuments !== "function") return result;
+      if (typeof defenderActor?.createEmbeddedDocuments !== 'function') return result;
 
-      await defenderActor.createEmbeddedDocuments("Item", [{ type: "wound", name: "Wound" }]);
+      await defenderActor.createEmbeddedDocuments('Item', [{ type: 'wound', name: 'Wound' }]);
       return result;
     };
     try {
       const result = await originalAddWound(options);
       await ensureTrackedWoundItem(result);
 
-      const shouldForceNpcRoll = defenderActor?.type === "npc" && result == null;
+      const shouldForceNpcRoll = defenderActor?.type === 'npc' && result == null;
       if (shouldForceNpcRoll) {
         await rollNpcWoundTable(defenderActor, untreatedWoundsBefore + 1);
       }
       return result;
     } catch (error) {
-      const message = String(error?.message ?? error ?? "");
-      if (message.includes("No table found for wounds")) {
+      const message = String(error?.message ?? error ?? '');
+      if (message.includes('No table found for wounds')) {
         return originalAddWound({ ...options, roll: false });
       }
       throw error;
@@ -227,9 +227,9 @@ async function applyDamageWithWoundsFallback(defenderActor, damageValue, context
 }
 
 function resolveOpposedDefenderActor(opposed = {}) {
-  const tokenId = String(opposed?.defender?.token ?? "").trim();
-  const sceneId = String(opposed?.defender?.scene ?? "").trim();
-  const activeSceneId = String(canvas?.scene?.id ?? "").trim();
+  const tokenId = String(opposed?.defender?.token ?? '').trim();
+  const sceneId = String(opposed?.defender?.scene ?? '').trim();
+  const activeSceneId = String(canvas?.scene?.id ?? '').trim();
   const resolvedSceneId = sceneId || activeSceneId;
 
   if (tokenId && resolvedSceneId) {
@@ -240,7 +240,9 @@ function resolveOpposedDefenderActor(opposed = {}) {
   }
 
   if (tokenId) {
-    const canvasToken = canvas?.tokens?.placeables?.find((token) => token?.document?.id === tokenId);
+    const canvasToken = canvas?.tokens?.placeables?.find(
+      (token) => token?.document?.id === tokenId
+    );
     const tokenActor = canvasToken?.actor ?? canvasToken?.document?.actor ?? null;
     if (tokenActor) return tokenActor;
   }
@@ -248,8 +250,10 @@ function resolveOpposedDefenderActor(opposed = {}) {
   return ChatMessage.getSpeakerActor(opposed?.defender) ?? null;
 }
 
-function armAutoApplyDamageForOpposed(opposedMessage, { sourceActor = null, sourceBeforeState = null } = {}) {
-
+function armAutoApplyDamageForOpposed(
+  opposedMessage,
+  { sourceActor = null, sourceBeforeState = null } = {}
+) {
   if (!opposedMessage?.id) return;
   const state = getTowAutomationStateBucket();
   if (!state.autoApplyArmed) state.autoApplyArmed = new Set();
@@ -264,7 +268,7 @@ function armAutoApplyDamageForOpposed(opposedMessage, { sourceActor = null, sour
   void (async () => {
     let applying = false;
     let separatorPosted = false;
-      const postSeparatorOnce = async (opposed, sourceMessage = null) => {
+    const postSeparatorOnce = async (opposed, sourceMessage = null) => {
       if (separatorPosted) return;
       separatorPosted = true;
       const sourceStatusHints = await deriveSourceStatusHints(sourceActor, sourceBeforeState, {
@@ -272,10 +276,14 @@ function armAutoApplyDamageForOpposed(opposedMessage, { sourceActor = null, sour
         towCombatOverlayLocalize,
         towCombatOverlayResolveConditionLabel
       });
-      const visibilitySourceMessage = resolveFlowVisibilitySourceMessage(sourceMessage, opposedMessage, {
-        TOW_MODULE_ID,
-        TOW_CHAT_VISIBILITY_FLAG
-      });
+      const visibilitySourceMessage = resolveFlowVisibilitySourceMessage(
+        sourceMessage,
+        opposedMessage,
+        {
+          TOW_MODULE_ID,
+          TOW_CHAT_VISIBILITY_FLAG
+        }
+      );
       await postFlowSeparatorCard(opposed, {
         sourceStatusHints,
         targetStatusHints: [],
@@ -285,11 +293,11 @@ function armAutoApplyDamageForOpposed(opposedMessage, { sourceActor = null, sour
         getFlowNamesModel,
         towCombatOverlayRenderTemplate,
         towCombatOverlayApplyRollVisibility,
-        resolveFlowVisibilitySourceMessage: (opposedRef, fallbackRef) => resolveFlowVisibilitySourceMessage(
-          opposedRef,
-          fallbackRef,
-          { TOW_MODULE_ID, TOW_CHAT_VISIBILITY_FLAG }
-        )
+        resolveFlowVisibilitySourceMessage: (opposedRef, fallbackRef) =>
+          resolveFlowVisibilitySourceMessage(opposedRef, fallbackRef, {
+            TOW_MODULE_ID,
+            TOW_CHAT_VISIBILITY_FLAG
+          })
       });
     };
 
@@ -303,7 +311,8 @@ function armAutoApplyDamageForOpposed(opposedMessage, { sourceActor = null, sour
       }
 
       const computed = opposed.result?.computed === true;
-      const hasDamage = typeof opposed.result?.damage !== "undefined" && opposed.result?.damage !== null;
+      const hasDamage =
+        typeof opposed.result?.damage !== 'undefined' && opposed.result?.damage !== null;
       const alreadyApplied = opposed.result?.damage?.applied === true;
       if (!computed) {
         await new Promise((resolve) => setTimeout(resolve, 100));
@@ -341,10 +350,14 @@ function armAutoApplyDamageForOpposed(opposedMessage, { sourceActor = null, sour
       });
       if (!separatorPosted) {
         separatorPosted = true;
-        const visibilitySourceMessage = resolveFlowVisibilitySourceMessage(message, opposedMessage, {
-          TOW_MODULE_ID,
-          TOW_CHAT_VISIBILITY_FLAG
-        });
+        const visibilitySourceMessage = resolveFlowVisibilitySourceMessage(
+          message,
+          opposedMessage,
+          {
+            TOW_MODULE_ID,
+            TOW_CHAT_VISIBILITY_FLAG
+          }
+        );
         await postFlowSeparatorCard(opposed, {
           sourceStatusHints,
           targetStatusHints,
@@ -354,11 +367,11 @@ function armAutoApplyDamageForOpposed(opposedMessage, { sourceActor = null, sour
           getFlowNamesModel,
           towCombatOverlayRenderTemplate,
           towCombatOverlayApplyRollVisibility,
-          resolveFlowVisibilitySourceMessage: (opposedRef, fallbackRef) => resolveFlowVisibilitySourceMessage(
-            opposedRef,
-            fallbackRef,
-            { TOW_MODULE_ID, TOW_CHAT_VISIBILITY_FLAG }
-          )
+          resolveFlowVisibilitySourceMessage: (opposedRef, fallbackRef) =>
+            resolveFlowVisibilitySourceMessage(opposedRef, fallbackRef, {
+              TOW_MODULE_ID,
+              TOW_CHAT_VISIBILITY_FLAG
+            })
         });
       }
       break;
@@ -377,5 +390,3 @@ export function createTowCombatOverlayAutomationCoordinator() {
 }
 
 export const towCombatOverlayAutomation = createTowCombatOverlayAutomationCoordinator();
-
-

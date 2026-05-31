@@ -1,7 +1,4 @@
-export function createPanelContextAccessService({
-  panelStateKey
-} = {}) {
-
+export function createPanelContextAccessService({ panelStateKey } = {}) {
   function getSingleControlledToken() {
     const controlledTokens = Array.isArray(canvas?.tokens?.controlled)
       ? canvas.tokens.controlled.filter((token) => token && !token.destroyed)
@@ -26,5 +23,3 @@ export function createPanelContextAccessService({
     getControlPanelState
   };
 }
-
-

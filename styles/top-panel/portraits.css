@@ -68,7 +68,7 @@ body.tow-combat-overlay-is-picking-target .tow-combat-overlay-top-panel__portrai
 }
 
 .tow-combat-overlay-top-panel__portrait.is-dead {
-  background: linear-gradient(180deg, rgba(52, 52, 52, 0.90) 0%, rgba(34, 34, 34, 0.90) 100%);
+  background: linear-gradient(180deg, rgba(52, 52, 52, 0.9) 0%, rgba(34, 34, 34, 0.9) 100%);
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6);
 }
 

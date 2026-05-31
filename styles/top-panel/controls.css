@@ -37,7 +37,7 @@
   align-items: center;
   justify-content: center;
   align-self: flex-start;
-  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-family: 'CaslonPro', var(--font-primary, Signika), serif;
   font-size: 12px;
   font-weight: 700;
   line-height: 1;
@@ -61,7 +61,8 @@
   cursor: grab;
 }
 
-.tow-combat-overlay-top-panel.is-dragging .tow-combat-overlay-top-panel__control-button--drag-handle {
+.tow-combat-overlay-top-panel.is-dragging
+  .tow-combat-overlay-top-panel__control-button--drag-handle {
   cursor: grabbing;
 }
 

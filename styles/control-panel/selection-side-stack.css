@@ -1,4 +1,5 @@
-.tow-combat-overlay-control-panel__selection-mods .tow-combat-overlay-control-panel__action-slot-label {
+.tow-combat-overlay-control-panel__selection-mods
+  .tow-combat-overlay-control-panel__action-slot-label {
   position: static;
   left: auto;
   right: auto;
@@ -52,8 +53,9 @@
   --tow-control-panel-status-gap: 4px;
   --tow-selection-stat-font-size: 15px;
   --tow-selection-stat-gap: 3px;
-  
-  --tow-selection-stat-icon-filter: brightness(0) saturate(100%) invert(90%) sepia(15%) saturate(210%) hue-rotate(357deg) brightness(103%) contrast(92%);
+
+  --tow-selection-stat-icon-filter: brightness(0) saturate(100%) invert(90%) sepia(15%)
+    saturate(210%) hue-rotate(357deg) brightness(103%) contrast(92%);
   position: absolute;
   right: 0;
   top: 0;
@@ -75,19 +77,20 @@
     rgba(29, 28, 26, 0.42) 78%,
     rgba(29, 28, 26, 0) 100%
   );
-  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-family: 'CaslonPro', var(--font-primary, Signika), serif;
   color: var(--tow-panel-text);
   pointer-events: auto;
 }
 
-.tow-combat-overlay-control-panel__selection.is-magic .tow-combat-overlay-control-panel__selection-side-stack {
+.tow-combat-overlay-control-panel__selection.is-magic
+  .tow-combat-overlay-control-panel__selection-side-stack {
   --tow-selection-stat-font-size: 14px;
   padding-top: 6px;
   padding-bottom: 6px;
 }
 
 .tow-combat-overlay-control-panel__selection-side-stack::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   background: linear-gradient(
@@ -113,7 +116,7 @@
   border-radius: 0;
   background: transparent;
   color: var(--tow-panel-text);
-  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-family: 'CaslonPro', var(--font-primary, Signika), serif;
   font-size: var(--tow-selection-stat-font-size);
   font-weight: 700;
   display: inline-flex;
@@ -137,19 +140,23 @@
   box-shadow: none;
 }
 
-.tow-combat-overlay-control-panel__selection-side-stack .tow-combat-overlay-control-panel__status-icon {
+.tow-combat-overlay-control-panel__selection-side-stack
+  .tow-combat-overlay-control-panel__status-icon {
   width: var(--tow-control-panel-status-size);
   height: var(--tow-control-panel-status-size);
   min-width: var(--tow-control-panel-status-size);
   min-height: var(--tow-control-panel-status-size);
 }
 
-.tow-combat-overlay-control-panel__selection-side-stack .tow-combat-overlay-control-panel__status-icon img {
+.tow-combat-overlay-control-panel__selection-side-stack
+  .tow-combat-overlay-control-panel__status-icon
+  img {
   width: calc(var(--tow-control-panel-status-size) - 5px);
   height: calc(var(--tow-control-panel-status-size) - 5px);
 }
 
-.tow-combat-overlay-control-panel__selection-side-stack .tow-combat-overlay-control-panel__modifier-text {
+.tow-combat-overlay-control-panel__selection-side-stack
+  .tow-combat-overlay-control-panel__modifier-text {
   display: inline-block;
   width: auto;
   max-width: none;
@@ -218,49 +225,57 @@
   transform: none;
 }
 
-.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="wounds"] {
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row='wounds'] {
   position: static;
   order: 1;
   cursor: pointer;
   gap: 5px;
 }
 
-.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="wounds"] .tow-combat-overlay-control-panel__selection-stat-icon {
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row='wounds']
+  .tow-combat-overlay-control-panel__selection-stat-icon {
   order: 1;
 }
 
-.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="resilience"] {
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row='resilience'] {
   position: static;
   order: 2;
 }
 
-.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="resilience"] .tow-combat-overlay-control-panel__selection-stat-icon {
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row='resilience']
+  .tow-combat-overlay-control-panel__selection-stat-icon {
   order: 1;
 }
 
-.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="speed"] {
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row='speed'] {
   position: static;
   order: 3;
 }
 
-.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="speed"] .tow-combat-overlay-control-panel__selection-stat-icon {
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row='speed']
+  .tow-combat-overlay-control-panel__selection-stat-icon {
   order: 1;
 }
 
-.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="miscastDice"] {
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row='miscastDice'] {
   position: static;
   order: 7;
   cursor: pointer;
 }
 
-.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="miscastDice"] .tow-combat-overlay-control-panel__selection-stat-icon {
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row='miscastDice']
+  .tow-combat-overlay-control-panel__selection-stat-icon {
   order: 1;
 }
 
-.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="wounds"] .tow-combat-overlay-control-panel__selection-stat-value,
-.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="resilience"] .tow-combat-overlay-control-panel__selection-stat-value,
-.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="speed"] .tow-combat-overlay-control-panel__selection-stat-value,
-.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row="miscastDice"] .tow-combat-overlay-control-panel__selection-stat-value {
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row='wounds']
+  .tow-combat-overlay-control-panel__selection-stat-value,
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row='resilience']
+  .tow-combat-overlay-control-panel__selection-stat-value,
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row='speed']
+  .tow-combat-overlay-control-panel__selection-stat-value,
+.tow-combat-overlay-control-panel__selection-stat-row[data-selection-stat-row='miscastDice']
+  .tow-combat-overlay-control-panel__selection-stat-value {
   font-size: var(--tow-selection-stat-font-size);
 }
 
@@ -268,14 +283,17 @@
   order: 4;
 }
 
-.tow-combat-overlay-selection-panel .tow-combat-overlay-control-panel__selection-mini-controls [data-action-control="rollState"] {
+.tow-combat-overlay-selection-panel
+  .tow-combat-overlay-control-panel__selection-mini-controls
+  [data-action-control='rollState'] {
   order: 6;
 }
 
-.tow-combat-overlay-selection-panel .tow-combat-overlay-control-panel__selection-mini-controls [data-action-control="diceModifier"] {
+.tow-combat-overlay-selection-panel
+  .tow-combat-overlay-control-panel__selection-mini-controls
+  [data-action-control='diceModifier'] {
   order: 5;
 }
-
 
 .tow-combat-overlay-control-panel__selection-stat-row:focus,
 .tow-combat-overlay-control-panel__selection-stat-row:focus-visible,
@@ -297,10 +315,14 @@
   vertical-align: baseline;
 }
 
-.tow-combat-overlay-control-panel :is(button, [role="button"], a, input, select, textarea, [tabindex]):focus,
-.tow-combat-overlay-control-panel :is(button, [role="button"], a, input, select, textarea, [tabindex]):focus-visible,
-.tow-combat-overlay-selection-panel :is(button, [role="button"], a, input, select, textarea, [tabindex]):focus,
-.tow-combat-overlay-selection-panel :is(button, [role="button"], a, input, select, textarea, [tabindex]):focus-visible {
+.tow-combat-overlay-control-panel
+  :is(button, [role='button'], a, input, select, textarea, [tabindex]):focus,
+.tow-combat-overlay-control-panel
+  :is(button, [role='button'], a, input, select, textarea, [tabindex]):focus-visible,
+.tow-combat-overlay-selection-panel
+  :is(button, [role='button'], a, input, select, textarea, [tabindex]):focus,
+.tow-combat-overlay-selection-panel
+  :is(button, [role='button'], a, input, select, textarea, [tabindex]):focus-visible {
   outline: none;
   box-shadow: none;
 }

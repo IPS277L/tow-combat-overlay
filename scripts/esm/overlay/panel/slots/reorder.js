@@ -9,23 +9,23 @@ export function createPanelReorderService({
 } = {}) {
   function getCurrentPanelButtonOrderScope() {
     const controlPanelState = getControlPanelState();
-    return String(controlPanelState?.buttonOrderScope ?? "global").trim() || "global";
+    return String(controlPanelState?.buttonOrderScope ?? 'global').trim() || 'global';
   }
 
   function getDefaultPanelButtonKeyOrder() {
     const preferredSequence = [
-      ["manoeuvre", "charge"],
-      ["manoeuvre", "run"],
-      ["manoeuvre", "moveQuietly"],
-      ["manoeuvre", "moveCarefully"],
-      ["recover", "recover"],
-      ["recover", "treat"],
-      ["actions", "help"],
-      ["recover", "condition"],
-      ["actions", "defence"],
-      ["actions", "aim"],
-      ["attacks", panelUnarmedActionId],
-      ["actions", "improvise"]
+      ['manoeuvre', 'charge'],
+      ['manoeuvre', 'run'],
+      ['manoeuvre', 'moveQuietly'],
+      ['manoeuvre', 'moveCarefully'],
+      ['recover', 'recover'],
+      ['recover', 'treat'],
+      ['actions', 'help'],
+      ['recover', 'condition'],
+      ['actions', 'defence'],
+      ['actions', 'aim'],
+      ['attacks', panelUnarmedActionId],
+      ['actions', 'improvise']
     ];
     return preferredSequence
       .map(([groupKey, itemId]) => toPanelButtonKey(groupKey, itemId))
@@ -33,37 +33,42 @@ export function createPanelReorderService({
   }
 
   function getSlotPanelButtonKey(slotElement) {
-    if (!(slotElement instanceof HTMLElement)) return "";
-    const itemType = String(slotElement.dataset.itemType ?? "").trim();
-    const itemGroup = String(slotElement.dataset.itemGroup ?? "").trim();
+    if (!(slotElement instanceof HTMLElement)) return '';
+    const itemType = String(slotElement.dataset.itemType ?? '').trim();
+    const itemGroup = String(slotElement.dataset.itemGroup ?? '').trim();
 
-    if (itemType === "empty") {
-      const explicitKey = String(slotElement.dataset.itemOrderKey ?? "").trim();
+    if (itemType === 'empty') {
+      const explicitKey = String(slotElement.dataset.itemOrderKey ?? '').trim();
       if (explicitKey && parsePanelButtonKey(explicitKey)) return explicitKey;
-      const fallbackId = String(slotElement.dataset.itemId ?? "").trim() || "empty";
-      return toPanelButtonKey(itemGroup || "all", fallbackId);
+      const fallbackId = String(slotElement.dataset.itemId ?? '').trim() || 'empty';
+      return toPanelButtonKey(itemGroup || 'all', fallbackId);
     }
 
-    if (itemType !== "item") return "";
-    if (!reorderableGroupKeys.has(itemGroup)) return "";
+    if (itemType !== 'item') return '';
+    if (!reorderableGroupKeys.has(itemGroup)) return '';
 
-    const explicitKey = String(slotElement.dataset.itemOrderKey ?? "").trim();
+    const explicitKey = String(slotElement.dataset.itemOrderKey ?? '').trim();
     if (explicitKey && parsePanelButtonKey(explicitKey)) return explicitKey;
 
-    const itemId = String(slotElement.dataset.itemId ?? "").trim();
+    const itemId = String(slotElement.dataset.itemId ?? '').trim();
     return toPanelButtonKey(itemGroup, itemId);
   }
 
   function isMainActionPanelSlot(slotElement) {
     if (!(slotElement instanceof HTMLElement)) return false;
-    if (!slotElement.closest(".tow-combat-overlay-control-panel__group-grid[data-item-group='all']")) return false;
+    if (
+      !slotElement.closest(".tow-combat-overlay-control-panel__group-grid[data-item-group='all']")
+    )
+      return false;
     return !!getSlotPanelButtonKey(slotElement);
   }
 
   function getVisibleMainPanelButtonKeys(panelElement) {
     if (!(panelElement instanceof HTMLElement)) return [];
     const slots = Array.from(
-      panelElement.querySelectorAll(".tow-combat-overlay-control-panel__group-grid[data-item-group='all'] .tow-combat-overlay-control-panel__slot")
+      panelElement.querySelectorAll(
+        ".tow-combat-overlay-control-panel__group-grid[data-item-group='all'] .tow-combat-overlay-control-panel__slot"
+      )
     );
     if (!slots.length) return [];
     const keys = [];
@@ -76,8 +81,8 @@ export function createPanelReorderService({
   }
 
   function movePanelButtonKeyBeforeTarget(sourceKey, targetKey, panelElement = null) {
-    const source = String(sourceKey ?? "").trim();
-    const target = String(targetKey ?? "").trim();
+    const source = String(sourceKey ?? '').trim();
+    const target = String(targetKey ?? '').trim();
     if (!source || !target || source === target) return false;
 
     const scope = getCurrentPanelButtonOrderScope();

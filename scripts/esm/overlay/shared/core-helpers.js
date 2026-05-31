@@ -1,6 +1,6 @@
-import { getTowCombatOverlayRuntimeConstants } from "../../runtime/overlay-constants.js";
-import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
-import { hideStatusTooltip, showOverlayTooltip } from "./shared.js";
+import { getTowCombatOverlayRuntimeConstants } from '../../runtime/overlay-constants.js';
+import { getTowCombatOverlayConstants } from '../../runtime/module-constants.js';
+import { hideStatusTooltip, showOverlayTooltip } from './shared.js';
 
 const {
   tokenControlPad: TOKEN_CONTROL_PAD,
@@ -20,8 +20,10 @@ export function towCombatOverlayCanEditActor(actor) {
 }
 
 export function towCombatOverlayWarnNoPermission(actor) {
-  const actorName = actor?.name ?? "actor";
-  ui.notifications.warn(MODULE_NOTIFICATIONS.noPermissionToEditActor.replace("{actorName}", actorName));
+  const actorName = actor?.name ?? 'actor';
+  ui.notifications.warn(
+    MODULE_NOTIFICATIONS.noPermissionToEditActor.replace('{actorName}', actorName)
+  );
 }
 
 export function towCombatOverlayGetActorFromToken(tokenObject) {
@@ -68,9 +70,8 @@ export function towCombatOverlayGetTokenOverlayScale(tokenObject) {
   const tokenSize = Math.min(width, height);
   if (!Number.isFinite(tokenSize) || tokenSize <= 0) return 1;
   const ratio = tokenSize / OVERLAY_TOKEN_BASE_PX;
-  const curvedScale = ratio < 1
-    ? Math.pow(ratio, OVERLAY_SCALE_EXP_SMALL)
-    : Math.pow(ratio, OVERLAY_SCALE_EXP_LARGE);
+  const curvedScale =
+    ratio < 1 ? Math.pow(ratio, OVERLAY_SCALE_EXP_SMALL) : Math.pow(ratio, OVERLAY_SCALE_EXP_LARGE);
   return Math.max(OVERLAY_SCALE_MIN, Math.min(OVERLAY_SCALE_MAX, curvedScale));
 }
 
@@ -109,28 +110,33 @@ export function towCombatOverlayGetMouseButton(event) {
 }
 
 export function towCombatOverlayIsShiftModifier(event) {
-  const nativeShift = event?.shiftKey ?? event?.nativeEvent?.shiftKey ?? event?.data?.originalEvent?.shiftKey;
+  const nativeShift =
+    event?.shiftKey ?? event?.nativeEvent?.shiftKey ?? event?.data?.originalEvent?.shiftKey;
   if (nativeShift === true) return true;
-  const shiftKey = foundry.helpers?.interaction?.KeyboardManager?.MODIFIER_KEYS?.SHIFT
-    ?? KeyboardManager?.MODIFIER_KEYS?.SHIFT;
+  const shiftKey =
+    foundry.helpers?.interaction?.KeyboardManager?.MODIFIER_KEYS?.SHIFT ??
+    KeyboardManager?.MODIFIER_KEYS?.SHIFT;
   if (!shiftKey) return false;
   return game.keyboard?.isModifierActive?.(shiftKey) === true;
 }
 
 export function towCombatOverlayIsAltModifier(event) {
-  const nativeAlt = event?.altKey ?? event?.nativeEvent?.altKey ?? event?.data?.originalEvent?.altKey;
+  const nativeAlt =
+    event?.altKey ?? event?.nativeEvent?.altKey ?? event?.data?.originalEvent?.altKey;
   if (nativeAlt === true) return true;
-  const altKey = foundry.helpers?.interaction?.KeyboardManager?.MODIFIER_KEYS?.ALT
-    ?? KeyboardManager?.MODIFIER_KEYS?.ALT;
+  const altKey =
+    foundry.helpers?.interaction?.KeyboardManager?.MODIFIER_KEYS?.ALT ??
+    KeyboardManager?.MODIFIER_KEYS?.ALT;
   if (!altKey) return false;
   return game.keyboard?.isModifierActive?.(altKey) === true;
 }
 
 export function towCombatOverlayIsCtrlModifier(event) {
-  const nativeCtrl = event?.ctrlKey ?? event?.nativeEvent?.ctrlKey ?? event?.data?.originalEvent?.ctrlKey;
+  const nativeCtrl =
+    event?.ctrlKey ?? event?.nativeEvent?.ctrlKey ?? event?.data?.originalEvent?.ctrlKey;
   if (nativeCtrl === true) return true;
-  const modifierKeys = foundry.helpers?.interaction?.KeyboardManager?.MODIFIER_KEYS
-    ?? KeyboardManager?.MODIFIER_KEYS;
+  const modifierKeys =
+    foundry.helpers?.interaction?.KeyboardManager?.MODIFIER_KEYS ?? KeyboardManager?.MODIFIER_KEYS;
   const ctrlKey = modifierKeys?.CONTROL ?? modifierKeys?.CTRL;
   if (!ctrlKey) return false;
   return game.keyboard?.isModifierActive?.(ctrlKey) === true;
@@ -142,14 +148,15 @@ export function towCombatOverlayCopyPoint(point) {
 }
 
 export function towCombatOverlayGetWorldPoint(event) {
-  if (typeof event?.getLocalPosition === "function" && canvas?.stage) {
+  if (typeof event?.getLocalPosition === 'function' && canvas?.stage) {
     return towCombatOverlayCopyPoint(event.getLocalPosition(canvas.stage));
   }
-  if (typeof event?.data?.getLocalPosition === "function" && canvas?.stage) {
+  if (typeof event?.data?.getLocalPosition === 'function' && canvas?.stage) {
     return towCombatOverlayCopyPoint(event.data.getLocalPosition(canvas.stage));
   }
   const global = event?.global ?? event?.data?.global;
-  if (global && canvas?.stage?.worldTransform) return towCombatOverlayCopyPoint(canvas.stage.worldTransform.applyInverse(global));
+  if (global && canvas?.stage?.worldTransform)
+    return towCombatOverlayCopyPoint(canvas.stage.worldTransform.applyInverse(global));
   return towCombatOverlayCopyPoint(canvas.mousePosition);
 }
 
@@ -161,28 +168,33 @@ export function towCombatOverlayGetTooltipPointFromEvent(event) {
   return towCombatOverlayGetScreenPoint(event) ?? towCombatOverlayGetWorldPoint(event);
 }
 
-export function towCombatOverlayBindTooltipHandlers(displayObject, getTooltipData, keyStore = null, options = {}) {
-  if (!displayObject || typeof getTooltipData !== "function") return null;
+export function towCombatOverlayBindTooltipHandlers(
+  displayObject,
+  getTooltipData,
+  keyStore = null,
+  options = {}
+) {
+  if (!displayObject || typeof getTooltipData !== 'function') return null;
 
   const onShow = (event) => {
     const point = towCombatOverlayGetTooltipPointFromEvent(event);
     if (!point) return;
     const data = getTooltipData(event) ?? {};
-    const title = data.title ?? data.name ?? "";
-    const description = data.description ?? "No description.";
+    const title = data.title ?? data.name ?? '';
+    const description = data.description ?? 'No description.';
     if (!title) return;
     showOverlayTooltip(title, description, point, null, {
-      theme: String(options?.theme ?? "overlay"),
+      theme: String(options?.theme ?? 'overlay'),
       descriptionIsHtml: options?.descriptionIsHtml === true
     });
   };
   const onHide = () => hideStatusTooltip();
 
-  displayObject.on("pointerover", onShow);
-  displayObject.on("pointermove", onShow);
-  displayObject.on("pointerout", onHide);
-  displayObject.on("pointerupoutside", onHide);
-  displayObject.on("pointercancel", onHide);
+  displayObject.on('pointerover', onShow);
+  displayObject.on('pointermove', onShow);
+  displayObject.on('pointerout', onHide);
+  displayObject.on('pointerupoutside', onHide);
+  displayObject.on('pointercancel', onHide);
 
   if (keyStore?.over) displayObject[keyStore.over] = onShow;
   if (keyStore?.move) displayObject[keyStore.move] = onShow;
@@ -198,24 +210,27 @@ export function towCombatOverlayTokenAtPoint(point, { excludeTokenId } = {}) {
     const token = placeables[i];
     if (!token || token.destroyed || !token.visible) continue;
     if (token.id === excludeTokenId) continue;
-    if (typeof token.containsPoint === "function") {
+    if (typeof token.containsPoint === 'function') {
       if (token.containsPoint(point)) return token;
       if (globalPoint && token.containsPoint(globalPoint)) return token;
     }
     if (token.mesh?.containsPoint?.(point)) return token;
     if (globalPoint && token.mesh?.containsPoint?.(globalPoint)) return token;
     if (token.bounds?.contains?.(point.x, point.y)) return token;
-    if (point.x >= token.x && point.x <= token.x + token.w && point.y >= token.y && point.y <= token.y + token.h) return token;
+    if (
+      point.x >= token.x &&
+      point.x <= token.x + token.w &&
+      point.y >= token.y &&
+      point.y <= token.y + token.h
+    )
+      return token;
   }
   return null;
 }
 
 export async function towCombatOverlayExecuteFirstMacroByNameCandidates(candidates) {
-  const macro = candidates
-    .map((name) => game.macros.getName(name))
-    .find(Boolean);
+  const macro = candidates.map((name) => game.macros.getName(name)).find(Boolean);
   if (!macro) return false;
   await macro.execute();
   return true;
 }
-

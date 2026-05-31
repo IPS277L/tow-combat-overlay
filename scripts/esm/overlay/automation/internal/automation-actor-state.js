@@ -16,8 +16,9 @@ export async function captureSettledActorState(actor, baselineState, settleMs = 
     await new Promise((resolve) => setTimeout(resolve, 80));
     const current = snapshotActorState(actor);
     const sameWounds = current.wounds === last.wounds;
-    const sameStatuses = current.statuses.size === last.statuses.size
-      && Array.from(current.statuses).every((status) => last.statuses.has(status));
+    const sameStatuses =
+      current.statuses.size === last.statuses.size &&
+      Array.from(current.statuses).every((status) => last.statuses.has(status));
     if (sameWounds && sameStatuses) {
       stableFor += 80;
       if (stableFor >= 160) return current;
@@ -35,7 +36,11 @@ export async function captureSettledActorState(actor, baselineState, settleMs = 
 export async function deriveSourceStatusHints(
   sourceActor,
   sourceBeforeState,
-  { deriveAppliedStatusLabels, towCombatOverlayLocalize, towCombatOverlayResolveConditionLabel } = {}
+  {
+    deriveAppliedStatusLabels,
+    towCombatOverlayLocalize,
+    towCombatOverlayResolveConditionLabel
+  } = {}
 ) {
   if (!sourceActor || !sourceBeforeState) return [];
   const sourceAfterState = await captureSettledActorState(sourceActor, sourceBeforeState, 500);

@@ -5,12 +5,36 @@
   --tow-top-panel-border-hostile-red: rgba(255, 0, 0, 1);
   --tow-top-panel-border-secret: rgba(162, 146, 90, 1);
   --tow-top-panel-border-legendary: rgba(255, 230, 0, 1);
-  --tow-top-panel-bg-common: linear-gradient(180deg, rgba(44, 44, 44, 0.72) 0%, rgba(28, 28, 28, 0.72) 100%);
-  --tow-top-panel-bg-uncommon: linear-gradient(180deg, rgba(28, 68, 20, 0.76) 0%, rgba(18, 44, 14, 0.76) 100%);
-  --tow-top-panel-bg-rare: linear-gradient(180deg, rgba(18, 66, 122, 0.78) 0%, rgba(8, 40, 86, 0.78) 100%);
-  --tow-top-panel-bg-hostile: linear-gradient(180deg, rgba(70, 20, 20, 0.76) 0%, rgba(46, 12, 12, 0.76) 100%);
-  --tow-top-panel-bg-secret: linear-gradient(180deg, rgba(72, 63, 38, 0.76) 0%, rgba(52, 45, 26, 0.76) 100%);
-  --tow-top-panel-bg-legendary: linear-gradient(180deg, rgba(124, 98, 18, 0.78) 0%, rgba(86, 64, 10, 0.78) 100%);
+  --tow-top-panel-bg-common: linear-gradient(
+    180deg,
+    rgba(44, 44, 44, 0.72) 0%,
+    rgba(28, 28, 28, 0.72) 100%
+  );
+  --tow-top-panel-bg-uncommon: linear-gradient(
+    180deg,
+    rgba(28, 68, 20, 0.76) 0%,
+    rgba(18, 44, 14, 0.76) 100%
+  );
+  --tow-top-panel-bg-rare: linear-gradient(
+    180deg,
+    rgba(18, 66, 122, 0.78) 0%,
+    rgba(8, 40, 86, 0.78) 100%
+  );
+  --tow-top-panel-bg-hostile: linear-gradient(
+    180deg,
+    rgba(70, 20, 20, 0.76) 0%,
+    rgba(46, 12, 12, 0.76) 100%
+  );
+  --tow-top-panel-bg-secret: linear-gradient(
+    180deg,
+    rgba(72, 63, 38, 0.76) 0%,
+    rgba(52, 45, 26, 0.76) 100%
+  );
+  --tow-top-panel-bg-legendary: linear-gradient(
+    180deg,
+    rgba(124, 98, 18, 0.78) 0%,
+    rgba(86, 64, 10, 0.78) 100%
+  );
   --tow-top-panel-padding: 0px;
   --tow-top-panel-gap: 4px;
   --tow-top-panel-portrait-size: 122px;
@@ -21,9 +45,9 @@
   --tow-top-panel-chip-rows: 2;
   --tow-top-panel-chip-offset: 2px;
   --tow-top-panel-chip-stack-height: calc(
-    (var(--tow-top-panel-chip-size) * var(--tow-top-panel-chip-rows))
-    + (var(--tow-top-panel-chip-gap) * (var(--tow-top-panel-chip-rows) - 1))
-    + var(--tow-top-panel-chip-offset)
+    (var(--tow-top-panel-chip-size) * var(--tow-top-panel-chip-rows)) +
+      (var(--tow-top-panel-chip-gap) * (var(--tow-top-panel-chip-rows) - 1)) +
+      var(--tow-top-panel-chip-offset)
   );
   position: fixed;
   top: 0;
@@ -42,11 +66,11 @@
   gap: var(--tow-top-panel-control-gap);
 }
 
-.tow-combat-overlay-top-panel[data-handle-position="right"] {
+.tow-combat-overlay-top-panel[data-handle-position='right'] {
   flex-direction: row-reverse;
 }
 
-.tow-combat-overlay-top-panel[data-has-tokens="false"] {
+.tow-combat-overlay-top-panel[data-has-tokens='false'] {
   display: none;
 }
 
@@ -62,7 +86,7 @@
   scrollbar-width: thin;
 }
 
-.tow-combat-overlay-top-panel[data-always-centered="true"] .tow-combat-overlay-top-panel__list {
+.tow-combat-overlay-top-panel[data-always-centered='true'] .tow-combat-overlay-top-panel__list {
   max-width: 100%;
 }
 

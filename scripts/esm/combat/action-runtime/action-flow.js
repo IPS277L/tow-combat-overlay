@@ -10,40 +10,50 @@ export function createPanelActionFlowService({
   const notifications = moduleNotifications ?? {};
 
   async function withTowCombatOverlaySafeApplyEffect(actor, actionKey, callback) {
-    if (!actor || typeof callback !== "function") return callback?.();
+    if (!actor || typeof callback !== 'function') return callback?.();
     const originalApplyEffect = actor?.applyEffect;
     const originalSystemApplyEffect = actor?.system?.applyEffect;
-    if (typeof originalApplyEffect !== "function" && typeof originalSystemApplyEffect !== "function") return callback();
+    if (
+      typeof originalApplyEffect !== 'function' &&
+      typeof originalSystemApplyEffect !== 'function'
+    )
+      return callback();
 
-    const actionLabel = String(game?.oldworld?.config?.actions?.[actionKey]?.name ?? actionKey ?? "Action").trim() || "Action";
+    const actionLabel =
+      String(game?.oldworld?.config?.actions?.[actionKey]?.name ?? actionKey ?? 'Action').trim() ||
+      'Action';
     const fallbackEffectName = actionLabel;
-    const normalizeSingleEffectData = (effectData, indexLabel = "") => {
-      if (!effectData || typeof effectData !== "object") return effectData;
-      const currentName = String(effectData?.name ?? "").trim();
+    const normalizeSingleEffectData = (effectData, indexLabel = '') => {
+      if (!effectData || typeof effectData !== 'object') return effectData;
+      const currentName = String(effectData?.name ?? '').trim();
       if (currentName) return effectData;
-      const labelName = String(effectData?.label ?? "").trim();
+      const labelName = String(effectData?.label ?? '').trim();
       const clonedEffectData = foundry?.utils?.deepClone?.(effectData) ?? { ...effectData };
       clonedEffectData.name = labelName || fallbackEffectName;
       return clonedEffectData;
     };
 
-    const normalizeEffectDataContainer = (value, labelPrefix = "effectData") => {
-      if (Array.isArray(value)) return value.map((entry, index) => normalizeSingleEffectData(entry, `${labelPrefix}[${index}]`));
-      if (value && typeof value === "object") return normalizeSingleEffectData(value, `${labelPrefix}[0]`);
+    const normalizeEffectDataContainer = (value, labelPrefix = 'effectData') => {
+      if (Array.isArray(value))
+        return value.map((entry, index) =>
+          normalizeSingleEffectData(entry, `${labelPrefix}[${index}]`)
+        );
+      if (value && typeof value === 'object')
+        return normalizeSingleEffectData(value, `${labelPrefix}[0]`);
       return value;
     };
 
     const formatEffectOptions = (options) => {
-      if (!options || typeof options !== "object") return options;
+      if (!options || typeof options !== 'object') return options;
       let changed = false;
       const normalizedOptions = { ...options };
-      if (Object.prototype.hasOwnProperty.call(options, "effectData")) {
-        const normalizedEffectData = normalizeEffectDataContainer(options.effectData, "effectData");
+      if (Object.prototype.hasOwnProperty.call(options, 'effectData')) {
+        const normalizedEffectData = normalizeEffectDataContainer(options.effectData, 'effectData');
         if (normalizedEffectData !== options.effectData) changed = true;
         normalizedOptions.effectData = normalizedEffectData;
       }
-      if (Object.prototype.hasOwnProperty.call(options, "effects")) {
-        const normalizedEffects = normalizeEffectDataContainer(options.effects, "effects");
+      if (Object.prototype.hasOwnProperty.call(options, 'effects')) {
+        const normalizedEffects = normalizeEffectDataContainer(options.effects, 'effects');
         if (normalizedEffects !== options.effects) changed = true;
         normalizedOptions.effects = normalizedEffects;
       }
@@ -53,68 +63,78 @@ export function createPanelActionFlowService({
     const patchedApplyEffect = async (options = {}, ...rest) => {
       const normalizedOptions = formatEffectOptions(options);
       try {
-        if (typeof originalApplyEffect !== "function") return undefined;
+        if (typeof originalApplyEffect !== 'function') return undefined;
         return originalApplyEffect.call(actor, normalizedOptions, ...rest);
-      } catch (error) { throw error; }
+      } catch (error) {
+        throw error;
+      }
     };
 
     const patchedSystemApplyEffect = async (options = {}, ...rest) => {
       const normalizedOptions = formatEffectOptions(options);
       try {
-        if (typeof originalSystemApplyEffect !== "function") return undefined;
+        if (typeof originalSystemApplyEffect !== 'function') return undefined;
         return originalSystemApplyEffect.call(actor.system, normalizedOptions, ...rest);
-      } catch (error) { throw error; }
+      } catch (error) {
+        throw error;
+      }
     };
 
-    if (typeof originalApplyEffect === "function") actor.applyEffect = patchedApplyEffect;
-    if (actor?.system && typeof originalSystemApplyEffect === "function") actor.system.applyEffect = patchedSystemApplyEffect;
+    if (typeof originalApplyEffect === 'function') actor.applyEffect = patchedApplyEffect;
+    if (actor?.system && typeof originalSystemApplyEffect === 'function')
+      actor.system.applyEffect = patchedSystemApplyEffect;
     try {
       return await callback();
     } finally {
-      if (typeof originalApplyEffect === "function" && actor.applyEffect === patchedApplyEffect) {
+      if (typeof originalApplyEffect === 'function' && actor.applyEffect === patchedApplyEffect) {
         actor.applyEffect = originalApplyEffect;
       }
-      if (actor?.system && typeof originalSystemApplyEffect === "function" && actor.system.applyEffect === patchedSystemApplyEffect) {
+      if (
+        actor?.system &&
+        typeof originalSystemApplyEffect === 'function' &&
+        actor.system.applyEffect === patchedSystemApplyEffect
+      ) {
         actor.system.applyEffect = originalSystemApplyEffect;
       }
     }
   }
 
   async function runDefaultPanelActorAction(actor, actionKey) {
-    const key = String(actionKey ?? "").trim();
+    const key = String(actionKey ?? '').trim();
     if (!actor || !key) return;
 
     // Some Old World action flows bypass actor.setupSkillTest and open the test
     // dialog directly, so arm a one-shot dialog patch as a fallback.
     armApplyRollModifiersToNextTestDialog(actor);
 
-    const runWithActionRollContext = async (callback) => withPatchedActionSkillTestContext(actor, callback);
-    const runWithSafeActionContext = async (callback) => withTowCombatOverlaySafeApplyEffect(
-      actor,
-      key,
-      () => runWithActionRollContext(callback)
-    );
-    if (typeof actor?.system?.doAction === "function") {
+    const runWithActionRollContext = async (callback) =>
+      withPatchedActionSkillTestContext(actor, callback);
+    const runWithSafeActionContext = async (callback) =>
+      withTowCombatOverlaySafeApplyEffect(actor, key, () => runWithActionRollContext(callback));
+    if (typeof actor?.system?.doAction === 'function') {
       await runWithSafeActionContext(() => actor.system.doAction(key));
       return;
     }
 
     const actionData = game?.oldworld?.config?.actions?.[key] ?? null;
-    if (actionData?.script && typeof actionData.script === "function") {
+    if (actionData?.script && typeof actionData.script === 'function') {
       await runWithSafeActionContext(() => actionData.script.call(actionData, actor));
       return;
     }
 
     const actionUse = game?.oldworld?.config?.rollClasses?.ActionUse;
-    if (typeof actionUse?.fromAction === "function") {
+    if (typeof actionUse?.fromAction === 'function') {
       await runWithSafeActionContext(() => actionUse.fromAction(key, actor));
     }
   }
 
-  function armApplyRollModifiersToNextTestDialog(actor, { matches = null, timeoutMs = 20000 } = {}) {
+  function armApplyRollModifiersToNextTestDialog(
+    actor,
+    { matches = null, timeoutMs = 20000 } = {}
+  ) {
     if (!actor) return;
     const rollFields = getTowCombatOverlayActorRollModifierFields(actor);
-    const hookName = "renderTestDialog";
+    const hookName = 'renderTestDialog';
     let hookId = null;
     let timeoutId = null;
 
@@ -127,7 +147,7 @@ export function createPanelActionFlowService({
 
     hookId = Hooks.on(hookName, (app) => {
       if (app?.actor?.id !== actor.id) return;
-      if (typeof matches === "function" && !matches(app)) return;
+      if (typeof matches === 'function' && !matches(app)) return;
       cleanup();
 
       if (!app || app._towCombatOverlayRollModsInjected) return;
@@ -141,35 +161,39 @@ export function createPanelActionFlowService({
         app.fields[key] = numericValue;
       }
 
-      if (typeof app.render === "function") app.render(true);
+      if (typeof app.render === 'function') app.render(true);
     });
 
     timeoutId = setTimeout(cleanup, Math.max(250, Number(timeoutMs) || 0));
   }
 
   function armAutoSubmitActionSkillDialog(actor, skill) {
-    const skillKey = String(skill ?? "").trim();
+    const skillKey = String(skill ?? '').trim();
     if (!skillKey) return;
     towCombatOverlayArmAutoSubmitDialog({
-      hookName: "renderTestDialog",
+      hookName: 'renderTestDialog',
       matches: (app) => app?.actor?.id === actor.id && app?.skill === skillKey,
-      submitErrorMessage: "TestDialog.submit() is unavailable."
+      submitErrorMessage: 'TestDialog.submit() is unavailable.'
     });
   }
 
   function armAutoPickFirstImproviseSkillDialog(actor) {
     towCombatOverlayArmAutoSubmitDialog({
-      hookName: "renderItemDialog",
+      hookName: 'renderItemDialog',
       matches: (app) => {
-        const text = String(app?.options?.text ?? "").trim().toLowerCase();
-        const title = String(app?.options?.window?.title ?? app?.title ?? "").trim().toLowerCase();
-        return text.includes("choose skill") || title.includes("improvise");
+        const text = String(app?.options?.text ?? '')
+          .trim()
+          .toLowerCase();
+        const title = String(app?.options?.window?.title ?? app?.title ?? '')
+          .trim()
+          .toLowerCase();
+        return text.includes('choose skill') || title.includes('improvise');
       },
-      submitErrorMessage: "ItemDialog.submit() is unavailable.",
+      submitErrorMessage: 'ItemDialog.submit() is unavailable.',
       beforeSubmit: async (app) => {
         if (!app) return;
         const firstChoice = app?.items?.[0] ?? null;
-        const firstSkill = String(firstChoice?.id ?? "").trim();
+        const firstSkill = String(firstChoice?.id ?? '').trim();
         app.chosen = [0];
         if (firstSkill) armAutoSubmitActionSkillDialog(actor, firstSkill);
       }
@@ -178,17 +202,21 @@ export function createPanelActionFlowService({
 
   function armAutoPickFirstHelpSkillDialog(actor) {
     towCombatOverlayArmAutoSubmitDialog({
-      hookName: "renderItemDialog",
+      hookName: 'renderItemDialog',
       matches: (app) => {
-        const text = String(app?.options?.text ?? "").trim().toLowerCase();
-        const title = String(app?.options?.window?.title ?? app?.title ?? "").trim().toLowerCase();
-        return text.includes("choose skill") || title.includes("help");
+        const text = String(app?.options?.text ?? '')
+          .trim()
+          .toLowerCase();
+        const title = String(app?.options?.window?.title ?? app?.title ?? '')
+          .trim()
+          .toLowerCase();
+        return text.includes('choose skill') || title.includes('help');
       },
-      submitErrorMessage: "ItemDialog.submit() is unavailable.",
+      submitErrorMessage: 'ItemDialog.submit() is unavailable.',
       beforeSubmit: async (app) => {
         if (!app) return;
         const firstChoice = app?.items?.[0] ?? null;
-        const firstSkill = String(firstChoice?.id ?? "").trim();
+        const firstSkill = String(firstChoice?.id ?? '').trim();
         app.chosen = [0];
         if (firstSkill) armAutoSubmitActionSkillDialog(actor, firstSkill);
       }
@@ -196,10 +224,12 @@ export function createPanelActionFlowService({
   }
 
   async function runPanelActorAction(actor, actionKey, { autoRoll = true } = {}) {
-    const key = String(actionKey ?? "").trim().toLowerCase();
+    const key = String(actionKey ?? '')
+      .trim()
+      .toLowerCase();
     if (!actor || !key) return;
 
-    if (key === "defence") {
+    if (key === 'defence') {
       await towCombatOverlayDefenceActor(actor, { manual: !autoRoll });
       return;
     }
@@ -209,31 +239,34 @@ export function createPanelActionFlowService({
       return;
     }
 
-    if (key === "aim") armAutoSubmitActionSkillDialog(actor, "awareness");
-    if (key === "improvise") armAutoPickFirstImproviseSkillDialog(actor);
+    if (key === 'aim') armAutoSubmitActionSkillDialog(actor, 'awareness');
+    if (key === 'improvise') armAutoPickFirstImproviseSkillDialog(actor);
 
     await runDefaultPanelActorAction(actor, key);
   }
 
   function getDialogActionList(config) {
-    if (Array.isArray(config?.buttons)) return config.buttons.map((button) => String(button?.action ?? ""));
-    return Object.values(config?.buttons ?? {}).map((button) => String(button?.action ?? ""));
+    if (Array.isArray(config?.buttons))
+      return config.buttons.map((button) => String(button?.action ?? ''));
+    return Object.values(config?.buttons ?? {}).map((button) => String(button?.action ?? ''));
   }
 
   function isRecoverChoiceDialogConfig(config) {
-    const title = String(config?.window?.title ?? "").toLowerCase();
+    const title = String(config?.window?.title ?? '').toLowerCase();
     const actions = getDialogActionList(config);
-    const hasExpectedChoices = actions.includes("recover") && actions.includes("treat") && actions.includes("condition");
-    return hasExpectedChoices && title.includes("recover");
+    const hasExpectedChoices =
+      actions.includes('recover') && actions.includes('treat') && actions.includes('condition');
+    return hasExpectedChoices && title.includes('recover');
   }
 
   async function withForcedRecoverDialogChoice(choice, callback) {
     const DialogApi = foundry?.applications?.api?.Dialog;
-    if (typeof DialogApi?.wait !== "function" || typeof callback !== "function") return callback?.();
+    if (typeof DialogApi?.wait !== 'function' || typeof callback !== 'function')
+      return callback?.();
 
     const originalWait = DialogApi.wait.bind(DialogApi);
     DialogApi.wait = async (config, options) => {
-      if (isRecoverChoiceDialogConfig(config)) return String(choice ?? "");
+      if (isRecoverChoiceDialogConfig(config)) return String(choice ?? '');
       return originalWait(config, options);
     };
 
@@ -247,50 +280,53 @@ export function createPanelActionFlowService({
   async function runDefaultRecoverAction(actor) {
     armApplyRollModifiersToNextTestDialog(actor);
 
-    if (typeof actor?.system?.doAction === "function") {
-      await withPatchedActionSkillTestContext(actor, () => actor.system.doAction("recover"));
+    if (typeof actor?.system?.doAction === 'function') {
+      await withPatchedActionSkillTestContext(actor, () => actor.system.doAction('recover'));
       return;
     }
 
     const recoverActionData = game?.oldworld?.config?.actions?.recover ?? null;
-    if (recoverActionData?.script && typeof recoverActionData.script === "function") {
-      await withPatchedActionSkillTestContext(actor, () => recoverActionData.script.call(recoverActionData, actor));
+    if (recoverActionData?.script && typeof recoverActionData.script === 'function') {
+      await withPatchedActionSkillTestContext(actor, () =>
+        recoverActionData.script.call(recoverActionData, actor)
+      );
       return;
     }
 
     const actionUse = game?.oldworld?.config?.rollClasses?.ActionUse;
-    if (typeof actionUse?.fromAction === "function") {
-      await withPatchedActionSkillTestContext(actor, () => actionUse.fromAction("recover", actor));
+    if (typeof actionUse?.fromAction === 'function') {
+      await withPatchedActionSkillTestContext(actor, () => actionUse.fromAction('recover', actor));
     }
   }
 
   function armAutoSubmitRecallSkillDialog(actor) {
     towCombatOverlayArmAutoSubmitDialog({
-      hookName: "renderTestDialog",
-      matches: (app) => app?.actor?.id === actor.id && app?.skill === "recall",
-      submitErrorMessage: "TestDialog.submit() is unavailable."
+      hookName: 'renderTestDialog',
+      matches: (app) => app?.actor?.id === actor.id && app?.skill === 'recall',
+      submitErrorMessage: 'TestDialog.submit() is unavailable.'
     });
   }
 
   function armAutoPickFirstRecoverItemDialog(pickerType) {
-    const type = String(pickerType ?? "").trim();
+    const type = String(pickerType ?? '').trim();
     if (!type) return;
 
-    const expectedText = (type === "treat")
-      ? "select wound to treat"
-      : "select condition to test against";
-    const expectedTitle = (type === "treat")
-      ? "treat wound"
-      : "remove condition";
+    const expectedText =
+      type === 'treat' ? 'select wound to treat' : 'select condition to test against';
+    const expectedTitle = type === 'treat' ? 'treat wound' : 'remove condition';
 
     towCombatOverlayArmAutoSubmitDialog({
-      hookName: "renderItemDialog",
+      hookName: 'renderItemDialog',
       matches: (app) => {
-        const text = String(app?.options?.text ?? "").trim().toLowerCase();
-        const title = String(app?.options?.window?.title ?? app?.title ?? "").trim().toLowerCase();
+        const text = String(app?.options?.text ?? '')
+          .trim()
+          .toLowerCase();
+        const title = String(app?.options?.window?.title ?? app?.title ?? '')
+          .trim()
+          .toLowerCase();
         return text.includes(expectedText) || title.includes(expectedTitle);
       },
-      submitErrorMessage: "ItemDialog.submit() is unavailable.",
+      submitErrorMessage: 'ItemDialog.submit() is unavailable.',
       beforeSubmit: async (app) => {
         if (!app) return;
         const itemCount = Number(app?.items?.length ?? 0);
@@ -301,20 +337,24 @@ export function createPanelActionFlowService({
   }
 
   async function runPanelRecoverAction(actor, subAction, { autoRoll = true } = {}) {
-    const actionKey = String(subAction ?? "").trim();
+    const actionKey = String(subAction ?? '').trim();
     if (!actor || !actionKey) return;
-    const forcedChoice = (actionKey === "condition" || actionKey === "treat" || actionKey === "recover")
-      ? actionKey
-      : "recover";
+    const forcedChoice =
+      actionKey === 'condition' || actionKey === 'treat' || actionKey === 'recover'
+        ? actionKey
+        : 'recover';
 
     if (!autoRoll) {
-      if (actionKey === "treat") {
+      if (actionKey === 'treat') {
         armApplyRollModifiersToNextTestDialog(actor, {
           matches: (app) => {
-            const skill = String(app?.skill ?? "").toLowerCase();
-            const title = String(app?.context?.title ?? "").toLowerCase();
-            const appendTitle = String(app?.context?.appendTitle ?? "").toLowerCase();
-            return skill === "recall" && (title.includes("treat wound") || appendTitle.includes("treat wound"));
+            const skill = String(app?.skill ?? '').toLowerCase();
+            const title = String(app?.context?.title ?? '').toLowerCase();
+            const appendTitle = String(app?.context?.appendTitle ?? '').toLowerCase();
+            return (
+              skill === 'recall' &&
+              (title.includes('treat wound') || appendTitle.includes('treat wound'))
+            );
           }
         });
       }
@@ -322,58 +362,68 @@ export function createPanelActionFlowService({
       return;
     }
 
-    if (actionKey === "treat") {
+    if (actionKey === 'treat') {
       armApplyRollModifiersToNextTestDialog(actor, {
         matches: (app) => {
-          const skill = String(app?.skill ?? "").toLowerCase();
-          const title = String(app?.context?.title ?? "").toLowerCase();
-          const appendTitle = String(app?.context?.appendTitle ?? "").toLowerCase();
-          return skill === "recall" && (title.includes("treat wound") || appendTitle.includes("treat wound"));
+          const skill = String(app?.skill ?? '').toLowerCase();
+          const title = String(app?.context?.title ?? '').toLowerCase();
+          const appendTitle = String(app?.context?.appendTitle ?? '').toLowerCase();
+          return (
+            skill === 'recall' &&
+            (title.includes('treat wound') || appendTitle.includes('treat wound'))
+          );
         }
       });
       armAutoSubmitRecallSkillDialog(actor);
-      armAutoPickFirstRecoverItemDialog("treat");
+      armAutoPickFirstRecoverItemDialog('treat');
     }
-    if (actionKey === "condition") armAutoPickFirstRecoverItemDialog("condition");
+    if (actionKey === 'condition') armAutoPickFirstRecoverItemDialog('condition');
     await withForcedRecoverDialogChoice(forcedChoice, () => runDefaultRecoverAction(actor));
   }
 
   async function runPanelManoeuvreAction(actor, subAction, { autoRoll = true } = {}) {
-    const action = "manoeuvre";
-    const actionKey = String(subAction ?? "").trim();
+    const action = 'manoeuvre';
+    const actionKey = String(subAction ?? '').trim();
     if (!actor || !actionKey) return;
-    const subActionData = game?.oldworld?.config?.actions?.[action]?.subActions?.[actionKey] ?? null;
+    const subActionData =
+      game?.oldworld?.config?.actions?.[action]?.subActions?.[actionKey] ?? null;
 
-    if (!autoRoll && typeof actor?.system?.doAction === "function") {
-      await withPatchedActionSkillTestContext(actor, () => actor.system.doAction(action, actionKey));
+    if (!autoRoll && typeof actor?.system?.doAction === 'function') {
+      await withPatchedActionSkillTestContext(actor, () =>
+        actor.system.doAction(action, actionKey)
+      );
       return;
     }
 
     const runSkillTestAuto = async (skill) => {
-      const skillKey = String(skill ?? "").trim();
-      if (!skillKey || typeof actor.setupSkillTest !== "function") return null;
+      const skillKey = String(skill ?? '').trim();
+      if (!skillKey || typeof actor.setupSkillTest !== 'function') return null;
       towCombatOverlayArmAutoSubmitDialog({
-        hookName: "renderTestDialog",
+        hookName: 'renderTestDialog',
         matches: (app) => app?.actor?.id === actor.id && app?.skill === skillKey,
-        submitErrorMessage: "TestDialog.submit() is unavailable."
+        submitErrorMessage: 'TestDialog.submit() is unavailable.'
       });
       return getTowCombatOverlaySystemAdapter().setupSkillTest(
         actor,
         skillKey,
-        createTowCombatOverlayRollContext(actor, { action, subAction: actionKey, skipTargets: true })
+        createTowCombatOverlayRollContext(actor, {
+          action,
+          subAction: actionKey,
+          skipTargets: true
+        })
       );
     };
 
-    if (actionKey === "run") {
-      const test = await runSkillTestAuto("athletics");
-      if (test?.failed && !actor.system?.isStaggered) await actor.addCondition?.("staggered");
+    if (actionKey === 'run') {
+      const test = await runSkillTestAuto('athletics');
+      if (test?.failed && !actor.system?.isStaggered) await actor.addCondition?.('staggered');
       return;
     }
 
-    if (actionKey === "charge") {
-      const test = await runSkillTestAuto("athletics");
+    if (actionKey === 'charge') {
+      const test = await runSkillTestAuto('athletics');
       if (test?.failed) {
-        if (!actor.system?.isStaggered) await actor.addCondition?.("staggered");
+        if (!actor.system?.isStaggered) await actor.addCondition?.('staggered');
         return;
       }
       const effect = foundry?.utils?.deepClone?.(subActionData?.effect);
@@ -386,65 +436,63 @@ export function createPanelActionFlowService({
       return;
     }
 
-    if (subActionData?.script && typeof subActionData.script === "function") {
+    if (subActionData?.script && typeof subActionData.script === 'function') {
       armApplyRollModifiersToNextTestDialog(actor);
       await subActionData.script.call(subActionData, actor);
       return;
     }
 
     const actionUse = game?.oldworld?.config?.rollClasses?.ActionUse;
-    if (typeof actionUse?.fromAction === "function") {
+    if (typeof actionUse?.fromAction === 'function') {
       armApplyRollModifiersToNextTestDialog(actor);
       await actionUse.fromAction(action, actor, { subAction: actionKey });
     }
   }
 
   function resolvePanelCastingLore(actor) {
-    const currentLore = String(actor?.system?.magic?.casting?.lore ?? "").trim();
-    if (currentLore && currentLore.toLowerCase() !== "none") return currentLore;
+    const currentLore = String(actor?.system?.magic?.casting?.lore ?? '').trim();
+    if (currentLore && currentLore.toLowerCase() !== 'none') return currentLore;
     const spells = Array.isArray(actor?.itemTypes?.spell) ? actor.itemTypes.spell : [];
     for (const spell of spells) {
-      const lore = String(spell?.system?.lore ?? "").trim();
-      if (lore && lore.toLowerCase() !== "none") return lore;
+      const lore = String(spell?.system?.lore ?? '').trim();
+      if (lore && lore.toLowerCase() !== 'none') return lore;
     }
-    return "";
+    return '';
   }
 
   async function runPanelAccumulatePowerAction(actor, { autoRoll = true } = {}) {
-    if (!actor || typeof actor.setupCastingTest !== "function") return;
+    if (!actor || typeof actor.setupCastingTest !== 'function') return;
     const lore = resolvePanelCastingLore(actor);
     if (!lore) {
-      ui.notifications?.error?.(notifications.noSpellLoreForAccumulatePower ?? "Cannot accumulate power: no spell lore is available for this actor.");
+      ui.notifications?.error?.(
+        notifications.noSpellLoreForAccumulatePower ??
+          'Cannot accumulate power: no spell lore is available for this actor.'
+      );
       return;
     }
 
     if (autoRoll) {
       armApplyRollModifiersToNextTestDialog(actor, {
-        matches: (app) => (
-          app?.actor?.id === actor.id
-          && (
-            String(app?.context?.rollClass ?? "").trim().toLowerCase() === "castingtest"
-            || app?.casting === true
-          )
-        )
+        matches: (app) =>
+          app?.actor?.id === actor.id &&
+          (String(app?.context?.rollClass ?? '')
+            .trim()
+            .toLowerCase() === 'castingtest' ||
+            app?.casting === true)
       });
       towCombatOverlayArmAutoSubmitDialog({
-        hookName: "renderTestDialog",
-        matches: (app) => (
-          app?.actor?.id === actor.id
-          && (
-            String(app?.context?.rollClass ?? "").trim().toLowerCase() === "castingtest"
-            || app?.casting === true
-          )
-        ),
-        submitErrorMessage: "Casting test submit() is unavailable."
+        hookName: 'renderTestDialog',
+        matches: (app) =>
+          app?.actor?.id === actor.id &&
+          (String(app?.context?.rollClass ?? '')
+            .trim()
+            .toLowerCase() === 'castingtest' ||
+            app?.casting === true),
+        submitErrorMessage: 'Casting test submit() is unavailable.'
       });
     }
 
-    await actor.setupCastingTest(
-      { lore },
-      createTowCombatOverlayRollContext(actor, { lore })
-    );
+    await actor.setupCastingTest({ lore }, createTowCombatOverlayRollContext(actor, { lore }));
   }
 
   return {
@@ -460,4 +508,3 @@ export function createPanelActionFlowService({
     runPanelAccumulatePowerAction
   };
 }
-

@@ -40,8 +40,8 @@
 }
 
 .tow-combat-overlay-control-panel__statuses-top .tow-combat-overlay-control-panel__type-icon,
-.tow-combat-overlay-control-panel__statuses-top [data-action-control="diceModifier"],
-.tow-combat-overlay-control-panel__statuses-top [data-action-control="rollState"] {
+.tow-combat-overlay-control-panel__statuses-top [data-action-control='diceModifier'],
+.tow-combat-overlay-control-panel__statuses-top [data-action-control='rollState'] {
   display: none;
 }
 
@@ -114,7 +114,8 @@
   padding-right: 0;
 }
 
-.tow-combat-overlay-control-panel__item-group[data-item-group="abilities"] .tow-combat-overlay-control-panel__group-grid {
+.tow-combat-overlay-control-panel__item-group[data-item-group='abilities']
+  .tow-combat-overlay-control-panel__group-grid {
   grid-template-rows: repeat(1, var(--tow-control-panel-slot-size)) !important;
   grid-auto-flow: column;
 }
@@ -130,7 +131,8 @@
 }
 
 .tow-combat-overlay-control-panel__status-abilities .tow-combat-overlay-control-panel__slot:hover,
-.tow-combat-overlay-control-panel__status-abilities .tow-combat-overlay-control-panel__slot:focus-visible {
+.tow-combat-overlay-control-panel__status-abilities
+  .tow-combat-overlay-control-panel__slot:focus-visible {
   border: 1px solid rgba(205, 205, 205, 0.7);
   background: rgba(84, 84, 84, 0.9);
   box-shadow: none;
@@ -146,13 +148,16 @@
   margin: auto;
 }
 
-.tow-combat-overlay-control-panel__item-group[data-item-group="topChips"] .tow-combat-overlay-control-panel__slot .tow-combat-overlay-control-panel__slot-image {
+.tow-combat-overlay-control-panel__item-group[data-item-group='topChips']
+  .tow-combat-overlay-control-panel__slot
+  .tow-combat-overlay-control-panel__slot-image {
   width: 88%;
   height: 88%;
   object-fit: contain;
 }
 
-.tow-combat-overlay-control-panel__item-group[data-item-group="topChips"] .tow-combat-overlay-control-panel__slot.is-top-chip-wound-active {
+.tow-combat-overlay-control-panel__item-group[data-item-group='topChips']
+  .tow-combat-overlay-control-panel__slot.is-top-chip-wound-active {
   border-color: rgba(214, 74, 74, 0.96);
   background: rgba(92, 22, 22, 0.9);
   box-shadow:
@@ -160,7 +165,9 @@
     0 0 0 1px rgba(173, 28, 28, 0.55);
 }
 
-.tow-combat-overlay-control-panel__item-group[data-item-group="topChips"] .tow-combat-overlay-control-panel__slot.is-top-chip-wound-active .tow-combat-overlay-control-panel__slot-image {
+.tow-combat-overlay-control-panel__item-group[data-item-group='topChips']
+  .tow-combat-overlay-control-panel__slot.is-top-chip-wound-active
+  .tow-combat-overlay-control-panel__slot-image {
   filter: saturate(1.35) hue-rotate(-14deg) brightness(0.95);
 }
 
@@ -201,7 +208,8 @@
   display: block;
 }
 
-.tow-combat-overlay-control-panel__wound-action-indicator.is-active .tow-combat-overlay-control-panel__wound-action-indicator-image {
+.tow-combat-overlay-control-panel__wound-action-indicator.is-active
+  .tow-combat-overlay-control-panel__wound-action-indicator-image {
   filter: saturate(1.35) hue-rotate(-14deg) brightness(0.95);
 }
 
@@ -222,7 +230,7 @@
   height: 100%;
   padding: 0 2px;
   color: var(--tow-panel-text);
-  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-family: 'CaslonPro', var(--font-primary, Signika), serif;
   font-size: 14px;
   font-weight: 700;
   line-height: 1;
@@ -238,20 +246,30 @@
   column-gap: 4px;
 }
 
-.tow-combat-overlay-control-panel__stat-row[data-stat-row="wounds"],
-[data-selection-stat-row="wounds"],
-[data-selection-stat-row="miscastDice"] {
+.tow-combat-overlay-control-panel__stat-row[data-stat-row='wounds'],
+[data-selection-stat-row='wounds'],
+[data-selection-stat-row='miscastDice'] {
   cursor: pointer;
 }
 
-.tow-combat-overlay-control-panel__stat-row[data-stat-row="tokenType"] { order: 1; }
-.tow-combat-overlay-control-panel__stat-row[data-stat-row="speed"] { order: 2; }
-.tow-combat-overlay-control-panel__stat-row[data-stat-row="resilience"] { order: 3; }
-.tow-combat-overlay-control-panel__stat-row[data-stat-row="wounds"] { order: 4; }
-.tow-combat-overlay-control-panel__stat-row[data-stat-row="miscastDice"] { order: 5; }
+.tow-combat-overlay-control-panel__stat-row[data-stat-row='tokenType'] {
+  order: 1;
+}
+.tow-combat-overlay-control-panel__stat-row[data-stat-row='speed'] {
+  order: 2;
+}
+.tow-combat-overlay-control-panel__stat-row[data-stat-row='resilience'] {
+  order: 3;
+}
+.tow-combat-overlay-control-panel__stat-row[data-stat-row='wounds'] {
+  order: 4;
+}
+.tow-combat-overlay-control-panel__stat-row[data-stat-row='miscastDice'] {
+  order: 5;
+}
 
 .tow-combat-overlay-control-panel__stat-label {
-  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-family: 'CaslonPro', var(--font-primary, Signika), serif;
   font-size: 16px;
   font-weight: 500;
   color: var(--tow-panel-subtext);
@@ -259,7 +277,7 @@
 }
 
 .tow-combat-overlay-control-panel__stat-value {
-  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-family: 'CaslonPro', var(--font-primary, Signika), serif;
   font-size: 16px;
   font-weight: 700;
   color: var(--tow-panel-text);

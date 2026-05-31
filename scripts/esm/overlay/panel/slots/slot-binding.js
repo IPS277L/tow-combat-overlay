@@ -11,7 +11,7 @@ export function createPanelSlotBindingService({
   showOverlayTooltip
 } = {}) {
   function bindPanelSlotEvent(slotElement) {
-    slotElement.addEventListener("click", (event) => {
+    slotElement.addEventListener('click', (event) => {
       event.preventDefault();
       const controlPanelState = getControlPanelState();
       if (controlPanelState?.suppressNextPanelSlotClick === true) {
@@ -20,16 +20,20 @@ export function createPanelSlotBindingService({
       }
       void handlePanelSlotClick(slotElement, event);
     });
-    slotElement.addEventListener("contextmenu", (event) => {
+    slotElement.addEventListener('contextmenu', (event) => {
       event.preventDefault();
-      const itemGroup = String(slotElement.dataset.itemGroup ?? "").trim();
-      const topChipType = String(slotElement.dataset.itemTopChipType ?? "").trim();
-      if (itemGroup !== "temporaryEffects" && !(itemGroup === "topChips" && topChipType === "temporaryEffects")) return;
+      const itemGroup = String(slotElement.dataset.itemGroup ?? '').trim();
+      const topChipType = String(slotElement.dataset.itemTopChipType ?? '').trim();
+      if (
+        itemGroup !== 'temporaryEffects' &&
+        !(itemGroup === 'topChips' && topChipType === 'temporaryEffects')
+      )
+        return;
       void handlePanelSlotClick(slotElement, event);
     });
 
     slotElement.draggable = !!canReorderButtons();
-    slotElement.addEventListener("dragstart", (event) => {
+    slotElement.addEventListener('dragstart', (event) => {
       if (!canReorderButtons()) {
         event.preventDefault();
         return;
@@ -46,40 +50,39 @@ export function createPanelSlotBindingService({
       const controlPanelState = getControlPanelState();
       if (controlPanelState) controlPanelState.draggedPanelButtonKey = sourceKey;
       if (event.dataTransfer) {
-        event.dataTransfer.effectAllowed = "move";
-        event.dataTransfer.setData("text/plain", sourceKey);
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', sourceKey);
       }
     });
 
-    slotElement.addEventListener("dragover", (event) => {
+    slotElement.addEventListener('dragover', (event) => {
       if (!canReorderButtons()) return;
       if (!isMainActionPanelSlot(slotElement)) return;
       const targetKey = getSlotPanelButtonKey(slotElement);
       if (!targetKey) return;
       const controlPanelState = getControlPanelState();
       const sourceKey = String(
-        controlPanelState?.draggedPanelButtonKey
-        ?? event.dataTransfer?.getData("text/plain")
-        ?? ""
+        controlPanelState?.draggedPanelButtonKey ?? event.dataTransfer?.getData('text/plain') ?? ''
       ).trim();
       if (!sourceKey || sourceKey === targetKey) return;
       event.preventDefault();
-      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
     });
 
-    slotElement.addEventListener("drop", (event) => {
+    slotElement.addEventListener('drop', (event) => {
       if (!canReorderButtons()) return;
       if (!isMainActionPanelSlot(slotElement)) return;
       const targetKey = getSlotPanelButtonKey(slotElement);
       const controlPanelState = getControlPanelState();
       const sourceKey = String(
-        controlPanelState?.draggedPanelButtonKey
-        ?? event.dataTransfer?.getData("text/plain")
-        ?? ""
+        controlPanelState?.draggedPanelButtonKey ?? event.dataTransfer?.getData('text/plain') ?? ''
       ).trim();
       if (!sourceKey || !targetKey || sourceKey === targetKey) return;
       event.preventDefault();
-      const panelElement = slotElement.closest(".tow-combat-overlay-control-panel") ?? controlPanelState?.element ?? null;
+      const panelElement =
+        slotElement.closest('.tow-combat-overlay-control-panel') ??
+        controlPanelState?.element ??
+        null;
       if (!movePanelButtonKeyBeforeTarget(sourceKey, targetKey, panelElement)) return;
       if (controlPanelState) controlPanelState.suppressNextPanelSlotClick = true;
       if (controlPanelState?.element instanceof HTMLElement) {
@@ -87,9 +90,9 @@ export function createPanelSlotBindingService({
       }
     });
 
-    slotElement.addEventListener("dragend", () => {
+    slotElement.addEventListener('dragend', () => {
       const controlPanelState = getControlPanelState();
-      if (controlPanelState) controlPanelState.draggedPanelButtonKey = "";
+      if (controlPanelState) controlPanelState.draggedPanelButtonKey = '';
     });
 
     const onShowTooltip = (event) => {
@@ -97,36 +100,42 @@ export function createPanelSlotBindingService({
         hideStatusTooltip();
         return;
       }
-      const title = String(slotElement.dataset.tooltipTitle ?? "").trim();
-      const description = String(slotElement.dataset.tooltipDescription ?? "").trim();
+      const title = String(slotElement.dataset.tooltipTitle ?? '').trim();
+      const description = String(slotElement.dataset.tooltipDescription ?? '').trim();
       if (!title) {
         hideStatusTooltip();
         return;
       }
-      showOverlayTooltip(title, description || "No description.", { x: event.clientX, y: event.clientY }, null, {
-        allowOutsideCanvas: true,
-        clientCoordinates: true,
-        theme: "panel",
-        descriptionIsHtml: true
-      });
+      showOverlayTooltip(
+        title,
+        description || 'No description.',
+        { x: event.clientX, y: event.clientY },
+        null,
+        {
+          allowOutsideCanvas: true,
+          clientCoordinates: true,
+          theme: 'panel',
+          descriptionIsHtml: true
+        }
+      );
     };
     const onHideTooltip = () => hideStatusTooltip();
-    slotElement.addEventListener("pointerenter", onShowTooltip);
-    slotElement.addEventListener("pointermove", onShowTooltip);
-    slotElement.addEventListener("pointerleave", onHideTooltip);
-    slotElement.addEventListener("pointercancel", onHideTooltip);
+    slotElement.addEventListener('pointerenter', onShowTooltip);
+    slotElement.addEventListener('pointermove', onShowTooltip);
+    slotElement.addEventListener('pointerleave', onHideTooltip);
+    slotElement.addEventListener('pointercancel', onHideTooltip);
   }
 
   function createPanelSlotElement(slotIndex) {
-    const slotElement = document.createElement("button");
-    slotElement.type = "button";
-    slotElement.classList.add("tow-combat-overlay-control-panel__slot");
+    const slotElement = document.createElement('button');
+    slotElement.type = 'button';
+    slotElement.classList.add('tow-combat-overlay-control-panel__slot');
     slotElement.dataset.slotIndex = String(slotIndex);
-    slotElement.setAttribute("aria-label", `Slot ${slotIndex + 1}`);
+    slotElement.setAttribute('aria-label', `Slot ${slotIndex + 1}`);
 
-    const iconPlaceholder = document.createElement("span");
-    iconPlaceholder.classList.add("tow-combat-overlay-control-panel__slot-icon");
-    iconPlaceholder.textContent = "+";
+    const iconPlaceholder = document.createElement('span');
+    iconPlaceholder.classList.add('tow-combat-overlay-control-panel__slot-icon');
+    iconPlaceholder.textContent = '+';
     slotElement.appendChild(iconPlaceholder);
 
     bindPanelSlotEvent(slotElement);

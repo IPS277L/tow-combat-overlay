@@ -1,7 +1,7 @@
 import {
   STATUS_PALETTE_ICON_GAP,
   STATUS_PALETTE_ICON_SIZE
-} from "../../runtime/overlay-constants.js";
+} from '../../runtime/overlay-constants.js';
 import {
   STATUS_CHIPS_PER_ROW_MAX,
   STATUS_CHIPS_PER_ROW_MIN,
@@ -13,10 +13,10 @@ import {
   STATUS_TARGET_CHIPS_PER_ROW,
   STATUS_TOKEN_INSET_BOTTOM,
   STATUS_TOKEN_INSET_X
-} from "./status-palette-constants.js";
-import { syncStatusIconMaskPosition } from "./status-palette-visuals.js";
-import { getTowCombatOverlayDisplaySetting } from "../../bootstrap/register-settings.js";
-import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
+} from './status-palette-constants.js';
+import { syncStatusIconMaskPosition } from './status-palette-visuals.js';
+import { getTowCombatOverlayDisplaySetting } from '../../bootstrap/register-settings.js';
+import { getTowCombatOverlayConstants } from '../../runtime/module-constants.js';
 
 function getConfiguredStatusChipsPerRow() {
   const { settings } = getTowCombatOverlayConstants();
@@ -64,9 +64,9 @@ export function getStatusPaletteLayoutForToken(tokenObject, expectedCount) {
   if (!hasTokenWidth) return { columns: Math.max(1, count), iconSize, iconGap, chipsPerRow };
 
   const { insetX } = getStatusPaletteInsets(tokenWidth);
-  const widthSafe = Math.max(1, tokenWidth - (insetX * 2));
+  const widthSafe = Math.max(1, tokenWidth - insetX * 2);
   const ratio = STATUS_PALETTE_ICON_GAP / Math.max(1, STATUS_PALETTE_ICON_SIZE);
-  const denom = chipsPerRow + ((chipsPerRow - 1) * ratio);
+  const denom = chipsPerRow + (chipsPerRow - 1) * ratio;
   const scaledSize = widthSafe / Math.max(1, denom);
   iconSize = Math.round(Math.min(STATUS_ICON_SIZE_MAX, Math.max(STATUS_ICON_SIZE_MIN, scaledSize)));
   iconGap = Math.round(iconSize * ratio);
@@ -75,28 +75,26 @@ export function getStatusPaletteLayoutForToken(tokenObject, expectedCount) {
   return { columns, iconSize, iconGap, chipsPerRow };
 }
 
-export function getStatusPaletteFitScale(tokenObject, totalWidth, iconSize, iconGap, chipsPerRow = null) {
+export function getStatusPaletteFitScale(
+  tokenObject,
+  totalWidth,
+  iconSize,
+  iconGap,
+  chipsPerRow = null
+) {
   const chipsPerRowSafe = Number.isFinite(Number(chipsPerRow))
     ? Math.max(
-      STATUS_CHIPS_PER_ROW_MIN,
-      Math.min(STATUS_CHIPS_PER_ROW_MAX, Math.round(Number(chipsPerRow)))
-    )
+        STATUS_CHIPS_PER_ROW_MIN,
+        Math.min(STATUS_CHIPS_PER_ROW_MAX, Math.round(Number(chipsPerRow)))
+      )
     : getConfiguredStatusChipsPerRow();
   const tokenWidth = Math.max(1, Number(tokenObject?.w ?? 0));
   const { insetX } = getStatusPaletteInsets(tokenWidth);
-  const availableWidth = Math.max(1, tokenWidth - (insetX * 2));
+  const availableWidth = Math.max(1, tokenWidth - insetX * 2);
   const sizeSafe = Math.max(1, Number(iconSize) || STATUS_PALETTE_ICON_SIZE);
   const gapSafe = Math.max(0, Number(iconGap) || 0);
-  const targetRowWidth = (
-    chipsPerRowSafe * sizeSafe
-  ) + (
-    (chipsPerRowSafe - 1) * gapSafe
-  );
-  const widthBasis = Math.max(
-    1,
-    Number(totalWidth) || 1,
-    targetRowWidth
-  );
+  const targetRowWidth = chipsPerRowSafe * sizeSafe + (chipsPerRowSafe - 1) * gapSafe;
+  const widthBasis = Math.max(1, Number(totalWidth) || 1, targetRowWidth);
   const widthScale = availableWidth / widthBasis;
   return Math.max(0.1, Math.min(1, widthScale));
 }
@@ -118,15 +116,15 @@ export function layoutStatusSpritesCentered(sprites, columns, iconSize, iconGap)
 
   const rowStride = sizeSafe + gapSafe;
   const maxItemsInRow = Math.min(columnsSafe, count);
-  const maxRowWidth = (maxItemsInRow * sizeSafe) + ((maxItemsInRow - 1) * gapSafe);
+  const maxRowWidth = maxItemsInRow * sizeSafe + (maxItemsInRow - 1) * gapSafe;
   const totalRows = Math.ceil(count / columnsSafe);
-  const totalHeight = (totalRows * sizeSafe) + ((totalRows - 1) * gapSafe);
+  const totalHeight = totalRows * sizeSafe + (totalRows - 1) * gapSafe;
 
   for (let row = 0; row < totalRows; row++) {
     const rowStart = row * columnsSafe;
     const rowCount = Math.min(columnsSafe, Math.max(0, count - rowStart));
     if (rowCount <= 0) continue;
-    const rowWidth = (rowCount * sizeSafe) + ((rowCount - 1) * gapSafe);
+    const rowWidth = rowCount * sizeSafe + (rowCount - 1) * gapSafe;
     const rowOffsetX = Math.round((maxRowWidth - rowWidth) / 2);
     for (let col = 0; col < rowCount; col++) {
       const index = rowStart + col;
@@ -137,14 +135,11 @@ export function layoutStatusSpritesCentered(sprites, columns, iconSize, iconGap)
         ? Number(sprite[STATUS_CHIP_SIZE])
         : sizeSafe;
       const half = chipSize / 2;
-      const baseX = rowOffsetX + (col * rowStride);
+      const baseX = rowOffsetX + col * rowStride;
       const baseY = row * rowStride;
-      const posX = isOverflow ? baseX : (baseX + half);
-      const posY = isOverflow ? baseY : (baseY + half);
-      sprite.position.set(
-        Math.round(posX),
-        Math.round(posY)
-      );
+      const posX = isOverflow ? baseX : baseX + half;
+      const posY = isOverflow ? baseY : baseY + half;
+      sprite.position.set(Math.round(posX), Math.round(posY));
       syncStatusIconMaskPosition(sprite);
     }
   }

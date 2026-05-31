@@ -8,7 +8,7 @@ export function towCombatOverlayToElement(appElement) {
 export function towCombatOverlayApplyDialogClass(renderHtml, className) {
   if (!renderHtml || !className) return;
 
-  const jqRoot = renderHtml?.closest?.(".app.dialog");
+  const jqRoot = renderHtml?.closest?.('.app.dialog');
   if (jqRoot?.addClass) {
     jqRoot.addClass(className);
     return;
@@ -17,44 +17,48 @@ export function towCombatOverlayApplyDialogClass(renderHtml, className) {
   const element = towCombatOverlayToElement(renderHtml);
   if (!element) return;
 
-  const directLooksLikeDialog = element.classList?.contains("dialog")
-    || element.classList?.contains("application")
-    || element.classList?.contains("window-app");
+  const directLooksLikeDialog =
+    element.classList?.contains('dialog') ||
+    element.classList?.contains('application') ||
+    element.classList?.contains('window-app');
   if (directLooksLikeDialog) {
     element.classList.add(className);
     return;
   }
 
-  const dialogRoot = element.closest?.(".app.dialog")
-    ?? element.closest?.(".application.dialog")
-    ?? element.closest?.(".application")
-    ?? null;
+  const dialogRoot =
+    element.closest?.('.app.dialog') ??
+    element.closest?.('.application.dialog') ??
+    element.closest?.('.application') ??
+    null;
   if (dialogRoot?.classList) dialogRoot.classList.add(className);
 }
 
 export function towCombatOverlayBindClick(renderHtml, selector, handler) {
-  if (!renderHtml || !selector || typeof handler !== "function") return;
+  if (!renderHtml || !selector || typeof handler !== 'function') return;
 
   const jqMatches = renderHtml?.find?.(selector);
   if (jqMatches?.on) {
-    jqMatches.on("click", handler);
+    jqMatches.on('click', handler);
     return;
   }
 
   const element = towCombatOverlayToElement(renderHtml);
   if (!element) return;
   for (const match of element.querySelectorAll(selector)) {
-    match.addEventListener("click", handler);
+    match.addEventListener('click', handler);
   }
 }
 
 function towCombatOverlayFindRenderedDialogElementByMarker(markerId) {
   const marker = document.querySelector(`[data-tow-selector-dialog-id="${markerId}"]`);
   if (!marker) return null;
-  return marker.closest(".app.window-app.dialog")
-    ?? marker.closest(".application.dialog")
-    ?? marker.closest(".application")
-    ?? null;
+  return (
+    marker.closest('.app.window-app.dialog') ??
+    marker.closest('.application.dialog') ??
+    marker.closest('.application') ??
+    null
+  );
 }
 
 export function towCombatOverlayOpenSelectorDialog({
@@ -64,10 +68,11 @@ export function towCombatOverlayOpenSelectorDialog({
   height = null,
   onRender
 } = {}) {
-  const markerId = foundry?.utils?.randomID?.() ?? `tow-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
-  const wrappedContent = `<div data-tow-selector-dialog-id="${towCombatOverlayEscapeHtml(markerId)}">${String(content ?? "")}</div>`;
+  const markerId =
+    foundry?.utils?.randomID?.() ?? `tow-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+  const wrappedContent = `<div data-tow-selector-dialog-id="${towCombatOverlayEscapeHtml(markerId)}">${String(content ?? '')}</div>`;
   const DialogV2Class = foundry?.applications?.api?.DialogV2;
-  if (typeof DialogV2Class === "function") {
+  if (typeof DialogV2Class === 'function') {
     try {
       const dialogV2Config = {
         title,
@@ -84,7 +89,7 @@ export function towCombatOverlayOpenSelectorDialog({
       }
       const dialogV2 = new DialogV2Class(dialogV2Config);
       dialogV2.render(true);
-      if (typeof onRender === "function") {
+      if (typeof onRender === 'function') {
         const bindOnceReady = (attempt = 0) => {
           const fromApp = towCombatOverlayToElement(dialogV2.element);
           const root = fromApp ?? towCombatOverlayFindRenderedDialogElementByMarker(markerId);
@@ -110,7 +115,7 @@ export function towCombatOverlayOpenSelectorDialog({
     content: wrappedContent,
     buttons: {},
     render: (html) => {
-      if (typeof onRender === "function") onRender(html, dialogV1);
+      if (typeof onRender === 'function') onRender(html, dialogV1);
     }
   };
   const dialogV1Options = {
@@ -123,7 +128,7 @@ export function towCombatOverlayOpenSelectorDialog({
 }
 
 export function towCombatOverlayScheduleSoon(callback) {
-  if (typeof window?.requestAnimationFrame === "function") {
+  if (typeof window?.requestAnimationFrame === 'function') {
     window.requestAnimationFrame(() => {
       void callback();
     });
@@ -135,19 +140,19 @@ export function towCombatOverlayScheduleSoon(callback) {
 }
 
 export function towCombatOverlayEscapeHtml(value) {
-  return foundry.utils.escapeHTML(String(value ?? ""));
+  return foundry.utils.escapeHTML(String(value ?? ''));
 }
 
-export function towCombatOverlayLocalize(key, fallback = "") {
+export function towCombatOverlayLocalize(key, fallback = '') {
   const localized = game?.i18n?.localize?.(key);
-  if (typeof localized === "string" && localized !== key) return localized;
-  return String(fallback ?? "");
+  if (typeof localized === 'string' && localized !== key) return localized;
+  return String(fallback ?? '');
 }
 
 export async function towCombatOverlayRenderTemplate(path, data = {}) {
   const renderer = foundry?.applications?.handlebars?.renderTemplate;
-  if (typeof renderer !== "function") {
-    throw new Error("[tow-combat-overlay] Missing foundry.applications.handlebars.renderTemplate");
+  if (typeof renderer !== 'function') {
+    throw new Error('[tow-combat-overlay] Missing foundry.applications.handlebars.renderTemplate');
   }
   return renderer(path, data);
 }

@@ -1,32 +1,24 @@
-import { getTowCombatOverlayConstants } from "../runtime/module-constants.js";
+import { getTowCombatOverlayConstants } from '../runtime/module-constants.js';
 
 function ensureTowCombatOverlayApiObject(hostObject, key) {
   if (!hostObject || !key) return null;
   const current = hostObject[key];
-  if (current && typeof current === "object") return current;
+  if (current && typeof current === 'object') return current;
   const next = {};
   hostObject[key] = next;
   return next;
 }
 
-function resolveTowCombatOverlaySharedApiObject({
-  moduleApi = null,
-  moduleKey = ""
-} = {}) {
-  const moduleObject = (moduleApi && moduleKey) ? moduleApi[moduleKey] : null;
-  if (moduleObject && typeof moduleObject === "object") return moduleObject;
+function resolveTowCombatOverlaySharedApiObject({ moduleApi = null, moduleKey = '' } = {}) {
+  const moduleObject = moduleApi && moduleKey ? moduleApi[moduleKey] : null;
+  if (moduleObject && typeof moduleObject === 'object') return moduleObject;
   return {};
 }
 
-export function registerTowCombatOverlayPublicApis({
-  actionsApi = null,
-  overlayApi = null
-} = {}) {
+export function registerTowCombatOverlayPublicApis({ actionsApi = null, overlayApi = null } = {}) {
   const { apiKeys, moduleId } = getTowCombatOverlayConstants();
   const moduleState = game?.modules?.get?.(moduleId) ?? null;
-  const moduleApi = moduleState
-    ? ensureTowCombatOverlayApiObject(moduleState, "api")
-    : null;
+  const moduleApi = moduleState ? ensureTowCombatOverlayApiObject(moduleState, 'api') : null;
 
   if (actionsApi) {
     const sharedActionsApi = resolveTowCombatOverlaySharedApiObject({
@@ -55,11 +47,11 @@ export function getTowCombatOverlayModuleApi() {
 }
 
 export function getTowCombatOverlayPublicApi(apiKey) {
-  const key = String(apiKey ?? "").trim();
+  const key = String(apiKey ?? '').trim();
   if (!key) return null;
 
   const moduleApi = getTowCombatOverlayModuleApi()?.[key] ?? null;
-  if (moduleApi && typeof moduleApi === "object") return moduleApi;
+  if (moduleApi && typeof moduleApi === 'object') return moduleApi;
 
   return null;
 }
@@ -71,4 +63,3 @@ export function getTowCombatOverlayActionsApi() {
 export function getTowCombatOverlayOverlayApi() {
   return getTowCombatOverlayPublicApi(getTowCombatOverlayConstants().apiKeys.overlay);
 }
-

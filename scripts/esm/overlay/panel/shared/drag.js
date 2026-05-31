@@ -7,51 +7,54 @@ export function removeStaleControlPanels({ panelId, selectionPanelId } = {}) {
 export function isDragBlockedTarget(targetElement) {
   if (!(targetElement instanceof Element)) return true;
   const blockedSelector = [
-    ".tow-combat-overlay-control-panel__slot",
-    ".tow-combat-overlay-control-panel__status-icon",
-    ".tow-combat-overlay-control-panel__selection-stat-row",
-    ".tow-combat-overlay-control-panel__selection-text-control",
-    ".tow-combat-overlay-control-panel__selection-mod-button",
-    "button",
-    "input",
-    "select",
-    "textarea",
-    "a",
+    '.tow-combat-overlay-control-panel__slot',
+    '.tow-combat-overlay-control-panel__status-icon',
+    '.tow-combat-overlay-control-panel__selection-stat-row',
+    '.tow-combat-overlay-control-panel__selection-text-control',
+    '.tow-combat-overlay-control-panel__selection-mod-button',
+    'button',
+    'input',
+    'select',
+    'textarea',
+    'a',
     "[contenteditable='true']"
-  ].join(", ");
+  ].join(', ');
   return !!targetElement.closest(blockedSelector);
 }
 
-export function bindControlPanelDrag(controlPanelState, panelElement, {
-  applyPosition,
-  persistPosition,
-  onMoved = null,
-  dragSources = [],
-  canDrag = null
-} = {}) {
+export function bindControlPanelDrag(
+  controlPanelState,
+  panelElement,
+  { applyPosition, persistPosition, onMoved = null, dragSources = [], canDrag = null } = {}
+) {
   let dragData = null;
 
   const onPointerMove = (event) => {
     if (!dragData) return;
     const deltaX = Number(event.clientX) - dragData.startClientX;
     const deltaY = Number(event.clientY) - dragData.startClientY;
-    applyPosition(controlPanelState, panelElement, dragData.startLeft + deltaX, dragData.startTop + deltaY);
-    if (typeof onMoved === "function") onMoved();
+    applyPosition(
+      controlPanelState,
+      panelElement,
+      dragData.startLeft + deltaX,
+      dragData.startTop + deltaY
+    );
+    if (typeof onMoved === 'function') onMoved();
   };
 
   const onPointerUp = () => {
     if (!dragData) return;
     dragData = null;
-    panelElement.classList.remove("is-dragging");
-    window.removeEventListener("pointermove", onPointerMove);
-    window.removeEventListener("pointerup", onPointerUp);
-    window.removeEventListener("pointercancel", onPointerUp);
-    if (typeof persistPosition === "function") persistPosition(panelElement);
+    panelElement.classList.remove('is-dragging');
+    window.removeEventListener('pointermove', onPointerMove);
+    window.removeEventListener('pointerup', onPointerUp);
+    window.removeEventListener('pointercancel', onPointerUp);
+    if (typeof persistPosition === 'function') persistPosition(panelElement);
   };
 
   const onPointerDown = (event) => {
     if (event.button !== 0) return;
-    if (typeof canDrag === "function" && !canDrag()) return;
+    if (typeof canDrag === 'function' && !canDrag()) return;
     if (isDragBlockedTarget(event.target)) return;
     event.preventDefault();
 
@@ -62,24 +65,26 @@ export function bindControlPanelDrag(controlPanelState, panelElement, {
       startLeft: Number(rect.left),
       startTop: Number(rect.top)
     };
-    panelElement.classList.add("is-dragging");
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerUp);
-    window.addEventListener("pointercancel", onPointerUp);
+    panelElement.classList.add('is-dragging');
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
   };
 
   const onResize = () => {
     const rect = panelElement.getBoundingClientRect();
     applyPosition(controlPanelState, panelElement, rect.left, rect.top);
-    if (typeof onMoved === "function") onMoved();
+    if (typeof onMoved === 'function') onMoved();
   };
 
   const sources = [
     panelElement,
-    ...(Array.isArray(dragSources) ? dragSources : []).filter((source) => source instanceof HTMLElement)
+    ...(Array.isArray(dragSources) ? dragSources : []).filter(
+      (source) => source instanceof HTMLElement
+    )
   ];
-  for (const sourceElement of sources) sourceElement.addEventListener("pointerdown", onPointerDown);
-  window.addEventListener("resize", onResize);
+  for (const sourceElement of sources) sourceElement.addEventListener('pointerdown', onPointerDown);
+  window.addEventListener('resize', onResize);
 
   controlPanelState.onPointerDown = onPointerDown;
   controlPanelState.dragSourceElements = sources;
@@ -87,4 +92,3 @@ export function bindControlPanelDrag(controlPanelState, panelElement, {
   controlPanelState.onPointerMove = onPointerMove;
   controlPanelState.onPointerUp = onPointerUp;
 }
-

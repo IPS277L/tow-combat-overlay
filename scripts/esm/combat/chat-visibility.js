@@ -1,6 +1,6 @@
-import { getTowCombatOverlayConstants } from "../runtime/module-constants.js";
-import { resolveTowCombatOverlayMessageRefId } from "../shared/message-reference.js";
-import { towCombatOverlayToElement } from "./dialog-utils.js";
+import { getTowCombatOverlayConstants } from '../runtime/module-constants.js';
+import { resolveTowCombatOverlayMessageRefId } from '../shared/message-reference.js';
+import { towCombatOverlayToElement } from './dialog-utils.js';
 
 const {
   moduleId: TOW_MODULE_ID,
@@ -16,14 +16,14 @@ export function towCombatOverlayApplyRollVisibility(
     additionalAllowedUserIds = null
   } = {}
 ) {
-  if (!chatData || typeof chatData !== "object") return chatData;
+  if (!chatData || typeof chatData !== 'object') return chatData;
 
   const extractVisibilityFromMessage = (message) => {
-    if (!message || typeof message !== "object") return null;
+    if (!message || typeof message !== 'object') return null;
     const censoredFlag = message?.getFlag?.(TOW_MODULE_ID, TOW_CHAT_VISIBILITY_FLAG);
-    if (censoredFlag?.mode === "censored") {
+    if (censoredFlag?.mode === 'censored') {
       const allowedUserIds = Array.isArray(censoredFlag.allowedUserIds)
-        ? censoredFlag.allowedUserIds.filter((id) => typeof id === "string" && id.length > 0)
+        ? censoredFlag.allowedUserIds.filter((id) => typeof id === 'string' && id.length > 0)
         : [];
       return {
         whisperUserIds: allowedUserIds,
@@ -32,7 +32,7 @@ export function towCombatOverlayApplyRollVisibility(
     }
 
     const whisperUserIds = Array.isArray(message.whisper)
-      ? message.whisper.filter((id) => typeof id === "string" && id.length > 0)
+      ? message.whisper.filter((id) => typeof id === 'string' && id.length > 0)
       : [];
     return {
       whisperUserIds,
@@ -41,16 +41,16 @@ export function towCombatOverlayApplyRollVisibility(
   };
 
   const resolveVisibilityFromRollMode = (mode) => {
-    if (typeof mode !== "string" || mode.length === 0) return null;
-    const gmWhispers = (ChatMessage?.getWhisperRecipients?.("GM") ?? [])
+    if (typeof mode !== 'string' || mode.length === 0) return null;
+    const gmWhispers = (ChatMessage?.getWhisperRecipients?.('GM') ?? [])
       .map((user) => user?.id)
-      .filter((id) => typeof id === "string" && id.length > 0);
+      .filter((id) => typeof id === 'string' && id.length > 0);
     switch (mode) {
-      case "gmroll":
+      case 'gmroll':
         return { whisperUserIds: gmWhispers, blind: false };
-      case "blindroll":
+      case 'blindroll':
         return { whisperUserIds: gmWhispers, blind: true };
-      case "selfroll":
+      case 'selfroll':
         return {
           whisperUserIds: game?.user?.id ? [game.user.id] : [],
           blind: false
@@ -89,33 +89,32 @@ export function towCombatOverlayApplyRollVisibility(
 
     const allowedUserIds = new Set(whisperUserIds);
     const sourceUserId = String(
-      sourceMessage?.author?.id
-      ?? sourceMessage?.user?.id
-      ?? sourceMessage?.user
-      ?? game?.user?.id
-      ?? ""
+      sourceMessage?.author?.id ??
+        sourceMessage?.user?.id ??
+        sourceMessage?.user ??
+        game?.user?.id ??
+        ''
     ).trim();
     if (sourceUserId) allowedUserIds.add(sourceUserId);
-    const explicitAllowed = Array.isArray(additionalAllowedUserIds)
-      ? additionalAllowedUserIds
-      : [];
+    const explicitAllowed = Array.isArray(additionalAllowedUserIds) ? additionalAllowedUserIds : [];
     for (const explicitUserId of explicitAllowed) {
-      const normalizedUserId = String(explicitUserId ?? "").trim();
+      const normalizedUserId = String(explicitUserId ?? '').trim();
       if (normalizedUserId) allowedUserIds.add(normalizedUserId);
     }
     if (visibility?.blind === true) {
-      for (const gmUser of (ChatMessage?.getWhisperRecipients?.("GM") ?? [])) {
-        const gmId = String(gmUser?.id ?? "").trim();
+      for (const gmUser of ChatMessage?.getWhisperRecipients?.('GM') ?? []) {
+        const gmId = String(gmUser?.id ?? '').trim();
         if (gmId) allowedUserIds.add(gmId);
       }
     }
 
-    chatData.flags = chatData.flags && typeof chatData.flags === "object" ? chatData.flags : {};
-    chatData.flags[TOW_MODULE_ID] = chatData.flags[TOW_MODULE_ID] && typeof chatData.flags[TOW_MODULE_ID] === "object"
-      ? chatData.flags[TOW_MODULE_ID]
-      : {};
+    chatData.flags = chatData.flags && typeof chatData.flags === 'object' ? chatData.flags : {};
+    chatData.flags[TOW_MODULE_ID] =
+      chatData.flags[TOW_MODULE_ID] && typeof chatData.flags[TOW_MODULE_ID] === 'object'
+        ? chatData.flags[TOW_MODULE_ID]
+        : {};
     chatData.flags[TOW_MODULE_ID][TOW_CHAT_VISIBILITY_FLAG] = {
-      mode: "censored",
+      mode: 'censored',
       allowedUserIds: Array.from(allowedUserIds),
       sourceUserId: sourceUserId || null
     };
@@ -126,7 +125,7 @@ export function towCombatOverlayApplyRollVisibility(
   let resolvedVisibility = null;
 
   const copyVisibilityFromSource = () => {
-    if (!sourceMessage || typeof sourceMessage !== "object") return false;
+    if (!sourceMessage || typeof sourceMessage !== 'object') return false;
     resolvedVisibility = extractVisibilityFromMessage(sourceMessage);
     if (!isVisibilityRestricted(resolvedVisibility)) return false;
     applyVisibilityToChatData(resolvedVisibility);
@@ -138,15 +137,15 @@ export function towCombatOverlayApplyRollVisibility(
     return chatData;
   }
 
-  const resolvedRollMode = rollMode ?? game?.settings?.get?.("core", "rollMode");
-  if (typeof resolvedRollMode !== "string" || resolvedRollMode.length === 0) return chatData;
+  const resolvedRollMode = rollMode ?? game?.settings?.get?.('core', 'rollMode');
+  if (typeof resolvedRollMode !== 'string' || resolvedRollMode.length === 0) return chatData;
 
   const applyRollMode = ChatMessage?.applyRollMode;
-  if (typeof applyRollMode === "function") {
+  if (typeof applyRollMode === 'function') {
     applyRollMode(chatData, resolvedRollMode);
     resolvedVisibility = {
       whisperUserIds: Array.isArray(chatData.whisper)
-        ? chatData.whisper.filter((id) => typeof id === "string" && id.length > 0)
+        ? chatData.whisper.filter((id) => typeof id === 'string' && id.length > 0)
         : [],
       blind: chatData.blind === true
     };
@@ -171,16 +170,16 @@ function towCombatOverlayToRenderedElement(renderHtml) {
 function towCombatOverlayGetChatVisibilityFlag(message) {
   if (!message?.getFlag) return null;
   const flag = message.getFlag(TOW_MODULE_ID, TOW_CHAT_VISIBILITY_FLAG);
-  return flag && typeof flag === "object" ? flag : null;
+  return flag && typeof flag === 'object' ? flag : null;
 }
 
 function towCombatOverlayBuildMessageVisibility(message) {
-  if (!message || typeof message !== "object") return null;
+  if (!message || typeof message !== 'object') return null;
 
   const flagData = towCombatOverlayGetChatVisibilityFlag(message);
-  if (flagData?.mode === "censored") {
+  if (flagData?.mode === 'censored') {
     const allowedUserIds = Array.isArray(flagData.allowedUserIds)
-      ? flagData.allowedUserIds.filter((id) => typeof id === "string" && id.length > 0)
+      ? flagData.allowedUserIds.filter((id) => typeof id === 'string' && id.length > 0)
       : [];
     if (allowedUserIds.length > 0) {
       return {
@@ -191,17 +190,19 @@ function towCombatOverlayBuildMessageVisibility(message) {
   }
 
   const whisperUserIds = Array.isArray(message.whisper)
-    ? message.whisper.filter((id) => typeof id === "string" && id.length > 0)
+    ? message.whisper.filter((id) => typeof id === 'string' && id.length > 0)
     : [];
   if (whisperUserIds.length === 0 && message.blind !== true) return null;
 
   const allowed = new Set(whisperUserIds);
-  const sourceUserId = String(message?.author?.id ?? message?.user?.id ?? message?.user ?? "").trim();
+  const sourceUserId = String(
+    message?.author?.id ?? message?.user?.id ?? message?.user ?? ''
+  ).trim();
   if (sourceUserId) allowed.add(sourceUserId);
 
   if (message.blind === true) {
-    for (const gmUser of (ChatMessage?.getWhisperRecipients?.("GM") ?? [])) {
-      const gmId = String(gmUser?.id ?? "").trim();
+    for (const gmUser of ChatMessage?.getWhisperRecipients?.('GM') ?? []) {
+      const gmId = String(gmUser?.id ?? '').trim();
       if (gmId) allowed.add(gmId);
     }
   }
@@ -215,17 +216,15 @@ function towCombatOverlayBuildMessageVisibility(message) {
 function towCombatOverlayCanCurrentUserSeeVisibility(visibility) {
   if (!visibility?.restricted) return true;
   if (game?.user?.isGM === true) return true;
-  const currentUserId = String(game?.user?.id ?? "").trim();
+  const currentUserId = String(game?.user?.id ?? '').trim();
   if (!currentUserId) return false;
-  const allowedUserIds = Array.isArray(visibility.allowedUserIds)
-    ? visibility.allowedUserIds
-    : [];
+  const allowedUserIds = Array.isArray(visibility.allowedUserIds) ? visibility.allowedUserIds : [];
   return allowedUserIds.includes(currentUserId);
 }
 
 function towCombatOverlayIsMessageContentVisibleForCurrentUser(message) {
-  if (!message || typeof message !== "object") return true;
-  if (typeof message.isContentVisible === "boolean") return message.isContentVisible;
+  if (!message || typeof message !== 'object') return true;
+  if (typeof message.isContentVisible === 'boolean') return message.isContentVisible;
   return true;
 }
 
@@ -244,7 +243,8 @@ function towCombatOverlayGetLinkedOpposedMessageIds(message) {
 
 function towCombatOverlayResolveOpposedLinkedVisibility(message) {
   if (!message) return null;
-  const { attackerMessageId, defenderMessageId } = towCombatOverlayGetLinkedOpposedMessageIds(message);
+  const { attackerMessageId, defenderMessageId } =
+    towCombatOverlayGetLinkedOpposedMessageIds(message);
   if (!attackerMessageId && !defenderMessageId) return null;
 
   if (attackerMessageId) {
@@ -271,22 +271,24 @@ function towCombatOverlayCanCurrentUserSeeUncensoredChat(message) {
   if (ownVisibility?.restricted) return towCombatOverlayCanCurrentUserSeeVisibility(ownVisibility);
 
   const linkedOpposedVisibility = towCombatOverlayResolveOpposedLinkedVisibility(message);
-  if (linkedOpposedVisibility?.restricted) return towCombatOverlayCanCurrentUserSeeVisibility(linkedOpposedVisibility);
+  if (linkedOpposedVisibility?.restricted)
+    return towCombatOverlayCanCurrentUserSeeVisibility(linkedOpposedVisibility);
 
   return true;
 }
 
 export function towCombatOverlayApplyChatMessageCensorship(message, renderHtml) {
   const ownFlag = towCombatOverlayGetChatVisibilityFlag(message);
-  const hasOwnCensoredFlag = ownFlag?.mode === "censored";
+  const hasOwnCensoredFlag = ownFlag?.mode === 'censored';
   const hasOpposedLinkedRestriction = !!towCombatOverlayResolveOpposedLinkedVisibility(message);
   if (!hasOwnCensoredFlag && !hasOpposedLinkedRestriction) return;
   if (towCombatOverlayCanCurrentUserSeeUncensoredChat(message)) return;
 
-  const root = towCombatOverlayToRenderedElement(renderHtml) ?? towCombatOverlayToElement(renderHtml);
+  const root =
+    towCombatOverlayToRenderedElement(renderHtml) ?? towCombatOverlayToElement(renderHtml);
   if (!root) return;
 
-  const messageContent = root.querySelector(".message-content");
+  const messageContent = root.querySelector('.message-content');
   if (!messageContent) return;
 
   messageContent.innerHTML = `

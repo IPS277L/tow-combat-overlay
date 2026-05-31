@@ -1,14 +1,16 @@
 export function normalizeStringList(values, { predicate = null } = {}) {
   if (!Array.isArray(values)) return [];
-  return Array.from(new Set(
-    values
-      .map((value) => String(value ?? "").trim())
-      .filter((value) => {
-        if (!value) return false;
-        if (typeof predicate !== "function") return true;
-        return predicate(value);
-      })
-  ));
+  return Array.from(
+    new Set(
+      values
+        .map((value) => String(value ?? '').trim())
+        .filter((value) => {
+          if (!value) return false;
+          if (typeof predicate !== 'function') return true;
+          return predicate(value);
+        })
+    )
+  );
 }
 
 export function clampCoordinate(value, min, max) {
@@ -19,7 +21,7 @@ export function clampCoordinate(value, min, max) {
 }
 
 export function readSavedPosition(storageKey) {
-  const key = String(storageKey ?? "").trim();
+  const key = String(storageKey ?? '').trim();
   if (!key) return null;
   try {
     const raw = window.localStorage.getItem(key);
@@ -35,13 +37,13 @@ export function readSavedPosition(storageKey) {
 }
 
 export function writeSavedPosition(storageKey, element) {
-  const key = String(storageKey ?? "").trim();
+  const key = String(storageKey ?? '').trim();
   if (!key) return;
   if (!(element instanceof HTMLElement)) return;
   try {
     const payload = {
-      left: Number(String(element.style.left ?? "").replace("px", "")),
-      top: Number(String(element.style.top ?? "").replace("px", ""))
+      left: Number(String(element.style.left ?? '').replace('px', '')),
+      top: Number(String(element.style.top ?? '').replace('px', ''))
     };
     if (!Number.isFinite(payload.left) || !Number.isFinite(payload.top)) return;
     window.localStorage.setItem(key, JSON.stringify(payload));

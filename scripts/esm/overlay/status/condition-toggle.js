@@ -11,7 +11,7 @@ export function createPanelConditionToggleService({
   async function setActorConditionState(actor, conditionId, active) {
     if (!actor || !conditionId) return;
     const id = String(conditionId);
-    if (id !== "staggered" && typeof actor.toggleStatusEffect === "function") {
+    if (id !== 'staggered' && typeof actor.toggleStatusEffect === 'function') {
       try {
         await actor.toggleStatusEffect(id, { active });
         return;
@@ -58,4 +58,3 @@ export function createPanelConditionToggleService({
     toggleConditionFromPanel
   };
 }
-

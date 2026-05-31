@@ -1,4 +1,4 @@
-import { getTowCombatOverlayConstants } from "../runtime/module-constants.js";
+import { getTowCombatOverlayConstants } from '../runtime/module-constants.js';
 
 const {
   flags: MODULE_FLAGS,
@@ -8,10 +8,10 @@ const {
 
 const DEFAULT_ACTOR_ROLL_MODIFIER_STATE = Object.freeze({
   diceModifier: 0,
-  rollState: "normal"
+  rollState: 'normal'
 });
 
-const ROLL_STATES = Object.freeze(["normal", "glorious", "grim"]);
+const ROLL_STATES = Object.freeze(['normal', 'glorious', 'grim']);
 
 function normalizeDiceModifier(value) {
   const numeric = Math.trunc(Number(value) || 0);
@@ -19,7 +19,9 @@ function normalizeDiceModifier(value) {
 }
 
 function normalizeRollState(value) {
-  const candidate = String(value ?? "").trim().toLowerCase();
+  const candidate = String(value ?? '')
+    .trim()
+    .toLowerCase();
   return ROLL_STATES.includes(candidate) ? candidate : DEFAULT_ACTOR_ROLL_MODIFIER_STATE.rollState;
 }
 
@@ -31,7 +33,7 @@ export function getTowCombatOverlayDefaultActorRollModifierState() {
 }
 
 export function normalizeTowCombatOverlayActorRollModifierState(state) {
-  const source = state && typeof state === "object" ? state : {};
+  const source = state && typeof state === 'object' ? state : {};
   return {
     diceModifier: normalizeDiceModifier(source.diceModifier),
     rollState: normalizeRollState(source.rollState)
@@ -57,8 +59,8 @@ export function getTowCombatOverlayActorRollModifierFields(actor) {
   return {
     bonus: Math.max(0, state.diceModifier),
     penalty: Math.max(0, -state.diceModifier),
-    glorious: state.rollState === "glorious" ? 1 : 0,
-    grim: state.rollState === "grim" ? 1 : 0
+    glorious: state.rollState === 'glorious' ? 1 : 0,
+    grim: state.rollState === 'grim' ? 1 : 0
   };
 }
 
@@ -81,7 +83,9 @@ export function createTowCombatOverlayRollContext(actor, baseContext = {}) {
 export async function setTowCombatOverlayActorRollModifierState(actor, nextState) {
   if (!actor?.setFlag) return null;
   const normalized = normalizeTowCombatOverlayActorRollModifierState(nextState);
-  const isDefault = normalized.diceModifier === 0 && normalized.rollState === DEFAULT_ACTOR_ROLL_MODIFIER_STATE.rollState;
+  const isDefault =
+    normalized.diceModifier === 0 &&
+    normalized.rollState === DEFAULT_ACTOR_ROLL_MODIFIER_STATE.rollState;
   if (isDefault && actor.unsetFlag) {
     await actor.unsetFlag(MODULE_ID, MODULE_FLAGS.actorRollModifier);
     return getTowCombatOverlayDefaultActorRollModifierState();
@@ -94,17 +98,18 @@ export async function adjustTowCombatOverlayActorRollModifierDice(actor, delta) 
   const current = getTowCombatOverlayActorRollModifierState(actor);
   return setTowCombatOverlayActorRollModifierState(actor, {
     ...current,
-    diceModifier: current.diceModifier + (Math.trunc(Number(delta) || 0))
+    diceModifier: current.diceModifier + Math.trunc(Number(delta) || 0)
   });
 }
 
 export async function cycleTowCombatOverlayActorRollState(actor, step = 1) {
   const current = getTowCombatOverlayActorRollModifierState(actor);
   const currentIndex = Math.max(0, ROLL_STATES.indexOf(current.rollState));
-  const nextIndex = ((currentIndex + Math.trunc(Number(step) || 0)) % ROLL_STATES.length + ROLL_STATES.length) % ROLL_STATES.length;
+  const nextIndex =
+    (((currentIndex + Math.trunc(Number(step) || 0)) % ROLL_STATES.length) + ROLL_STATES.length) %
+    ROLL_STATES.length;
   return setTowCombatOverlayActorRollModifierState(actor, {
     ...current,
     rollState: ROLL_STATES[nextIndex]
   });
 }
-

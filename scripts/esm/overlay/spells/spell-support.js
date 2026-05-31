@@ -1,4 +1,4 @@
-import { SPELL_SELF_TARGET_VALUES } from "./spell-targeting-constants.js";
+import { SPELL_SELF_TARGET_VALUES } from './spell-targeting-constants.js';
 
 export function createPanelSpellSupportService({
   towCombatOverlayArmAutoSubmitDialog,
@@ -6,31 +6,32 @@ export function createPanelSpellSupportService({
 } = {}) {
   let panelItemUseRollCompatibilityPatched = false;
 
-  function armAutoResolveSpellTriggeredTestDialogs(sourceActor = null, {
-    timeoutMs = 20000,
-    matches = null
-  } = {}) {
-    const sourceActorId = String(sourceActor?.id ?? "").trim();
-    const sourceActorUuid = String(sourceActor?.uuid ?? "").trim();
+  function armAutoResolveSpellTriggeredTestDialogs(
+    sourceActor = null,
+    { timeoutMs = 20000, matches = null } = {}
+  ) {
+    const sourceActorId = String(sourceActor?.id ?? '').trim();
+    const sourceActorUuid = String(sourceActor?.uuid ?? '').trim();
 
     return towCombatOverlayArmAutoSubmitDialog({
-      hookName: "renderTestDialog",
+      hookName: 'renderTestDialog',
       matches: (app) => {
         if (!app || app._towCombatOverlaySpellAutoResolved === true) return false;
-        if (typeof matches === "function" && !matches(app)) return false;
+        if (typeof matches === 'function' && !matches(app)) return false;
 
         if (sourceActorId || sourceActorUuid) {
-          const appActorId = String(app?.actor?.id ?? "").trim();
-          const appActorUuid = String(app?.actor?.uuid ?? app?.context?.actor ?? "").trim();
-          const actorMatchesSource = (sourceActorId && appActorId === sourceActorId)
-            || (sourceActorUuid && appActorUuid === sourceActorUuid);
-          if (!actorMatchesSource && typeof matches !== "function") return false;
+          const appActorId = String(app?.actor?.id ?? '').trim();
+          const appActorUuid = String(app?.actor?.uuid ?? app?.context?.actor ?? '').trim();
+          const actorMatchesSource =
+            (sourceActorId && appActorId === sourceActorId) ||
+            (sourceActorUuid && appActorUuid === sourceActorUuid);
+          if (!actorMatchesSource && typeof matches !== 'function') return false;
         }
 
         app._towCombatOverlaySpellAutoResolved = true;
         return true;
       },
-      submitErrorMessage: "TestDialog.submit() is unavailable.",
+      submitErrorMessage: 'TestDialog.submit() is unavailable.',
       beforeSubmit: async (app) => {
         // Spell apply handlers can open follow-up tests where app.actor is not the
         // original spell caster, but the caster's panel roll state should still drive
@@ -53,12 +54,12 @@ export function createPanelSpellSupportService({
     if (panelItemUseRollCompatibilityPatched) return;
     const ItemUseClass = game?.oldworld?.config?.rollClasses?.ItemUse;
     const originalRoll = ItemUseClass?.prototype?.roll;
-    if (!ItemUseClass || typeof originalRoll !== "function") return;
+    if (!ItemUseClass || typeof originalRoll !== 'function') return;
     ItemUseClass.prototype.roll = async function patchedTowCombatOverlayItemUseRoll(...args) {
       const result = await originalRoll.apply(this, args);
       if (!this?._roll) {
         try {
-          this._roll = await new Roll("0").roll();
+          this._roll = await new Roll('0').roll();
         } catch (_error) {
           // Best-effort compatibility patch only.
         }
@@ -69,14 +70,18 @@ export function createPanelSpellSupportService({
   }
 
   function spellRequiresTargetPick(spell) {
-    const targetValue = String(spell?.system?.target?.value ?? "").trim().toLowerCase();
+    const targetValue = String(spell?.system?.target?.value ?? '')
+      .trim()
+      .toLowerCase();
     const requiresPick = !targetValue || !SPELL_SELF_TARGET_VALUES.includes(targetValue);
     return requiresPick;
   }
 
   function spellTargetsSelf(spell) {
-    const targetValue = String(spell?.system?.target?.value ?? "").trim().toLowerCase();
-    return targetValue === "self" || targetValue === "you";
+    const targetValue = String(spell?.system?.target?.value ?? '')
+      .trim()
+      .toLowerCase();
+    return targetValue === 'self' || targetValue === 'you';
   }
 
   function resolveActorMiscastState(actor) {
@@ -99,4 +104,3 @@ export function createPanelSpellSupportService({
     resolveActorMiscastState
   };
 }
-

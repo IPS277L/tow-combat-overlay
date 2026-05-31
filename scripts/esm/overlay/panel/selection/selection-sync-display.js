@@ -1,5 +1,5 @@
-import { getTowCombatOverlayConstants } from "../../../runtime/module-constants.js";
-import { isTowCombatOverlayDisplaySettingEnabled } from "../../../bootstrap/register-settings.js";
+import { getTowCombatOverlayConstants } from '../../../runtime/module-constants.js';
+import { isTowCombatOverlayDisplaySettingEnabled } from '../../../bootstrap/register-settings.js';
 
 const { settings: MODULE_SETTINGS } = getTowCombatOverlayConstants();
 
@@ -53,28 +53,36 @@ export function createPanelSelectionSyncDisplayService({
 
   function syncItemGroupsMinWidth(panelElement) {
     if (!(panelElement instanceof HTMLElement)) return;
-    const statusesTopElement = panelElement.querySelector(".tow-combat-overlay-control-panel__statuses-top");
-    const statusesBottomElement = panelElement.querySelector(".tow-combat-overlay-control-panel__statuses-bottom");
-    const itemGroupsElement = panelElement.querySelector(".tow-combat-overlay-control-panel__item-groups");
+    const statusesTopElement = panelElement.querySelector(
+      '.tow-combat-overlay-control-panel__statuses-top'
+    );
+    const statusesBottomElement = panelElement.querySelector(
+      '.tow-combat-overlay-control-panel__statuses-bottom'
+    );
+    const itemGroupsElement = panelElement.querySelector(
+      '.tow-combat-overlay-control-panel__item-groups'
+    );
     if (!(itemGroupsElement instanceof HTMLElement)) return;
 
-    itemGroupsElement.style.removeProperty("min-width");
+    itemGroupsElement.style.removeProperty('min-width');
 
     const widths = [
-      statusesBottomElement instanceof HTMLElement ? statusesBottomElement.getBoundingClientRect().width : 0,
-      (statusesTopElement instanceof HTMLElement)
+      statusesBottomElement instanceof HTMLElement
+        ? statusesBottomElement.getBoundingClientRect().width
+        : 0,
+      statusesTopElement instanceof HTMLElement
         ? statusesTopElement.getBoundingClientRect().width
         : 0
     ].map((value) => Number(value) || 0);
     const targetWidth = Math.max(0, Math.max(...widths) - 12);
     if (targetWidth > 0) itemGroupsElement.style.minWidth = `${Math.ceil(targetWidth)}px`;
-    else itemGroupsElement.style.removeProperty("min-width");
+    else itemGroupsElement.style.removeProperty('min-width');
   }
 
   function fitSelectionNameFont(selectionNameMainElement, { minFontSizePx = 12 } = {}) {
     if (!(selectionNameMainElement instanceof HTMLElement)) return;
-    selectionNameMainElement.style.fontSize = "";
-    selectionNameMainElement.style.lineHeight = "";
+    selectionNameMainElement.style.fontSize = '';
+    selectionNameMainElement.style.lineHeight = '';
 
     const availableWidth = Number(selectionNameMainElement.clientWidth || 0);
     const contentWidth = Number(selectionNameMainElement.scrollWidth || 0);
@@ -88,23 +96,43 @@ export function createPanelSelectionSyncDisplayService({
     const nextSize = Math.max(Number(minFontSizePx) || 12, Math.floor(baseFontSize * scale));
     if (nextSize >= baseFontSize) return;
     selectionNameMainElement.style.fontSize = `${nextSize}px`;
-    selectionNameMainElement.style.lineHeight = "1";
+    selectionNameMainElement.style.lineHeight = '1';
   }
 
   function updateSelectionDisplay(panelElement) {
     const controlPanelState = getControlPanelState();
     const selectionPanelElement = controlPanelState?.selectionElement;
-    const selectionElement = selectionPanelElement?.querySelector?.(".tow-combat-overlay-control-panel__selection");
+    const selectionElement = selectionPanelElement?.querySelector?.(
+      '.tow-combat-overlay-control-panel__selection'
+    );
     if (!(selectionElement instanceof HTMLElement)) return;
-    const imageElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-image");
-    const selectionNameMainElement = selectionPanelElement?.querySelector?.(".tow-combat-overlay-control-panel__selection-name-main");
-    const selectionSpeedElement = selectionPanelElement?.querySelector?.("[data-selection-stat='speed']");
-    const selectionResilienceElement = selectionPanelElement?.querySelector?.("[data-selection-stat='resilience']");
-    const selectionWoundsElement = selectionPanelElement?.querySelector?.("[data-selection-stat='wounds']");
-    const selectionMiscastElement = selectionPanelElement?.querySelector?.("[data-selection-stat='miscastDice']");
-    const selectionMiscastRow = selectionPanelElement?.querySelector?.("[data-selection-stat-row='miscastDice']");
-    const placeholderElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-placeholder");
-    const multiCountElement = selectionElement.querySelector(".tow-combat-overlay-control-panel__selection-multi-count");
+    const imageElement = selectionElement.querySelector(
+      '.tow-combat-overlay-control-panel__selection-image'
+    );
+    const selectionNameMainElement = selectionPanelElement?.querySelector?.(
+      '.tow-combat-overlay-control-panel__selection-name-main'
+    );
+    const selectionSpeedElement = selectionPanelElement?.querySelector?.(
+      "[data-selection-stat='speed']"
+    );
+    const selectionResilienceElement = selectionPanelElement?.querySelector?.(
+      "[data-selection-stat='resilience']"
+    );
+    const selectionWoundsElement = selectionPanelElement?.querySelector?.(
+      "[data-selection-stat='wounds']"
+    );
+    const selectionMiscastElement = selectionPanelElement?.querySelector?.(
+      "[data-selection-stat='miscastDice']"
+    );
+    const selectionMiscastRow = selectionPanelElement?.querySelector?.(
+      "[data-selection-stat-row='miscastDice']"
+    );
+    const placeholderElement = selectionElement.querySelector(
+      '.tow-combat-overlay-control-panel__selection-placeholder'
+    );
+    const multiCountElement = selectionElement.querySelector(
+      '.tow-combat-overlay-control-panel__selection-multi-count'
+    );
     if (!(placeholderElement instanceof HTMLElement)) return;
     if (!(multiCountElement instanceof HTMLElement)) return;
 
@@ -114,14 +142,15 @@ export function createPanelSelectionSyncDisplayService({
     const selectedCount = controlledTokens.length;
 
     if (selectedCount !== 1) {
-      panelElement.style.display = "none";
-      if (selectionPanelElement instanceof HTMLElement) selectionPanelElement.style.display = "none";
+      panelElement.style.display = 'none';
+      if (selectionPanelElement instanceof HTMLElement)
+        selectionPanelElement.style.display = 'none';
       clearPanelAttackPickMode();
       return;
     }
 
-    panelElement.style.display = "";
-    if (selectionPanelElement instanceof HTMLElement) selectionPanelElement.style.display = "";
+    panelElement.style.display = '';
+    if (selectionPanelElement instanceof HTMLElement) selectionPanelElement.style.display = '';
 
     const token = controlledTokens[0];
     const iconSrc = getPrimaryTokenIconSrc(token);
@@ -131,19 +160,26 @@ export function createPanelSelectionSyncDisplayService({
     const speed = getSpeedLabel(token);
     const actor = token?.actor ?? token?.document?.actor ?? null;
     const hasMagic = actorHasMagicCasting(actor);
-    const isDead = !!actor?.hasCondition?.("dead");
-    const showPortrait = isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelEnablePortrait, true);
-    const showDeadPortraitStatus = showPortrait
-      && isTowCombatOverlayDisplaySettingEnabled(MODULE_SETTINGS.controlPanelShowDeadPortraitStatus, true);
-    selectionElement.dataset.selection = "single";
-    selectionElement.classList.toggle("is-dead", showDeadPortraitStatus && isDead);
-    selectionElement.classList.toggle("is-magic", hasMagic);
+    const isDead = !!actor?.hasCondition?.('dead');
+    const showPortrait = isTowCombatOverlayDisplaySettingEnabled(
+      MODULE_SETTINGS.controlPanelEnablePortrait,
+      true
+    );
+    const showDeadPortraitStatus =
+      showPortrait &&
+      isTowCombatOverlayDisplaySettingEnabled(
+        MODULE_SETTINGS.controlPanelShowDeadPortraitStatus,
+        true
+      );
+    selectionElement.dataset.selection = 'single';
+    selectionElement.classList.toggle('is-dead', showDeadPortraitStatus && isDead);
+    selectionElement.classList.toggle('is-magic', hasMagic);
     if (imageElement instanceof HTMLImageElement) {
       imageElement.src = iconSrc;
       imageElement.alt = tokenName;
     }
     if (selectionNameMainElement instanceof HTMLElement) {
-      selectionNameMainElement.textContent = tokenName || "-";
+      selectionNameMainElement.textContent = tokenName || '-';
       fitSelectionNameFont(selectionNameMainElement);
       scheduleSelectionNameRefit(controlPanelState, selectionNameMainElement);
     }
@@ -157,25 +193,38 @@ export function createPanelSelectionSyncDisplayService({
       selectionWoundsElement.textContent = formatWoundsWithMax(token, wounds);
     }
     if (selectionMiscastElement instanceof HTMLElement) {
-      selectionMiscastElement.textContent = hasMagic ? formatMiscastDiceValue(token) : "-";
+      selectionMiscastElement.textContent = hasMagic ? formatMiscastDiceValue(token) : '-';
     }
     if (selectionMiscastRow instanceof HTMLElement) {
-      selectionMiscastRow.style.display = hasMagic ? "" : "none";
+      selectionMiscastRow.style.display = hasMagic ? '' : 'none';
     }
-    placeholderElement.textContent = iconSrc ? "-" : "?";
-    placeholderElement.style.display = (imageElement instanceof HTMLImageElement) ? "" : "inline-flex";
-    multiCountElement.textContent = "x1";
+    placeholderElement.textContent = iconSrc ? '-' : '?';
+    placeholderElement.style.display =
+      imageElement instanceof HTMLImageElement ? '' : 'inline-flex';
+    multiCountElement.textContent = 'x1';
     updatePanelSlots(panelElement, token);
     updateStatusDisplay(panelElement, token);
     syncItemGroupsMinWidth(panelElement);
     updateActionControlsDisplay(panelElement, token);
     updateActionControlsDisplay(selectionPanelElement, token);
     if (!controlPanelState.hasInitialAutoCenter) {
-      applyInitialPanelPosition(panelElement, panelViewportMarginPx, controlPanelState, panelSelectionGapPx);
+      applyInitialPanelPosition(
+        panelElement,
+        panelViewportMarginPx,
+        controlPanelState,
+        panelSelectionGapPx
+      );
       controlPanelState.hasInitialAutoCenter = true;
     }
     const rect = panelElement.getBoundingClientRect();
-    applyPanelPosition(panelElement, rect.left, rect.top, panelViewportMarginPx, controlPanelState, panelSelectionGapPx);
+    applyPanelPosition(
+      panelElement,
+      rect.left,
+      rect.top,
+      panelViewportMarginPx,
+      controlPanelState,
+      panelSelectionGapPx
+    );
     syncSelectionPanelPosition(controlPanelState, panelSelectionGapPx);
   }
 

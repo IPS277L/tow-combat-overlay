@@ -1,18 +1,18 @@
-import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
+import { getTowCombatOverlayConstants } from '../../runtime/module-constants.js';
 import {
   TOP_PANEL_ORDER_STORAGE_KEY,
   TOP_PANEL_POSITION_STORAGE_KEY
-} from "./top-panel-constants.js";
+} from './top-panel-constants.js';
 import {
   clampCoordinate,
   normalizeStringList,
   readSavedPosition,
   writeSavedPosition
-} from "../shared/storage-utils.js";
+} from '../shared/storage-utils.js';
 
 function getTopPanelOrderStorageKey(sceneId) {
-  const safeSceneId = String(sceneId ?? "").trim();
-  if (!safeSceneId) return "";
+  const safeSceneId = String(sceneId ?? '').trim();
+  if (!safeSceneId) return '';
   return `${TOP_PANEL_ORDER_STORAGE_KEY}:${safeSceneId}`;
 }
 
@@ -29,9 +29,9 @@ function getTopPanelOrderKeys() {
   const { moduleId, settings, flags, sockets } = getTowCombatOverlayConstants();
   return {
     moduleId,
-    settingKey: String(settings?.tokensPanelTokenOrderByScene ?? "tokensPanelTokenOrderByScene"),
-    requestFlagKey: String(flags?.topPanelOrderRequest ?? "topPanelOrderRequest"),
-    requestSocketType: String(sockets?.topPanelOrderRequest ?? "topPanelOrderRequest")
+    settingKey: String(settings?.tokensPanelTokenOrderByScene ?? 'tokensPanelTokenOrderByScene'),
+    requestFlagKey: String(flags?.topPanelOrderRequest ?? 'topPanelOrderRequest'),
+    requestSocketType: String(sockets?.topPanelOrderRequest ?? 'topPanelOrderRequest')
   };
 }
 
@@ -39,7 +39,7 @@ function readTopPanelWorldOrderState() {
   const { moduleId, settingKey } = getTopPanelOrderKeys();
   try {
     const raw = game?.settings?.get?.(moduleId, settingKey);
-    return (raw && typeof raw === "object") ? raw : {};
+    return raw && typeof raw === 'object' ? raw : {};
   } catch (_error) {
     return {};
   }
@@ -50,19 +50,15 @@ function normalizeTopPanelTokenIds(tokenIds) {
 }
 
 function requestTopPanelWorldOrderUpdate(sceneId, tokenIds) {
-  const safeSceneId = String(sceneId ?? "").trim();
+  const safeSceneId = String(sceneId ?? '').trim();
   if (!safeSceneId) return;
   const currentUser = game?.user;
-  const {
-    moduleId,
-    requestFlagKey,
-    requestSocketType
-  } = getTopPanelOrderKeys();
+  const { moduleId, requestFlagKey, requestSocketType } = getTopPanelOrderKeys();
   try {
     const payload = {
       sceneId: safeSceneId,
       tokenIds: normalizeTopPanelTokenIds(tokenIds),
-      requesterId: String(currentUser?.id ?? "").trim(),
+      requesterId: String(currentUser?.id ?? '').trim(),
       timestamp: Date.now()
     };
     if (currentUser?.setFlag) {
@@ -110,17 +106,16 @@ function writeSavedTopPanelTokenOrderLocal(sceneId, tokenIds) {
 }
 
 export async function applyTopPanelWorldOrderUpdate(sceneId, tokenIds) {
-  const safeSceneId = String(sceneId ?? "").trim();
+  const safeSceneId = String(sceneId ?? '').trim();
   if (!safeSceneId || !canUpdateTopPanelWorldOrderSetting()) return false;
   const { moduleId, settingKey } = getTopPanelOrderKeys();
 
   const nextTokenIds = normalizeTopPanelTokenIds(tokenIds);
   const currentState = readTopPanelWorldOrderState();
   const currentSceneIds = normalizeTopPanelTokenIds(currentState?.[safeSceneId]);
-  const isUnchanged = (
-    currentSceneIds.length === nextTokenIds.length
-    && currentSceneIds.every((tokenId, index) => tokenId === nextTokenIds[index])
-  );
+  const isUnchanged =
+    currentSceneIds.length === nextTokenIds.length &&
+    currentSceneIds.every((tokenId, index) => tokenId === nextTokenIds[index]);
   if (isUnchanged) return false;
 
   const nextState = { ...currentState };
@@ -136,14 +131,15 @@ export async function applyTopPanelWorldOrderUpdate(sceneId, tokenIds) {
 }
 
 export function readSavedTopPanelTokenOrder(sceneId) {
-  const safeSceneId = String(sceneId ?? "").trim();
+  const safeSceneId = String(sceneId ?? '').trim();
   if (!safeSceneId) return null;
   const { moduleId, settingKey } = getTopPanelOrderKeys();
 
   try {
     const rawWorldState = game?.settings?.get?.(moduleId, settingKey);
-    const worldState = (rawWorldState && typeof rawWorldState === "object") ? rawWorldState : null;
-    const hasSceneEntry = !!worldState && Object.prototype.hasOwnProperty.call(worldState, safeSceneId);
+    const worldState = rawWorldState && typeof rawWorldState === 'object' ? rawWorldState : null;
+    const hasSceneEntry =
+      !!worldState && Object.prototype.hasOwnProperty.call(worldState, safeSceneId);
     if (hasSceneEntry) {
       return normalizeTopPanelTokenIds(worldState[safeSceneId]);
     }
@@ -155,7 +151,7 @@ export function readSavedTopPanelTokenOrder(sceneId) {
 }
 
 export function writeSavedTopPanelTokenOrder(sceneId, tokenIds) {
-  const safeSceneId = String(sceneId ?? "").trim();
+  const safeSceneId = String(sceneId ?? '').trim();
   if (!safeSceneId) return;
   if (!Array.isArray(tokenIds)) return;
 

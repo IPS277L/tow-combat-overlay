@@ -2,37 +2,37 @@ import {
   STATUS_CHIPS_PER_ROW_MAX,
   STATUS_CHIPS_PER_ROW_MIN,
   STATUS_TARGET_CHIPS_PER_ROW
-} from "../../overlay/status/status-palette-constants.js";
+} from '../../overlay/status/status-palette-constants.js';
 
 export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
   const tokensPanelSettings = Object.freeze([
     {
       key: settingKeys.enableTopPanel,
       defaultValue: true,
-      nameKey: "TOWCOMBATOVERLAY.Setting.EnableTopPanel.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.EnableTopPanel.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.EnableTopPanel.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.EnableTopPanel.Hint'
     },
     {
       key: settingKeys.tokensPanelCardsDragDropMinimumRole,
-      type: "select",
-      defaultValue: "all",
+      type: 'select',
+      defaultValue: 'all',
       choices: minimumRoleChoices,
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelCardsDragDropMinimumRole.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelCardsDragDropMinimumRole.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelCardsDragDropMinimumRole.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelCardsDragDropMinimumRole.Hint'
     },
     {
       key: settingKeys.tokensPanelMinimumRole,
-      type: "select",
-      defaultValue: "all",
+      type: 'select',
+      defaultValue: 'all',
       choices: minimumRoleChoices,
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelMinimumRole.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelMinimumRole.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelMinimumRole.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelMinimumRole.Hint'
     },
     {
       key: settingKeys.tokensPanelEnableStatusRow,
       defaultValue: true,
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableStatusRow.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableStatusRow.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableStatusRow.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableStatusRow.Hint'
     },
     {
       key: settingKeys.tokensPanelEnableStatuses,
@@ -41,8 +41,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.tokensPanelEnableStatusRow,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableStatuses.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableStatuses.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableStatuses.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableStatuses.Hint'
     },
     {
       key: settingKeys.tokensPanelEnableWounds,
@@ -51,8 +51,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.tokensPanelEnableStatusRow,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableWounds.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableWounds.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableWounds.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableWounds.Hint'
     },
     {
       key: settingKeys.tokensPanelEnableTemporaryEffects,
@@ -61,47 +61,47 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.tokensPanelEnableStatusRow,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableTemporaryEffects.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableTemporaryEffects.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableTemporaryEffects.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableTemporaryEffects.Hint'
     },
     {
       key: settingKeys.tokensPanelShowDeadVisual,
       defaultValue: true,
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelShowDeadVisual.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelShowDeadVisual.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelShowDeadVisual.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelShowDeadVisual.Hint'
     },
     {
       key: settingKeys.tokensPanelPositionMode,
-      type: "select",
-      defaultValue: "free",
+      type: 'select',
+      defaultValue: 'free',
       choices: Object.freeze({
-        free: "TOWCOMBATOVERLAY.Setting.TokensPanelPositionMode.OptionFree",
-        locked: "TOWCOMBATOVERLAY.Setting.TokensPanelPositionMode.OptionLocked",
-        alwaysCentered: "TOWCOMBATOVERLAY.Setting.TokensPanelPositionMode.OptionAlwaysCentered"
+        free: 'TOWCOMBATOVERLAY.Setting.TokensPanelPositionMode.OptionFree',
+        locked: 'TOWCOMBATOVERLAY.Setting.TokensPanelPositionMode.OptionLocked',
+        alwaysCentered: 'TOWCOMBATOVERLAY.Setting.TokensPanelPositionMode.OptionAlwaysCentered'
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelPositionMode.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelPositionMode.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelPositionMode.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelPositionMode.Hint'
     },
     {
       key: settingKeys.tokensPanelDragButtonPosition,
-      type: "select",
-      defaultValue: "right",
+      type: 'select',
+      defaultValue: 'right',
       visibleWhen: Object.freeze({
         key: settingKeys.tokensPanelPositionMode,
-        equals: "free"
+        equals: 'free'
       }),
       choices: Object.freeze({
-        left: "TOWCOMBATOVERLAY.Setting.TokensPanelDragButtonPosition.OptionLeft",
-        right: "TOWCOMBATOVERLAY.Setting.TokensPanelDragButtonPosition.OptionRight"
+        left: 'TOWCOMBATOVERLAY.Setting.TokensPanelDragButtonPosition.OptionLeft',
+        right: 'TOWCOMBATOVERLAY.Setting.TokensPanelDragButtonPosition.OptionRight'
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelDragButtonPosition.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelDragButtonPosition.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelDragButtonPosition.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelDragButtonPosition.Hint'
     },
     {
       key: settingKeys.tokensPanelEnableTooltips,
       defaultValue: true,
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableTooltips.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableTooltips.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableTooltips.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableTooltips.Hint'
     },
     {
       key: settingKeys.tokensPanelEnableCardsTooltip,
@@ -110,8 +110,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.tokensPanelEnableTooltips,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableCardsTooltip.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableCardsTooltip.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableCardsTooltip.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableCardsTooltip.Hint'
     },
     {
       key: settingKeys.tokensPanelEnableStatusesTooltip,
@@ -120,8 +120,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.tokensPanelEnableTooltips,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableStatusesTooltip.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableStatusesTooltip.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableStatusesTooltip.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableStatusesTooltip.Hint'
     },
     {
       key: settingKeys.tokensPanelEnableWoundsTooltip,
@@ -130,8 +130,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.tokensPanelEnableTooltips,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableWoundsTooltip.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableWoundsTooltip.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableWoundsTooltip.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableWoundsTooltip.Hint'
     },
     {
       key: settingKeys.tokensPanelEnableTemporaryEffectsTooltip,
@@ -140,8 +140,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.tokensPanelEnableTooltips,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableTemporaryEffectsTooltip.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableTemporaryEffectsTooltip.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableTemporaryEffectsTooltip.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableTemporaryEffectsTooltip.Hint'
     },
     {
       key: settingKeys.tokensPanelEnableOverflowTooltip,
@@ -150,8 +150,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.tokensPanelEnableTooltips,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableOverflowTooltip.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokensPanelEnableOverflowTooltip.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableOverflowTooltip.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokensPanelEnableOverflowTooltip.Hint'
     }
   ]);
 
@@ -159,32 +159,32 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
     {
       key: settingKeys.enableOverlay,
       defaultValue: true,
-      nameKey: "TOWCOMBATOVERLAY.Setting.EnableOverlay.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.EnableOverlay.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.EnableOverlay.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.EnableOverlay.Hint'
     },
     {
       key: settingKeys.tokenLayoutMinimumRole,
-      type: "select",
-      defaultValue: "all",
+      type: 'select',
+      defaultValue: 'all',
       choices: minimumRoleChoices,
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutMinimumRole.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutMinimumRole.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutMinimumRole.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutMinimumRole.Hint'
     },
     {
       key: settingKeys.tokenLayoutShowBorder,
       defaultValue: true,
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutShowBorder.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutShowBorder.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutShowBorder.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutShowBorder.Hint'
     },
     {
       key: settingKeys.tokenLayoutEnableStatusRow,
       defaultValue: true,
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatusRow.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatusRow.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatusRow.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatusRow.Hint'
     },
     {
       key: settingKeys.tokenLayoutStatusesPerRow,
-      type: "range",
+      type: 'range',
       defaultValue: STATUS_TARGET_CHIPS_PER_ROW,
       min: STATUS_CHIPS_PER_ROW_MIN,
       max: STATUS_CHIPS_PER_ROW_MAX,
@@ -193,8 +193,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.tokenLayoutEnableStatusRow,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutStatusesPerRow.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutStatusesPerRow.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutStatusesPerRow.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutStatusesPerRow.Hint'
     },
     {
       key: settingKeys.tokenLayoutEnableStatuses,
@@ -203,8 +203,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.tokenLayoutEnableStatusRow,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatuses.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatuses.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatuses.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatuses.Hint'
     },
     {
       key: settingKeys.tokenLayoutEnableWounds,
@@ -213,8 +213,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.tokenLayoutEnableStatusRow,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableWounds.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableWounds.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableWounds.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableWounds.Hint'
     },
     {
       key: settingKeys.tokenLayoutEnableTemporaryEffects,
@@ -223,41 +223,41 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.tokenLayoutEnableStatusRow,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTemporaryEffects.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTemporaryEffects.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTemporaryEffects.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTemporaryEffects.Hint'
     },
     {
       key: settingKeys.tokenLayoutShowCustomName,
       defaultValue: true,
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutShowCustomName.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutShowCustomName.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutShowCustomName.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutShowCustomName.Hint'
     },
     {
       key: settingKeys.tokenLayoutNamePosition,
-      type: "select",
-      defaultValue: "bottom",
+      type: 'select',
+      defaultValue: 'bottom',
       visibleWhen: Object.freeze({
         key: settingKeys.tokenLayoutShowCustomName,
         equals: true
       }),
       choices: Object.freeze({
-        top: "TOWCOMBATOVERLAY.Setting.TokenLayoutNamePosition.OptionTop",
-        bottom: "TOWCOMBATOVERLAY.Setting.TokenLayoutNamePosition.OptionBottom"
+        top: 'TOWCOMBATOVERLAY.Setting.TokenLayoutNamePosition.OptionTop',
+        bottom: 'TOWCOMBATOVERLAY.Setting.TokenLayoutNamePosition.OptionBottom'
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutNamePosition.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutNamePosition.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutNamePosition.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutNamePosition.Hint'
     },
     {
       key: settingKeys.tokenLayoutShowDeadVisuals,
       defaultValue: true,
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutShowDeadVisuals.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutShowDeadVisuals.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutShowDeadVisuals.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutShowDeadVisuals.Hint'
     },
     {
       key: settingKeys.tokenLayoutEnableTooltips,
       defaultValue: true,
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTooltips.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTooltips.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTooltips.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTooltips.Hint'
     },
     {
       key: settingKeys.tokenLayoutEnableNameTooltip,
@@ -266,8 +266,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.tokenLayoutEnableTooltips,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableNameTooltip.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableNameTooltip.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableNameTooltip.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableNameTooltip.Hint'
     },
     {
       key: settingKeys.tokenLayoutEnableStatusesTooltip,
@@ -276,8 +276,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.tokenLayoutEnableTooltips,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatusesTooltip.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatusesTooltip.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatusesTooltip.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatusesTooltip.Hint'
     },
     {
       key: settingKeys.tokenLayoutEnableWoundsTooltip,
@@ -286,8 +286,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.tokenLayoutEnableTooltips,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableWoundsTooltip.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableWoundsTooltip.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableWoundsTooltip.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableWoundsTooltip.Hint'
     },
     {
       key: settingKeys.tokenLayoutEnableTemporaryEffectsTooltip,
@@ -296,8 +296,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.tokenLayoutEnableTooltips,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTemporaryEffectsTooltip.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTemporaryEffectsTooltip.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTemporaryEffectsTooltip.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableTemporaryEffectsTooltip.Hint'
     },
     {
       key: settingKeys.tokenLayoutEnableOverflowTooltip,
@@ -306,8 +306,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.tokenLayoutEnableTooltips,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableOverflowTooltip.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableOverflowTooltip.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableOverflowTooltip.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.TokenLayoutEnableOverflowTooltip.Hint'
     }
   ]);
 
@@ -315,22 +315,22 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
     {
       key: settingKeys.enableControlPanel,
       defaultValue: true,
-      nameKey: "TOWCOMBATOVERLAY.Setting.EnableControlPanel.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.EnableControlPanel.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.EnableControlPanel.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.EnableControlPanel.Hint'
     },
     {
       key: settingKeys.controlPanelMinimumRole,
-      type: "select",
-      defaultValue: "all",
+      type: 'select',
+      defaultValue: 'all',
       choices: minimumRoleChoices,
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelMinimumRole.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelMinimumRole.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelMinimumRole.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelMinimumRole.Hint'
     },
     {
       key: settingKeys.controlPanelEnableStatusRow,
       defaultValue: true,
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatusRow.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatusRow.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatusRow.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatusRow.Hint'
     },
     {
       key: settingKeys.controlPanelEnableStatuses,
@@ -339,8 +339,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnableStatusRow,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatuses.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatuses.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatuses.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatuses.Hint'
     },
     {
       key: settingKeys.controlPanelEnableAbilities,
@@ -349,8 +349,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnableStatusRow,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableAbilities.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableAbilities.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableAbilities.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableAbilities.Hint'
     },
     {
       key: settingKeys.controlPanelEnableWounds,
@@ -359,8 +359,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnableStatusRow,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableWounds.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableWounds.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableWounds.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableWounds.Hint'
     },
     {
       key: settingKeys.controlPanelEnableTemporaryEffects,
@@ -369,14 +369,14 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnableStatusRow,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableTemporaryEffects.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableTemporaryEffects.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableTemporaryEffects.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableTemporaryEffects.Hint'
     },
     {
       key: settingKeys.controlPanelEnablePortrait,
       defaultValue: true,
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnablePortrait.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnablePortrait.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnablePortrait.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnablePortrait.Hint'
     },
     {
       key: settingKeys.controlPanelEnableName,
@@ -385,8 +385,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnablePortrait,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableName.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableName.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableName.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableName.Hint'
     },
     {
       key: settingKeys.controlPanelEnableImage,
@@ -395,8 +395,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnablePortrait,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableImage.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableImage.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableImage.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableImage.Hint'
     },
     {
       key: settingKeys.controlPanelEnableStats,
@@ -405,14 +405,14 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnablePortrait,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStats.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStats.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableStats.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableStats.Hint'
     },
     {
       key: settingKeys.controlPanelEnableGridButtons,
       defaultValue: true,
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableGridButtons.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableGridButtons.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableGridButtons.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableGridButtons.Hint'
     },
     {
       key: settingKeys.controlPanelEnableActionButtons,
@@ -421,8 +421,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnableGridButtons,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableActionButtons.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableActionButtons.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableActionButtons.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableActionButtons.Hint'
     },
     {
       key: settingKeys.controlPanelEnableWeaponsButtons,
@@ -431,8 +431,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnableGridButtons,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableWeaponsButtons.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableWeaponsButtons.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableWeaponsButtons.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableWeaponsButtons.Hint'
     },
     {
       key: settingKeys.controlPanelEnableMagicButtons,
@@ -441,8 +441,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnableGridButtons,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableMagicButtons.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableMagicButtons.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableMagicButtons.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableMagicButtons.Hint'
     },
     {
       key: settingKeys.controlPanelEnableItemsRarity,
@@ -451,8 +451,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnableGridButtons,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableItemsRarity.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableItemsRarity.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableItemsRarity.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableItemsRarity.Hint'
     },
     {
       key: settingKeys.controlPanelShowDeadPortraitStatus,
@@ -461,32 +461,32 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnablePortrait,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelShowDeadPortraitStatus.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelShowDeadPortraitStatus.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelShowDeadPortraitStatus.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelShowDeadPortraitStatus.Hint'
     },
     {
       key: settingKeys.controlPanelPositionMode,
-      type: "select",
-      defaultValue: "free",
+      type: 'select',
+      defaultValue: 'free',
       choices: Object.freeze({
-        free: "TOWCOMBATOVERLAY.Setting.ControlPanelPositionMode.OptionFree",
-        locked: "TOWCOMBATOVERLAY.Setting.ControlPanelPositionMode.OptionLocked",
-        alwaysCentered: "TOWCOMBATOVERLAY.Setting.ControlPanelPositionMode.OptionAlwaysCentered"
+        free: 'TOWCOMBATOVERLAY.Setting.ControlPanelPositionMode.OptionFree',
+        locked: 'TOWCOMBATOVERLAY.Setting.ControlPanelPositionMode.OptionLocked',
+        alwaysCentered: 'TOWCOMBATOVERLAY.Setting.ControlPanelPositionMode.OptionAlwaysCentered'
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelPositionMode.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelPositionMode.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelPositionMode.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelPositionMode.Hint'
     },
     {
       key: settingKeys.controlPanelEnableButtonsDragDrop,
       defaultValue: false,
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonsDragDrop.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonsDragDrop.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonsDragDrop.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonsDragDrop.Hint'
     },
     {
       key: settingKeys.controlPanelEnableTooltips,
       defaultValue: true,
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableTooltips.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableTooltips.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableTooltips.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableTooltips.Hint'
     },
     {
       key: settingKeys.controlPanelShowTooltipClickBehaviorText,
@@ -495,8 +495,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnableTooltips,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelShowTooltipClickBehaviorText.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelShowTooltipClickBehaviorText.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelShowTooltipClickBehaviorText.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelShowTooltipClickBehaviorText.Hint'
     },
     {
       key: settingKeys.controlPanelEnableNameTooltip,
@@ -505,8 +505,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnableTooltips,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableNameTooltip.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableNameTooltip.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableNameTooltip.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableNameTooltip.Hint'
     },
     {
       key: settingKeys.controlPanelEnableStatsTooltip,
@@ -515,8 +515,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnableTooltips,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatsTooltip.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatsTooltip.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatsTooltip.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatsTooltip.Hint'
     },
     {
       key: settingKeys.controlPanelEnableStatusesTooltip,
@@ -525,8 +525,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnableTooltips,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatusesTooltip.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatusesTooltip.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatusesTooltip.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableStatusesTooltip.Hint'
     },
     {
       key: settingKeys.controlPanelEnableAbilitiesTooltip,
@@ -535,8 +535,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnableTooltips,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableAbilitiesTooltip.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableAbilitiesTooltip.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableAbilitiesTooltip.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableAbilitiesTooltip.Hint'
     },
     {
       key: settingKeys.controlPanelEnableWoundsTooltip,
@@ -545,8 +545,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnableTooltips,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableWoundsTooltip.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableWoundsTooltip.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableWoundsTooltip.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableWoundsTooltip.Hint'
     },
     {
       key: settingKeys.controlPanelEnableTemporaryEffectsTooltip,
@@ -555,8 +555,8 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnableTooltips,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableTemporaryEffectsTooltip.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableTemporaryEffectsTooltip.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableTemporaryEffectsTooltip.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableTemporaryEffectsTooltip.Hint'
     },
     {
       key: settingKeys.controlPanelEnableButtonsTooltip,
@@ -565,18 +565,18 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
         key: settingKeys.controlPanelEnableTooltips,
         equals: true
       }),
-      nameKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonsTooltip.Name",
-      hintKey: "TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonsTooltip.Hint"
+      nameKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonsTooltip.Name',
+      hintKey: 'TOWCOMBATOVERLAY.Setting.ControlPanelEnableButtonsTooltip.Hint'
     }
   ]);
 
   return Object.freeze({
     tokensPanel: Object.freeze({
-      menuKey: "tokensPanel",
+      menuKey: 'tokensPanel',
       settings: tokensPanelSettings,
       sections: Object.freeze([
         {
-          titleKey: "TOWCOMBATOVERLAY.SettingsSection.TokensPanel.General",
+          titleKey: 'TOWCOMBATOVERLAY.SettingsSection.TokensPanel.General',
           settingKeys: Object.freeze([
             settingKeys.enableTopPanel,
             settingKeys.tokensPanelMinimumRole,
@@ -586,7 +586,7 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
           ])
         },
         {
-          titleKey: "TOWCOMBATOVERLAY.SettingsSection.TokensPanel.Chips",
+          titleKey: 'TOWCOMBATOVERLAY.SettingsSection.TokensPanel.Chips',
           settingKeys: Object.freeze([
             settingKeys.tokensPanelEnableStatusRow,
             settingKeys.tokensPanelEnableStatuses,
@@ -595,13 +595,11 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
           ])
         },
         {
-          titleKey: "TOWCOMBATOVERLAY.SettingsSection.TokensPanel.Behavior",
-          settingKeys: Object.freeze([
-            settingKeys.tokensPanelShowDeadVisual
-          ])
+          titleKey: 'TOWCOMBATOVERLAY.SettingsSection.TokensPanel.Behavior',
+          settingKeys: Object.freeze([settingKeys.tokensPanelShowDeadVisual])
         },
         {
-          titleKey: "TOWCOMBATOVERLAY.SettingsSection.TokensPanel.Tooltips",
+          titleKey: 'TOWCOMBATOVERLAY.SettingsSection.TokensPanel.Tooltips',
           settingKeys: Object.freeze([
             settingKeys.tokensPanelEnableTooltips,
             settingKeys.tokensPanelEnableCardsTooltip,
@@ -614,18 +612,18 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
       ])
     }),
     tokenLayout: Object.freeze({
-      menuKey: "tokenLayout",
+      menuKey: 'tokenLayout',
       settings: tokenLayoutSettings,
       sections: Object.freeze([
         {
-          titleKey: "TOWCOMBATOVERLAY.SettingsSection.TokenLayout.General",
+          titleKey: 'TOWCOMBATOVERLAY.SettingsSection.TokenLayout.General',
           settingKeys: Object.freeze([
             settingKeys.enableOverlay,
             settingKeys.tokenLayoutMinimumRole
           ])
         },
         {
-          titleKey: "TOWCOMBATOVERLAY.SettingsSection.TokenLayout.Chips",
+          titleKey: 'TOWCOMBATOVERLAY.SettingsSection.TokenLayout.Chips',
           settingKeys: Object.freeze([
             settingKeys.tokenLayoutEnableStatusRow,
             settingKeys.tokenLayoutStatusesPerRow,
@@ -635,7 +633,7 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
           ])
         },
         {
-          titleKey: "TOWCOMBATOVERLAY.SettingsSection.TokenLayout.Overlay",
+          titleKey: 'TOWCOMBATOVERLAY.SettingsSection.TokenLayout.Overlay',
           settingKeys: Object.freeze([
             settingKeys.tokenLayoutShowCustomName,
             settingKeys.tokenLayoutNamePosition,
@@ -644,7 +642,7 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
           ])
         },
         {
-          titleKey: "TOWCOMBATOVERLAY.SettingsSection.TokenLayout.Tooltips",
+          titleKey: 'TOWCOMBATOVERLAY.SettingsSection.TokenLayout.Tooltips',
           settingKeys: Object.freeze([
             settingKeys.tokenLayoutEnableTooltips,
             settingKeys.tokenLayoutEnableNameTooltip,
@@ -657,11 +655,11 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
       ])
     }),
     controlPanel: Object.freeze({
-      menuKey: "controlPanel",
+      menuKey: 'controlPanel',
       settings: controlPanelSettings,
       sections: Object.freeze([
         {
-          titleKey: "TOWCOMBATOVERLAY.SettingsSection.ControlPanel.General",
+          titleKey: 'TOWCOMBATOVERLAY.SettingsSection.ControlPanel.General',
           settingKeys: Object.freeze([
             settingKeys.enableControlPanel,
             settingKeys.controlPanelMinimumRole,
@@ -670,7 +668,7 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
           ])
         },
         {
-          titleKey: "TOWCOMBATOVERLAY.SettingsSection.ControlPanel.StatusRow",
+          titleKey: 'TOWCOMBATOVERLAY.SettingsSection.ControlPanel.StatusRow',
           settingKeys: Object.freeze([
             settingKeys.controlPanelEnableStatusRow,
             settingKeys.controlPanelEnableStatuses,
@@ -680,7 +678,7 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
           ])
         },
         {
-          titleKey: "TOWCOMBATOVERLAY.SettingsSection.ControlPanel.Portrait",
+          titleKey: 'TOWCOMBATOVERLAY.SettingsSection.ControlPanel.Portrait',
           settingKeys: Object.freeze([
             settingKeys.controlPanelEnablePortrait,
             settingKeys.controlPanelEnableName,
@@ -690,7 +688,7 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
           ])
         },
         {
-          titleKey: "TOWCOMBATOVERLAY.SettingsSection.ControlPanel.GridButtons",
+          titleKey: 'TOWCOMBATOVERLAY.SettingsSection.ControlPanel.GridButtons',
           settingKeys: Object.freeze([
             settingKeys.controlPanelEnableGridButtons,
             settingKeys.controlPanelEnableActionButtons,
@@ -700,7 +698,7 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
           ])
         },
         {
-          titleKey: "TOWCOMBATOVERLAY.SettingsSection.ControlPanel.Tooltips",
+          titleKey: 'TOWCOMBATOVERLAY.SettingsSection.ControlPanel.Tooltips',
           settingKeys: Object.freeze([
             settingKeys.controlPanelEnableTooltips,
             settingKeys.controlPanelShowTooltipClickBehaviorText,
@@ -717,5 +715,3 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
     })
   });
 }
-
-

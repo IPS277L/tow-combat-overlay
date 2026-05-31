@@ -11,10 +11,10 @@ import {
   towCombatOverlayShouldExecuteAttack,
   towCombatOverlayToElement,
   towCombatOverlayWaitForChatMessage
-} from "./core.js";
-import { getTowCombatOverlayConstants } from "../runtime/module-constants.js";
-import { createTowCombatOverlayRollContext } from "./roll-modifier.js";
-import { getTowCombatOverlaySystemAdapter } from "../system-adapter/system-adapter.js";
+} from './core.js';
+import { getTowCombatOverlayConstants } from '../runtime/module-constants.js';
+import { createTowCombatOverlayRollContext } from './roll-modifier.js';
+import { getTowCombatOverlaySystemAdapter } from '../system-adapter/system-adapter.js';
 
 const {
   logPrefix: MODULE_LOG_PREFIX,
@@ -23,7 +23,8 @@ const {
 } = getTowCombatOverlayConstants();
 
 export function towCombatOverlayEnsurePromiseClose(app) {
-  if (!app || app._towCombatOverlayPromiseCloseWrapped || typeof app.close !== "function") return app;
+  if (!app || app._towCombatOverlayPromiseCloseWrapped || typeof app.close !== 'function')
+    return app;
   const originalClose = app.close;
   app.close = function wrappedTowPromiseClose(...args) {
     try {
@@ -40,14 +41,14 @@ export function towCombatOverlayArmDamageAppend(actor, ability) {
   let timeoutId = null;
 
   const cleanup = (hookId) => {
-    Hooks.off("createChatMessage", hookId);
+    Hooks.off('createChatMessage', hookId);
     if (timeoutId) {
       clearTimeout(timeoutId);
       timeoutId = null;
     }
   };
 
-  const hookId = Hooks.on("createChatMessage", async (message) => {
+  const hookId = Hooks.on('createChatMessage', async (message) => {
     const test = message?.system?.test;
     const sameActor = test?.context?.actor === actor.uuid;
     const sameItem = test?.context?.itemUuid === ability.uuid;
@@ -68,7 +69,6 @@ export function towCombatOverlayArmAutoSubmitDialog({
   beforeSubmit = null,
   timeoutMs = 0
 }) {
-
   let hookId = null;
   let timeoutId = null;
   const cleanup = () => {
@@ -85,23 +85,23 @@ export function towCombatOverlayArmAutoSubmitDialog({
 
     const element = towCombatOverlayToElement(app?.element);
     if (element) {
-      element.style.visibility = "hidden";
-      element.style.pointerEvents = "none";
+      element.style.visibility = 'hidden';
+      element.style.pointerEvents = 'none';
     }
 
     towCombatOverlayScheduleSoon(async () => {
-      if (typeof beforeSubmit === "function") {
+      if (typeof beforeSubmit === 'function') {
         try {
           await beforeSubmit(app, element);
         } catch (error) {
           console.error(`${MODULE_LOG_PREFIX} beforeSubmit hook failed.`, error);
         }
       }
-      if (typeof app?.submit !== "function") {
+      if (typeof app?.submit !== 'function') {
         console.error(`${MODULE_LOG_PREFIX} ${submitErrorMessage}`);
         if (element) {
-          element.style.visibility = "";
-          element.style.pointerEvents = "";
+          element.style.visibility = '';
+          element.style.pointerEvents = '';
         }
         return;
       }
@@ -116,47 +116,57 @@ export function towCombatOverlayArmAutoSubmitDialog({
 
 function towCombatOverlayArmAutoSubmitAbilityDialog(actor, ability) {
   towCombatOverlayArmAutoSubmitDialog({
-    hookName: "renderAbilityAttackDialog",
+    hookName: 'renderAbilityAttackDialog',
     matches: (app) => app?.actor?.id === actor.id && app?.ability?.id === ability.id,
-    submitErrorMessage: "AbilityAttackDialog.submit() is unavailable."
+    submitErrorMessage: 'AbilityAttackDialog.submit() is unavailable.'
   });
 }
 
 function towCombatOverlayArmAutoSubmitWeaponDialog(actor, weapon) {
   towCombatOverlayArmAutoSubmitDialog({
-    hookName: "renderWeaponDialog",
+    hookName: 'renderWeaponDialog',
     matches: (app) => app?.actor?.id === actor.id && app?.weapon?.id === weapon.id,
-    submitErrorMessage: "WeaponDialog.submit() is unavailable."
+    submitErrorMessage: 'WeaponDialog.submit() is unavailable.'
   });
 }
 
 function towCombatOverlayArmAutoSubmitWeaponReloadDialog(actor, weapon) {
   towCombatOverlayArmAutoSubmitDialog({
-    hookName: "renderTestDialog",
+    hookName: 'renderTestDialog',
     matches: (app) => {
       if (app?.actor?.id !== actor.id) return false;
 
       const reloadContext = app?.context?.reload;
-      const reloadContextId = String(reloadContext?.id ?? reloadContext?._id ?? "").trim();
-      const reloadContextUuid = String(reloadContext?.uuid ?? "").trim();
-      const contextItemUuid = String(app?.context?.itemUuid ?? "").trim();
+      const reloadContextId = String(reloadContext?.id ?? reloadContext?._id ?? '').trim();
+      const reloadContextUuid = String(reloadContext?.uuid ?? '').trim();
+      const contextItemUuid = String(app?.context?.itemUuid ?? '').trim();
 
-      const sameWeapon = reloadContextId === weapon.id
-        || reloadContextUuid === weapon.uuid
-        || contextItemUuid === weapon.uuid;
+      const sameWeapon =
+        reloadContextId === weapon.id ||
+        reloadContextUuid === weapon.uuid ||
+        contextItemUuid === weapon.uuid;
       if (!sameWeapon) return false;
 
-      const dialogSkill = String(app?.skill ?? "").trim().toLowerCase();
-      return dialogSkill === "dexterity";
+      const dialogSkill = String(app?.skill ?? '')
+        .trim()
+        .toLowerCase();
+      return dialogSkill === 'dexterity';
     },
-    submitErrorMessage: "Reload TestDialog.submit() is unavailable.",
+    submitErrorMessage: 'Reload TestDialog.submit() is unavailable.',
     timeoutMs: 10000
   });
 }
 
-export async function towCombatOverlaySetupAbilityTestWithDamage(actor, ability, { autoRoll = false, context = {} } = {}) {
+export async function towCombatOverlaySetupAbilityTestWithDamage(
+  actor,
+  ability,
+  { autoRoll = false, context = {} } = {}
+) {
   const attackItem = ability;
-  const isWeaponAttack = String(attackItem?.type ?? "").trim().toLowerCase() === "weapon";
+  const isWeaponAttack =
+    String(attackItem?.type ?? '')
+      .trim()
+      .toLowerCase() === 'weapon';
   towCombatOverlayArmDamageAppend(actor, attackItem);
   const rollContext = createTowCombatOverlayRollContext(actor, context);
 
@@ -166,8 +176,7 @@ export async function towCombatOverlaySetupAbilityTestWithDamage(actor, ability,
     if (isWeaponAttack) {
       towCombatOverlayArmAutoSubmitWeaponDialog(actor, attackItem);
       towCombatOverlayArmAutoSubmitWeaponReloadDialog(actor, attackItem);
-    }
-    else towCombatOverlayArmAutoSubmitAbilityDialog(actor, attackItem);
+    } else towCombatOverlayArmAutoSubmitAbilityDialog(actor, attackItem);
     testRef = isWeaponAttack
       ? await getTowCombatOverlaySystemAdapter().setupWeaponTest(actor, attackItem, rollContext)
       : await getTowCombatOverlaySystemAdapter().setupAbilityTest(actor, attackItem, rollContext);
@@ -187,38 +196,41 @@ export async function towCombatOverlaySetupAbilityTestWithDamage(actor, ability,
 
 export async function towCombatOverlayRenderAttackSelector(actor, attacks, { onFastAuto } = {}) {
   const rows = attacks.map((attack, index) => ({
-    rowClass: "attack-btn",
+    rowClass: 'attack-btn',
     id: attack.id,
     label: attack.name,
     subLabel: towCombatOverlayGetAttackMeta(attack),
-    valueLabel: "",
+    valueLabel: '',
     highlighted: index === 0,
     compact: false
   }));
-  const buttonMarkup = (await Promise.all(
-    rows.map((row) => towCombatOverlayRenderSelectorRowButton(row))
-  )).join("");
+  const buttonMarkup = (
+    await Promise.all(rows.map((row) => towCombatOverlayRenderSelectorRowButton(row)))
+  ).join('');
 
-  const content = await towCombatOverlayRenderTemplate("modules/tow-combat-overlay/templates/combat/attack-selector.hbs", {
-    attackListHeader: MODULE_DIALOGS.attackListHeader,
-    noAttacks: MODULE_DIALOGS.noAttacks,
-    buttonMarkup
-  });
-  const title = MODULE_DIALOGS.attackSelectorTitle.replace("{actorName}", actor.name);
+  const content = await towCombatOverlayRenderTemplate(
+    'modules/tow-combat-overlay/templates/combat/attack-selector.hbs',
+    {
+      attackListHeader: MODULE_DIALOGS.attackListHeader,
+      noAttacks: MODULE_DIALOGS.noAttacks,
+      buttonMarkup
+    }
+  );
+  const title = MODULE_DIALOGS.attackSelectorTitle.replace('{actorName}', actor.name);
   towCombatOverlayOpenSelectorDialog({
     title,
     content,
     width: 560,
     onRender: (html, dialogApp) => {
-      towCombatOverlayApplyDialogClass(html, "tow-combat-overlay-dialog");
-      towCombatOverlayApplyDialogClass(html, "tow-combat-overlay-settings-window");
-      towCombatOverlayBindClick(html, ".attack-btn", async (event) => {
+      towCombatOverlayApplyDialogClass(html, 'tow-combat-overlay-dialog');
+      towCombatOverlayApplyDialogClass(html, 'tow-combat-overlay-settings-window');
+      towCombatOverlayBindClick(html, '.attack-btn', async (event) => {
         const chosen = actor.items.get(event.currentTarget.dataset.id);
         if (!chosen) return;
         const fastRoll = event.shiftKey === true;
 
         dialogApp.close();
-        if (fastRoll && typeof onFastAuto === "function") {
+        if (fastRoll && typeof onFastAuto === 'function') {
           try {
             await onFastAuto({ actor, ability: chosen });
           } catch (error) {
@@ -232,7 +244,10 @@ export async function towCombatOverlayRenderAttackSelector(actor, attacks, { onF
   });
 }
 
-export async function towCombatOverlayAttackActor(actor, { manual = false, onFastAuto = null } = {}) {
+export async function towCombatOverlayAttackActor(
+  actor,
+  { manual = false, onFastAuto = null } = {}
+) {
   if (!actor) return;
   if (!towCombatOverlayShouldExecuteAttack(actor, { manual })) return;
   const attacks = towCombatOverlayGetSortedWeaponAttacks(actor);
@@ -255,5 +270,3 @@ export async function towCombatOverlayRunAttackForControlled({ manual = false } 
     await towCombatOverlayAttackActor(token.actor, { manual });
   }
 }
-
-

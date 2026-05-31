@@ -1,6 +1,6 @@
 export const AUTO_APPLY_ACTION_PRIORITY_ENTRIES = Object.freeze([
-  ["applydamage", 1],
-  ["applytargeteffect", 2]
+  ['applydamage', 1],
+  ['applytargeteffect', 2]
 ]);
 
 export const AUTO_APPLY_ACTION_STEP_DELAY_MS = 20;

@@ -1,13 +1,18 @@
-export async function withPatchedPanelActionSkillTestContext(actor, callback, {
-  createRollContext
-} = {}) {
-  if (!actor || typeof callback !== "function") return callback?.();
-  if (typeof actor.setupSkillTest !== "function") return callback();
-  if (typeof createRollContext !== "function") return callback();
+export async function withPatchedPanelActionSkillTestContext(
+  actor,
+  callback,
+  { createRollContext } = {}
+) {
+  if (!actor || typeof callback !== 'function') return callback?.();
+  if (typeof actor.setupSkillTest !== 'function') return callback();
+  if (typeof createRollContext !== 'function') return callback();
 
   const originalSetupSkillTest = actor.setupSkillTest;
   const boundOriginal = originalSetupSkillTest.bind(actor);
-  const patchedSetupSkillTest = function patchedTowCombatOverlayActionSkillTest(skill, context = {}) {
+  const patchedSetupSkillTest = function patchedTowCombatOverlayActionSkillTest(
+    skill,
+    context = {}
+  ) {
     return boundOriginal(skill, createRollContext(actor, context));
   };
   actor.setupSkillTest = patchedSetupSkillTest;
@@ -20,4 +25,3 @@ export async function withPatchedPanelActionSkillTestContext(actor, callback, {
     }
   }
 }
-

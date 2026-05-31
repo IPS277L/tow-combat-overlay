@@ -1,9 +1,9 @@
-import { collectActorReferenceSet } from "../../shared/actor-reference-helpers.js";
+import { collectActorReferenceSet } from '../../shared/actor-reference-helpers.js';
 
 function resolveCreateDataActorRefs(data = {}) {
   const refs = new Set();
   const add = (value) => {
-    const next = String(value ?? "").trim();
+    const next = String(value ?? '').trim();
     if (next) refs.add(next);
   };
 
@@ -22,17 +22,14 @@ export async function withScopedInheritedChatVisibility(
   { towCombatOverlayApplyRollVisibility } = {}
 ) {
   const applyVisibility = towCombatOverlayApplyRollVisibility;
-  if (!sourceMessage || typeof applyVisibility !== "function") return callback();
+  if (!sourceMessage || typeof applyVisibility !== 'function') return callback();
 
   const sourceUserId = String(
-    sourceMessage?.author?.id
-    ?? sourceMessage?.user?.id
-    ?? sourceMessage?.user
-    ?? ""
+    sourceMessage?.author?.id ?? sourceMessage?.user?.id ?? sourceMessage?.user ?? ''
   ).trim();
   const actorRefs = collectActorReferenceSet(affectedActors);
-  const hookId = Hooks.on("preCreateChatMessage", (messageDoc, createData, _options, userId) => {
-    const creatingUserId = String(userId ?? "").trim();
+  const hookId = Hooks.on('preCreateChatMessage', (messageDoc, createData, _options, userId) => {
+    const creatingUserId = String(userId ?? '').trim();
     if (sourceUserId && creatingUserId && creatingUserId !== sourceUserId) return;
 
     if (actorRefs.size > 0) {
@@ -53,6 +50,6 @@ export async function withScopedInheritedChatVisibility(
   try {
     return await callback();
   } finally {
-    Hooks.off("preCreateChatMessage", hookId);
+    Hooks.off('preCreateChatMessage', hookId);
   }
 }

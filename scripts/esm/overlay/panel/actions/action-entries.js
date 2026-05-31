@@ -10,31 +10,31 @@ export function createPanelActionEntriesService({
   resolvePanelCastingLore,
   normalizeDescriptionSource
 } = {}) {
-  function localizeMaybe(key, fallback = "") {
-    const localized = game?.i18n?.localize?.(String(key ?? ""));
-    if (typeof localized === "string" && localized !== key) return localized;
-    return String(fallback ?? key ?? "");
+  function localizeMaybe(key, fallback = '') {
+    const localized = game?.i18n?.localize?.(String(key ?? ''));
+    if (typeof localized === 'string' && localized !== key) return localized;
+    return String(fallback ?? key ?? '');
   }
 
   function toReadableTypeLabel(rawType) {
-    const value = String(rawType ?? "").trim();
-    if (!value) return "";
+    const value = String(rawType ?? '').trim();
+    if (!value) return '';
     if (value !== value.toLowerCase()) return value;
     return value
       .split(/[\s_-]+/g)
       .filter(Boolean)
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(" ");
+      .join(' ');
   }
 
   function getCoreActionDescription(actionData) {
     return normalizeDescriptionSource(
-      actionData?.description
-      ?? actionData?.summary
-      ?? actionData?.details
-      ?? actionData?.text
-      ?? actionData?.hint
-      ?? ""
+      actionData?.description ??
+        actionData?.summary ??
+        actionData?.details ??
+        actionData?.text ??
+        actionData?.hint ??
+        ''
     );
   }
 
@@ -43,27 +43,32 @@ export function createPanelActionEntriesService({
     const progress = Number.isFinite(progressRaw) ? Math.max(0, Math.trunc(progressRaw)) : 0;
     if (progress <= 0) return 0;
 
-    const actorId = String(actor?.id ?? "").trim();
-    const actorUuid = String(actor?.uuid ?? "").trim();
+    const actorId = String(actor?.id ?? '').trim();
+    const actorUuid = String(actor?.uuid ?? '').trim();
     if (!actorId && !actorUuid) return 0;
 
     const messages = Array.isArray(game?.messages?.contents) ? game.messages.contents : [];
     for (let i = messages.length - 1; i >= 0; i -= 1) {
       const message = messages[i];
-      const rollClass = String(message?.system?.context?.rollClass ?? "").trim().toLowerCase();
-      if (rollClass !== "castingtest") continue;
+      const rollClass = String(message?.system?.context?.rollClass ?? '')
+        .trim()
+        .toLowerCase();
+      if (rollClass !== 'castingtest') continue;
 
-      const speakerActorId = String(message?.speaker?.actor ?? "").trim();
-      const testActorUuid = String(message?.system?.test?.context?.actor ?? message?.system?.context?.actor ?? "").trim();
-      const sameActor = (actorId && speakerActorId === actorId) || (actorUuid && testActorUuid === actorUuid);
+      const speakerActorId = String(message?.speaker?.actor ?? '').trim();
+      const testActorUuid = String(
+        message?.system?.test?.context?.actor ?? message?.system?.context?.actor ?? ''
+      ).trim();
+      const sameActor =
+        (actorId && speakerActorId === actorId) || (actorUuid && testActorUuid === actorUuid);
       if (!sameActor) continue;
 
       const potencyRaw = Number(
-        message?.system?.result?.potency
-        ?? message?.system?.test?.result?.potency
-        ?? message?.system?.result?.successes
-        ?? message?.system?.test?.result?.successes
-        ?? NaN
+        message?.system?.result?.potency ??
+          message?.system?.test?.result?.potency ??
+          message?.system?.result?.successes ??
+          message?.system?.test?.result?.successes ??
+          NaN
       );
       if (!Number.isFinite(potencyRaw)) return 0;
       return Math.max(0, Math.trunc(potencyRaw));
@@ -75,7 +80,7 @@ export function createPanelActionEntriesService({
     const actionsConfig = game?.oldworld?.config?.actions ?? {};
     return panelActionsOrder
       .map((key) => {
-        if (key === "accumulatePower") {
+        if (key === 'accumulatePower') {
           if (!actorHasMagicCasting(actor)) return null;
           if (!resolvePanelCastingLore(actor)) return null;
           const powerRaw = Number(actor?.system?.magic?.casting?.progress ?? NaN);
@@ -84,11 +89,13 @@ export function createPanelActionEntriesService({
           const miscastsRaw = Number(actor?.system?.magic?.miscasts ?? NaN);
           const miscasts = Number.isFinite(miscastsRaw) ? Math.max(0, Math.trunc(miscastsRaw)) : 0;
           const miscastsMaxRaw = Number(actor?.system?.magic?.level ?? NaN);
-          const miscastsMax = Number.isFinite(miscastsMaxRaw) ? Math.max(0, Math.trunc(miscastsMaxRaw)) : 0;
+          const miscastsMax = Number.isFinite(miscastsMaxRaw)
+            ? Math.max(0, Math.trunc(miscastsMaxRaw))
+            : 0;
           const miscastReady = miscastsMax > 0 && miscasts >= miscastsMax;
           return {
             id: key,
-            name: miscastReady ? "Dispose Miscast" : "Channel the Winds of Magic",
+            name: miscastReady ? 'Dispose Miscast' : 'Channel the Winds of Magic',
             img: panelActionIconByKey.accumulatePower,
             system: {
               accumulatedPower: power,
@@ -97,29 +104,35 @@ export function createPanelActionEntriesService({
               miscastsMax,
               miscastReady,
               description: miscastReady
-                ? "Miscast limit reached. Click to roll the miscast table."
-                : "Roll a casting test to accumulate power."
+                ? 'Miscast limit reached. Click to roll the miscast table.'
+                : 'Roll a casting test to accumulate power.'
             }
           };
         }
-        if (key === "defence") {
+        if (key === 'defence') {
           return {
             id: key,
-            name: "Defence",
+            name: 'Defence',
             img: panelActionIconByKey.defence,
             system: {
-              description: "Defend against incoming attacks using your available defence options."
+              description: 'Defend against incoming attacks using your available defence options.'
             }
           };
         }
         const action = actionsConfig?.[key] ?? null;
         if (!action) return null;
-        const localizedLabel = localizeMaybe(String(action?.label ?? ""), String(action?.label ?? key));
-        const rawLabel = localizedLabel && localizedLabel !== String(action?.label ?? "")
-          ? localizedLabel
-          : toReadableTypeLabel(key);
+        const localizedLabel = localizeMaybe(
+          String(action?.label ?? ''),
+          String(action?.label ?? key)
+        );
+        const rawLabel =
+          localizedLabel && localizedLabel !== String(action?.label ?? '')
+            ? localizedLabel
+            : toReadableTypeLabel(key);
         const label = String(rawLabel || key);
-        const image = String(panelActionIconByKey[key] ?? action?.effect?.img ?? action?.img ?? "").trim() || panelFallbackItemIcon;
+        const image =
+          String(panelActionIconByKey[key] ?? action?.effect?.img ?? action?.img ?? '').trim() ||
+          panelFallbackItemIcon;
         return {
           id: key,
           name: label,
@@ -152,9 +165,9 @@ export function createPanelActionEntriesService({
   function getPanelRecoverActionEntries() {
     const recoverAction = game?.oldworld?.config?.actions?.recover ?? {};
     const labels = {
-      recover: "Recover",
-      treat: "Treat Wound",
-      condition: "Remove Condition"
+      recover: 'Recover',
+      treat: 'Treat Wound',
+      condition: 'Remove Condition'
     };
 
     return panelRecoverOrder.map((key) => {
@@ -179,4 +192,3 @@ export function createPanelActionEntriesService({
     getPanelRecoverActionEntries
   };
 }
-

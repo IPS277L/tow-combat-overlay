@@ -1,5 +1,4 @@
 export {
   towCombatOverlayEnsureControlPanel,
   towCombatOverlayRemoveControlPanel
-} from "./control-panel-runtime-composition.js";
-
+} from './control-panel-runtime-composition.js';

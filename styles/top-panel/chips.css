@@ -120,12 +120,13 @@
 }
 
 .tow-combat-overlay-top-panel__chip.is-ability.is-active .tow-combat-overlay-top-panel__chip-image,
-.tow-combat-overlay-top-panel__chip.is-ability-overflow.is-active .tow-combat-overlay-top-panel__chip-image {
+.tow-combat-overlay-top-panel__chip.is-ability-overflow.is-active
+  .tow-combat-overlay-top-panel__chip-image {
   filter: saturate(1.35) hue-rotate(-14deg) brightness(0.95);
 }
 
 .tow-combat-overlay-top-panel__chip-text {
-  font-family: "CaslonPro", var(--font-primary, Signika), serif;
+  font-family: 'CaslonPro', var(--font-primary, Signika), serif;
   font-size: 9px;
   font-weight: 700;
   line-height: 1;

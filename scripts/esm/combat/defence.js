@@ -1,42 +1,39 @@
-import {
-  DEFAULT_DEFENCE_SKILL,
-  SELF_ROLL_CONTEXT,
-} from "../runtime/action-constants.js";
-import { getTowCombatOverlayConstants } from "../runtime/module-constants.js";
+import { DEFAULT_DEFENCE_SKILL, SELF_ROLL_CONTEXT } from '../runtime/action-constants.js';
+import { getTowCombatOverlayConstants } from '../runtime/module-constants.js';
 import {
   createTowCombatOverlayRollContext,
   getTowCombatOverlayActorRollState,
   getTowCombatOverlayActorRollModifierFields
-} from "./roll-modifier.js";
-import { towCombatOverlayArmAutoSubmitDialog } from "./attack.js";
+} from './roll-modifier.js';
+import { towCombatOverlayArmAutoSubmitDialog } from './attack.js';
 import {
   towCombatOverlayApplyDialogClass,
   towCombatOverlayBindClick,
   towCombatOverlayOpenSelectorDialog,
   towCombatOverlayRenderTemplate,
   towCombatOverlayRenderSelectorRowButton
-} from "./core.js";
-import { getTowCombatOverlaySystemAdapter } from "../system-adapter/system-adapter.js";
+} from './core.js';
+import { getTowCombatOverlaySystemAdapter } from '../system-adapter/system-adapter.js';
 
-const {
-  notifications: MODULE_NOTIFICATIONS,
-  dialogs: MODULE_DIALOGS
-} = getTowCombatOverlayConstants();
+const { notifications: MODULE_NOTIFICATIONS, dialogs: MODULE_DIALOGS } =
+  getTowCombatOverlayConstants();
 
 function towCombatOverlayGetSkillLabel(skill) {
   return game.oldworld?.config?.skills?.[skill] ?? skill;
 }
 
 function towCombatOverlayGetCharacteristicLabel(characteristic) {
-  return game.oldworld?.config?.characteristics?.[characteristic]
-    ?? game.oldworld?.config?.characteristicAbbrev?.[characteristic]
-    ?? characteristic;
+  return (
+    game.oldworld?.config?.characteristics?.[characteristic] ??
+    game.oldworld?.config?.characteristicAbbrev?.[characteristic] ??
+    characteristic
+  );
 }
 
 export function towCombatOverlayGetActorSkills(actor) {
   const skills = Object.keys(actor.system?.skills ?? {}).filter((skill) => {
     const skillData = actor.system?.skills?.[skill];
-    return skillData && typeof skillData.value !== "undefined";
+    return skillData && typeof skillData.value !== 'undefined';
   });
 
   return skills.sort((a, b) => a.localeCompare(b));
@@ -51,14 +48,14 @@ function towCombatOverlayGetActorCharacteristics(actor) {
 
 export function towCombatOverlayGetManualDefenceEntries(actor) {
   const skillEntries = towCombatOverlayGetActorSkills(actor).map((skill) => ({
-    type: "skill",
+    type: 'skill',
     id: skill,
     label: towCombatOverlayGetSkillLabel(skill),
     target: Number(actor.system?.skills?.[skill]?.value ?? 0)
   }));
 
   const charEntries = towCombatOverlayGetActorCharacteristics(actor).map((characteristic) => ({
-    type: "characteristic",
+    type: 'characteristic',
     id: characteristic,
     label: towCombatOverlayGetCharacteristicLabel(characteristic),
     target: Number(actor.system?.characteristics?.[characteristic]?.value ?? 0)
@@ -69,15 +66,19 @@ export function towCombatOverlayGetManualDefenceEntries(actor) {
 
 function towCombatOverlayArmAutoSubmitSkillDialog(actor, skill) {
   towCombatOverlayArmAutoSubmitDialog({
-    hookName: "renderTestDialog",
+    hookName: 'renderTestDialog',
     matches: (app) => app?.actor?.id === actor.id && app?.skill === skill,
-    submitErrorMessage: "TestDialog.submit() is unavailable."
+    submitErrorMessage: 'TestDialog.submit() is unavailable.'
   });
 }
 
 export async function towCombatOverlayRollSkill(actor, skill, { autoRoll = false } = {}) {
   if (autoRoll) towCombatOverlayArmAutoSubmitSkillDialog(actor, skill);
-  return getTowCombatOverlaySystemAdapter().setupSkillTest(actor, skill, createTowCombatOverlayRollContext(actor, SELF_ROLL_CONTEXT));
+  return getTowCombatOverlaySystemAdapter().setupSkillTest(
+    actor,
+    skill,
+    createTowCombatOverlayRollContext(actor, SELF_ROLL_CONTEXT)
+  );
 }
 
 async function towCombatOverlayRollCharacteristic(actor, characteristic) {
@@ -91,8 +92,8 @@ async function towCombatOverlayRollCharacteristic(actor, characteristic) {
   if (!Number.isFinite(target) || target <= 0) {
     ui.notifications.warn(
       MODULE_NOTIFICATIONS.defence.noCharacteristicValue
-        .replace("{actorName}", actor.name)
-        .replace("{characteristic}", characteristic)
+        .replace('{actorName}', actor.name)
+        .replace('{characteristic}', characteristic)
     );
     return null;
   }
@@ -106,12 +107,14 @@ async function towCombatOverlayRollCharacteristic(actor, characteristic) {
     ...getTowCombatOverlayActorRollModifierFields(actor),
     state: getTowCombatOverlayActorRollState(actor),
     loseTies: false,
-    rollMode: game.settings.get("core", "rollMode"),
+    rollMode: game.settings.get('core', 'rollMode'),
     speaker: CONFIG.ChatMessage.documentClass.getSpeaker({ actor }),
     targets: [],
     context: {
-      title: game.i18n.format("TOW.Test.SkillTest", { skill: towCombatOverlayGetCharacteristicLabel(characteristic) }),
-      appendTitle: "",
+      title: game.i18n.format('TOW.Test.SkillTest', {
+        skill: towCombatOverlayGetCharacteristicLabel(characteristic)
+      }),
+      appendTitle: '',
       endeavour: false,
       action: undefined,
       subAction: undefined,
@@ -129,12 +132,13 @@ async function towCombatOverlayRollCharacteristic(actor, characteristic) {
 }
 
 export async function towCombatOverlayRenderDefenceSelector(actor, entries) {
-  const emphasizedSkills = new Set(["defence", "athletics", "endurance"]);
+  const emphasizedSkills = new Set(['defence', 'athletics', 'endurance']);
   const buildRowData = (entry) => {
     const value = Number(entry.target ?? 0);
-    const shouldEmphasize = entry.type === "skill" && emphasizedSkills.has(String(entry.id).toLowerCase());
+    const shouldEmphasize =
+      entry.type === 'skill' && emphasizedSkills.has(String(entry.id).toLowerCase());
     return {
-      rowClass: "skill-btn",
+      rowClass: 'skill-btn',
       type: entry.type,
       id: entry.id,
       label: entry.label,
@@ -144,41 +148,50 @@ export async function towCombatOverlayRenderDefenceSelector(actor, entries) {
     };
   };
 
-  const characteristicEntries = entries.filter((entry) => entry.type === "characteristic");
-  const skillEntries = entries.filter((entry) => entry.type === "skill");
+  const characteristicEntries = entries.filter((entry) => entry.type === 'characteristic');
+  const skillEntries = entries.filter((entry) => entry.type === 'skill');
 
-  const characteristicMarkup = (await Promise.all(
-    characteristicEntries.map((entry) => towCombatOverlayRenderSelectorRowButton(buildRowData(entry)))
-  )).join("");
-  const skillMarkup = (await Promise.all(
-    skillEntries.map((entry) => towCombatOverlayRenderSelectorRowButton(buildRowData(entry)))
-  )).join("");
+  const characteristicMarkup = (
+    await Promise.all(
+      characteristicEntries.map((entry) =>
+        towCombatOverlayRenderSelectorRowButton(buildRowData(entry))
+      )
+    )
+  ).join('');
+  const skillMarkup = (
+    await Promise.all(
+      skillEntries.map((entry) => towCombatOverlayRenderSelectorRowButton(buildRowData(entry)))
+    )
+  ).join('');
 
-  const content = await towCombatOverlayRenderTemplate("modules/tow-combat-overlay/templates/combat/defence-selector.hbs", {
-    defenceCharacteristicsHeader: MODULE_DIALOGS.defenceCharacteristicsHeader,
-    defenceSkillsHeader: MODULE_DIALOGS.defenceSkillsHeader,
-    noCharacteristics: MODULE_DIALOGS.noCharacteristics,
-    noSkills: MODULE_DIALOGS.noSkills,
-    characteristicMarkup,
-    skillMarkup
-  });
+  const content = await towCombatOverlayRenderTemplate(
+    'modules/tow-combat-overlay/templates/combat/defence-selector.hbs',
+    {
+      defenceCharacteristicsHeader: MODULE_DIALOGS.defenceCharacteristicsHeader,
+      defenceSkillsHeader: MODULE_DIALOGS.defenceSkillsHeader,
+      noCharacteristics: MODULE_DIALOGS.noCharacteristics,
+      noSkills: MODULE_DIALOGS.noSkills,
+      characteristicMarkup,
+      skillMarkup
+    }
+  );
 
-  const title = MODULE_DIALOGS.defenceSelectorTitle.replace("{actorName}", actor.name);
+  const title = MODULE_DIALOGS.defenceSelectorTitle.replace('{actorName}', actor.name);
   towCombatOverlayOpenSelectorDialog({
     title,
     content,
     width: 560,
     height: 560,
     onRender: (html, dialogApp) => {
-      towCombatOverlayApplyDialogClass(html, "tow-combat-overlay-dialog");
-      towCombatOverlayApplyDialogClass(html, "tow-combat-overlay-settings-window");
-      towCombatOverlayBindClick(html, ".skill-btn", async (event) => {
+      towCombatOverlayApplyDialogClass(html, 'tow-combat-overlay-dialog');
+      towCombatOverlayApplyDialogClass(html, 'tow-combat-overlay-settings-window');
+      towCombatOverlayBindClick(html, '.skill-btn', async (event) => {
         const id = event.currentTarget.dataset.id;
         const type = event.currentTarget.dataset.type;
         if (!id || !type) return;
         dialogApp.close();
 
-        if (type === "characteristic") {
+        if (type === 'characteristic') {
           await towCombatOverlayRollCharacteristic(actor, id);
           return;
         }
@@ -193,7 +206,9 @@ export async function towCombatOverlayDefenceActor(actor, { manual = false } = {
   const skills = towCombatOverlayGetActorSkills(actor);
   const manualEntries = towCombatOverlayGetManualDefenceEntries(actor);
   if (manualEntries.length === 0) {
-    ui.notifications.warn(MODULE_NOTIFICATIONS.defence.noManualEntries.replace("{actorName}", actor.name));
+    ui.notifications.warn(
+      MODULE_NOTIFICATIONS.defence.noManualEntries.replace('{actorName}', actor.name)
+    );
     return;
   }
 
@@ -203,7 +218,9 @@ export async function towCombatOverlayDefenceActor(actor, { manual = false } = {
   }
 
   if (skills.length === 0) {
-    ui.notifications.warn(MODULE_NOTIFICATIONS.defence.noDefaultSkills.replace("{actorName}", actor.name));
+    ui.notifications.warn(
+      MODULE_NOTIFICATIONS.defence.noDefaultSkills.replace('{actorName}', actor.name)
+    );
     return;
   }
 
@@ -211,9 +228,9 @@ export async function towCombatOverlayDefenceActor(actor, { manual = false } = {
   if (skillToRoll !== DEFAULT_DEFENCE_SKILL) {
     ui.notifications.warn(
       MODULE_NOTIFICATIONS.defence.fallbackSkill
-        .replace("{actorName}", actor.name)
-        .replace("{defaultSkill}", DEFAULT_DEFENCE_SKILL)
-        .replace("{rolledSkill}", skillToRoll)
+        .replace('{actorName}', actor.name)
+        .replace('{defaultSkill}', DEFAULT_DEFENCE_SKILL)
+        .replace('{rolledSkill}', skillToRoll)
     );
   }
   await towCombatOverlayRollSkill(actor, skillToRoll, { autoRoll: true });
@@ -229,4 +246,3 @@ export async function towCombatOverlayRunDefenceForControlled({ manual = false }
     await towCombatOverlayDefenceActor(token.actor, { manual });
   }
 }
-

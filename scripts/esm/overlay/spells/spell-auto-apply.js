@@ -1,1 +1,1 @@
-export * from "./spell-auto-apply-service.js";
+export * from './spell-auto-apply-service.js';

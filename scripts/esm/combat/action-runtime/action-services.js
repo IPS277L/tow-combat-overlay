@@ -1,11 +1,8 @@
-import {
-  towCombatOverlayAttackActor,
-  towCombatOverlayRunAttackForControlled
-} from "../attack.js";
+import { towCombatOverlayAttackActor, towCombatOverlayRunAttackForControlled } from '../attack.js';
 import {
   towCombatOverlayDefenceActor,
   towCombatOverlayRunDefenceForControlled
-} from "../defence.js";
+} from '../defence.js';
 
 let actionServicesSingleton = null;
 
@@ -25,4 +22,3 @@ export function registerTowCombatOverlayActionServices(overrides = {}) {
 export function getTowCombatOverlayActionServices() {
   return actionServicesSingleton ?? registerTowCombatOverlayActionServices();
 }
-
