@@ -3,6 +3,8 @@ import {
   STATUS_PALETTE_ICON_SIZE
 } from "../../runtime/overlay-constants.js";
 import {
+  STATUS_CHIPS_PER_ROW_MAX,
+  STATUS_CHIPS_PER_ROW_MIN,
   CHIP_ICON_TOTAL_INSET,
   STATUS_CHIP_SIZE,
   STATUS_ICON_SIZE_MAX,
@@ -13,6 +15,22 @@ import {
   STATUS_TOKEN_INSET_X
 } from "./status-palette-constants.js";
 import { syncStatusIconMaskPosition } from "./status-palette-visuals.js";
+import { getTowCombatOverlayDisplaySetting } from "../../bootstrap/register-settings.js";
+import { getTowCombatOverlayConstants } from "../../runtime/module-constants.js";
+
+function getConfiguredStatusChipsPerRow() {
+  const { settings } = getTowCombatOverlayConstants();
+  const raw = getTowCombatOverlayDisplaySetting(
+    settings.tokenLayoutStatusesPerRow,
+    STATUS_TARGET_CHIPS_PER_ROW
+  );
+  const configured = Number(raw);
+  if (!Number.isFinite(configured)) return STATUS_TARGET_CHIPS_PER_ROW;
+  return Math.max(
+    STATUS_CHIPS_PER_ROW_MIN,
+    Math.min(STATUS_CHIPS_PER_ROW_MAX, Math.round(configured))
+  );
+}
 
 export function centerOverflowText(overflowText, iconSize) {
   if (!overflowText) return;
@@ -38,34 +56,41 @@ export function getStatusPaletteInsets(tokenWidth) {
 
 export function getStatusPaletteLayoutForToken(tokenObject, expectedCount) {
   const count = Math.max(0, Number(expectedCount ?? 0) || 0);
+  const chipsPerRow = getConfiguredStatusChipsPerRow();
   let iconSize = STATUS_PALETTE_ICON_SIZE;
   let iconGap = STATUS_PALETTE_ICON_GAP;
   const tokenWidth = Number(tokenObject?.w ?? NaN);
   const hasTokenWidth = Number.isFinite(tokenWidth) && tokenWidth > 0;
-  if (!hasTokenWidth) return { columns: Math.max(1, count), iconSize, iconGap };
+  if (!hasTokenWidth) return { columns: Math.max(1, count), iconSize, iconGap, chipsPerRow };
 
   const { insetX } = getStatusPaletteInsets(tokenWidth);
   const widthSafe = Math.max(1, tokenWidth - (insetX * 2));
   const ratio = STATUS_PALETTE_ICON_GAP / Math.max(1, STATUS_PALETTE_ICON_SIZE);
-  const denom = STATUS_TARGET_CHIPS_PER_ROW + ((STATUS_TARGET_CHIPS_PER_ROW - 1) * ratio);
+  const denom = chipsPerRow + ((chipsPerRow - 1) * ratio);
   const scaledSize = widthSafe / Math.max(1, denom);
   iconSize = Math.round(Math.min(STATUS_ICON_SIZE_MAX, Math.max(STATUS_ICON_SIZE_MIN, scaledSize)));
   iconGap = Math.round(iconSize * ratio);
-  if (count <= 1) return { columns: Math.max(1, count), iconSize, iconGap };
-  const columns = Math.max(1, Math.min(count, STATUS_TARGET_CHIPS_PER_ROW));
-  return { columns, iconSize, iconGap };
+  if (count <= 1) return { columns: Math.max(1, count), iconSize, iconGap, chipsPerRow };
+  const columns = Math.max(1, Math.min(count, chipsPerRow));
+  return { columns, iconSize, iconGap, chipsPerRow };
 }
 
-export function getStatusPaletteFitScale(tokenObject, totalWidth, iconSize, iconGap) {
+export function getStatusPaletteFitScale(tokenObject, totalWidth, iconSize, iconGap, chipsPerRow = null) {
+  const chipsPerRowSafe = Number.isFinite(Number(chipsPerRow))
+    ? Math.max(
+      STATUS_CHIPS_PER_ROW_MIN,
+      Math.min(STATUS_CHIPS_PER_ROW_MAX, Math.round(Number(chipsPerRow)))
+    )
+    : getConfiguredStatusChipsPerRow();
   const tokenWidth = Math.max(1, Number(tokenObject?.w ?? 0));
   const { insetX } = getStatusPaletteInsets(tokenWidth);
   const availableWidth = Math.max(1, tokenWidth - (insetX * 2));
   const sizeSafe = Math.max(1, Number(iconSize) || STATUS_PALETTE_ICON_SIZE);
   const gapSafe = Math.max(0, Number(iconGap) || 0);
   const targetRowWidth = (
-    STATUS_TARGET_CHIPS_PER_ROW * sizeSafe
+    chipsPerRowSafe * sizeSafe
   ) + (
-    (STATUS_TARGET_CHIPS_PER_ROW - 1) * gapSafe
+    (chipsPerRowSafe - 1) * gapSafe
   );
   const widthBasis = Math.max(
     1,

@@ -1,3 +1,9 @@
+import {
+  STATUS_CHIPS_PER_ROW_MAX,
+  STATUS_CHIPS_PER_ROW_MIN,
+  STATUS_TARGET_CHIPS_PER_ROW
+} from "../../overlay/status/status-palette-constants.js";
+
 export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
   const tokensPanelSettings = Object.freeze([
     {
@@ -175,6 +181,20 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
       defaultValue: true,
       nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatusRow.Name",
       hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutEnableStatusRow.Hint"
+    },
+    {
+      key: settingKeys.tokenLayoutStatusesPerRow,
+      type: "range",
+      defaultValue: STATUS_TARGET_CHIPS_PER_ROW,
+      min: STATUS_CHIPS_PER_ROW_MIN,
+      max: STATUS_CHIPS_PER_ROW_MAX,
+      step: 1,
+      visibleWhen: Object.freeze({
+        key: settingKeys.tokenLayoutEnableStatusRow,
+        equals: true
+      }),
+      nameKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutStatusesPerRow.Name",
+      hintKey: "TOWCOMBATOVERLAY.Setting.TokenLayoutStatusesPerRow.Hint"
     },
     {
       key: settingKeys.tokenLayoutEnableStatuses,
@@ -608,6 +628,7 @@ export function buildDisplaySettingsGroups(settingKeys, minimumRoleChoices) {
           titleKey: "TOWCOMBATOVERLAY.SettingsSection.TokenLayout.Chips",
           settingKeys: Object.freeze([
             settingKeys.tokenLayoutEnableStatusRow,
+            settingKeys.tokenLayoutStatusesPerRow,
             settingKeys.tokenLayoutEnableStatuses,
             settingKeys.tokenLayoutEnableWounds,
             settingKeys.tokenLayoutEnableTemporaryEffects

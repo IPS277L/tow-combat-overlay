@@ -36,6 +36,22 @@ function normalizeSelectSettingValue(settingDefinition, value) {
   return String(settingDefinition?.defaultValue ?? allowedValues[0] ?? "").trim();
 }
 
+function normalizeRangeSettingValue(settingDefinition, value) {
+  const min = Number(settingDefinition?.min ?? 0);
+  const max = Number(settingDefinition?.max ?? 100);
+  const step = Number(settingDefinition?.step ?? 1);
+  const fallback = Number(settingDefinition?.defaultValue ?? min);
+  const parsed = Number(value);
+  const safeMin = Number.isFinite(min) ? min : 0;
+  const safeMax = Number.isFinite(max) ? max : Math.max(safeMin, 100);
+  const safeStep = Number.isFinite(step) && step > 0 ? step : 1;
+  const safeFallback = Number.isFinite(fallback) ? fallback : safeMin;
+  const bounded = Number.isFinite(parsed) ? parsed : safeFallback;
+  const clamped = Math.max(safeMin, Math.min(safeMax, bounded));
+  const steps = Math.round((clamped - safeMin) / safeStep);
+  return Number((safeMin + (steps * safeStep)).toFixed(6));
+}
+
 function getFoundryUserRoleEntries() {
   const source = CONST?.USER_ROLES;
   if (!source || typeof source !== "object") return [];
@@ -132,10 +148,11 @@ function createGroupFormClass(group) {
       );
       const fields = group.settings.map((entry) => {
         const isSelect = String(entry?.type ?? "boolean").trim() === "select";
+        const isRange = String(entry?.type ?? "boolean").trim() === "range";
         const rawValue = currentValueByKey.get(entry.key);
         const normalizedValue = isSelect
           ? normalizeSelectSettingValue(entry, rawValue)
-          : !!rawValue;
+          : (isRange ? normalizeRangeSettingValue(entry, rawValue) : !!rawValue);
         const visibilityRule = entry?.visibleWhen;
         const visibleWhenKey = String(visibilityRule?.key ?? "").trim();
         const visibleWhenValue = String(visibilityRule?.equals ?? "").trim();
@@ -171,7 +188,11 @@ function createGroupFormClass(group) {
           hint: localizeMaybe(entry.hintKey, ""),
           value: normalizedValue,
           isSelect,
-          isBoolean: !isSelect,
+          isRange,
+          isBoolean: !isSelect && !isRange,
+          rangeMin: isRange ? Number(entry?.min ?? 0) : null,
+          rangeMax: isRange ? Number(entry?.max ?? 100) : null,
+          rangeStep: isRange ? Number(entry?.step ?? 1) : null,
           choices,
           visibleWhenKey,
           visibleWhenValue,
@@ -232,6 +253,18 @@ function createGroupFormClass(group) {
         }
       };
 
+      const syncRangeValueDisplays = () => {
+        const rangeElements = Array.from(rootElement.querySelectorAll("input[type='range']"));
+        for (const rangeElement of rangeElements) {
+          if (!(rangeElement instanceof HTMLInputElement)) continue;
+          const targetId = String(rangeElement.id ?? "").trim();
+          if (!targetId) continue;
+          const valueElement = rootElement.querySelector(`[data-range-value-for="${targetId}"]`);
+          if (!(valueElement instanceof HTMLElement)) continue;
+          valueElement.textContent = String(rangeElement.value ?? "");
+        }
+      };
+
       const applyConditionalVisibility = () => {
         const allFields = rootElement.querySelectorAll(".form-group");
         for (const fieldElement of allFields) {
@@ -275,10 +308,17 @@ function createGroupFormClass(group) {
           sectionElement.style.display = visibleFields.length > 0 ? "" : "none";
         }
         syncSelectFieldWidths();
+        syncRangeValueDisplays();
         syncWindowHeight();
       };
 
       rootElement.addEventListener("change", applyConditionalVisibility);
+      rootElement.addEventListener("input", (event) => {
+        const target = event?.target;
+        if (!(target instanceof HTMLInputElement) || target.type !== "range") return;
+        const valueElement = rootElement.querySelector(`[data-range-value-for="${target.id}"]`);
+        if (valueElement instanceof HTMLElement) valueElement.textContent = String(target.value ?? "");
+      });
       applyConditionalVisibility();
     }
 
@@ -288,9 +328,12 @@ function createGroupFormClass(group) {
       for (const entry of group.settings) {
         const rawValue = expanded?.[entry.key];
         const isSelect = String(entry?.type ?? "boolean").trim() === "select";
+        const isRange = String(entry?.type ?? "boolean").trim() === "range";
         const nextValue = isSelect
           ? normalizeSelectSettingValue(entry, rawValue)
-          : (rawValue === true || rawValue === "true" || rawValue === "on");
+          : (isRange
+              ? normalizeRangeSettingValue(entry, rawValue)
+              : (rawValue === true || rawValue === "true" || rawValue === "on"));
         await game.settings.set(moduleId, entry.key, nextValue);
       }
     }
@@ -323,6 +366,7 @@ function registerDisplaySettingsGroupMenu(moduleId, group) {
 
 function registerDisplaySetting(moduleId, settingDefinition, onChange) {
   const isSelect = String(settingDefinition?.type ?? "boolean").trim() === "select";
+  const isRange = String(settingDefinition?.type ?? "boolean").trim() === "range";
   if (isSelect) {
     const defaultValue = normalizeSelectSettingValue(settingDefinition, settingDefinition.defaultValue);
     const choices = {};
@@ -334,6 +378,20 @@ function registerDisplaySetting(moduleId, settingDefinition, onChange) {
       config: false,
       type: String,
       choices,
+      default: defaultValue,
+      name: settingDefinition.nameKey,
+      hint: settingDefinition.hintKey,
+      onChange: () => onChange(settingDefinition.key)
+    });
+    return;
+  }
+
+  if (isRange) {
+    const defaultValue = normalizeRangeSettingValue(settingDefinition, settingDefinition.defaultValue);
+    game.settings.register(moduleId, settingDefinition.key, {
+      scope: "world",
+      config: false,
+      type: Number,
       default: defaultValue,
       name: settingDefinition.nameKey,
       hint: settingDefinition.hintKey,

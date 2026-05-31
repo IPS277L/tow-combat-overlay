@@ -180,7 +180,7 @@ export function setupStatusPalette(tokenObject) {
   const expectedStateSignature = visibleEntries.map((entry) => (
     `${String(entry?.key ?? "")}:${String(entry?.variant ?? "")}:${entry?.forceActive === true ? "1" : "0"}:${String(entry?.img ?? "")}`
   )).join("|");
-  const { columns, iconSize, iconGap } = getStatusPaletteLayoutForToken(tokenObject, expectedCount);
+  const { columns, iconSize, iconGap, chipsPerRow } = getStatusPaletteLayoutForToken(tokenObject, expectedCount);
   let layer = tokenObject[KEYS.statusPaletteLayer];
   const iconChildrenCount = layer
     ? (layer.children?.filter((child) => child?.[KEYS.statusConditionId]).length ?? 0)
@@ -271,7 +271,7 @@ export function setupStatusPalette(tokenObject) {
   const tokenWidth = Math.max(1, Number(tokenObject?.w ?? 0));
   const { insetX, insetBottom } = getStatusPaletteInsets(tokenWidth);
   const availableWidth = Math.max(1, tokenWidth - (insetX * 2));
-  const fitScale = getStatusPaletteFitScale(tokenObject, totalWidth, iconSize, iconGap);
+  const fitScale = getStatusPaletteFitScale(tokenObject, totalWidth, iconSize, iconGap, chipsPerRow);
   const scaledWidth = totalWidth * fitScale;
   const scaledHeight = totalHeight * fitScale;
   layer.scale.set(fitScale);

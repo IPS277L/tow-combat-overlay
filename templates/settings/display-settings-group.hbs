@@ -20,7 +20,12 @@
                     {{/each}}
                   </select>
                 {{else}}
-                  <input id="{{this.id}}" type="checkbox" name="{{this.key}}" {{#if this.value}}checked{{/if}} />
+                  {{#if this.isRange}}
+                    <input id="{{this.id}}" type="range" name="{{this.key}}" min="{{this.rangeMin}}" max="{{this.rangeMax}}" step="{{this.rangeStep}}" value="{{this.value}}" />
+                    <span data-range-value-for="{{this.id}}" style="min-width: 2.4em; text-align: right; display: inline-block;">{{this.value}}</span>
+                  {{else}}
+                    <input id="{{this.id}}" type="checkbox" name="{{this.key}}" {{#if this.value}}checked{{/if}} />
+                  {{/if}}
                 {{/if}}
               </div>
               <p class="hint">{{this.hint}}</p>
@@ -45,7 +50,12 @@
                 {{/each}}
               </select>
             {{else}}
-              <input id="{{this.id}}" type="checkbox" name="{{this.key}}" {{#if this.value}}checked{{/if}} />
+              {{#if this.isRange}}
+                <input id="{{this.id}}" type="range" name="{{this.key}}" min="{{this.rangeMin}}" max="{{this.rangeMax}}" step="{{this.rangeStep}}" value="{{this.value}}" />
+                <span data-range-value-for="{{this.id}}" style="min-width: 2.4em; text-align: right; display: inline-block;">{{this.value}}</span>
+              {{else}}
+                <input id="{{this.id}}" type="checkbox" name="{{this.key}}" {{#if this.value}}checked{{/if}} />
+              {{/if}}
             {{/if}}
           </div>
           <p class="hint">{{this.hint}}</p>

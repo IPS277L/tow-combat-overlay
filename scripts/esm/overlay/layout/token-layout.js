@@ -218,7 +218,7 @@ export function towCombatOverlayEnsureDeadVisual(tokenObject) {
     const deadFilter = new PIXI.ColorMatrixFilter();
     deadFilter.reset();
     // Use a single explicit grayscale+darken matrix to avoid renderer/API color casts.
-    const deadLuma = 0.56;
+    const deadLuma = 0.12;
     const lr = 0.2126 * deadLuma;
     const lg = 0.7152 * deadLuma;
     const lb = 0.0722 * deadLuma;

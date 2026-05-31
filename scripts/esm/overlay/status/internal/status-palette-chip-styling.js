@@ -16,6 +16,9 @@ import {
   CHIP_INACTIVE_BORDER,
   CHIP_INACTIVE_BORDER_ALPHA,
   CHIP_INACTIVE_FILL,
+  CHIP_OUTER_RING_ALPHA,
+  CHIP_OUTER_RING_COLOR,
+  CHIP_OUTER_RING_WIDTH,
   STATUS_ABILITY_ACTIVE_INNER_RING_ALPHA,
   STATUS_ABILITY_ACTIVE_INNER_RING_COLOR,
   STATUS_ABILITY_ACTIVE_OUTER_RING_ALPHA,
@@ -24,6 +27,16 @@ import {
   STATUS_CHIP_VARIANT,
   STATUS_OVERFLOW_COUNT
 } from "../status-palette-constants.js";
+
+function drawChipOuterRing(chipBg, centerX, centerY, radius) {
+  chipBg.lineStyle({
+    width: CHIP_OUTER_RING_WIDTH,
+    color: CHIP_OUTER_RING_COLOR,
+    alpha: CHIP_OUTER_RING_ALPHA,
+    alignment: 0
+  });
+  chipBg.drawCircle(centerX, centerY, Math.max(1, radius + 0.8));
+}
 
 export function stylePaletteSprite(sprite, actor, conditionId, activeStatuses = null, forceActive = false) {
   const statuses = activeStatuses instanceof Set ? activeStatuses : getActorStatusSet(actor);
@@ -56,6 +69,7 @@ export function stylePaletteSprite(sprite, actor, conditionId, activeStatuses = 
     chipBg.beginFill(CHIP_INACTIVE_FILL, 0.9);
     chipBg.drawCircle(centerX, centerY, Math.max(1, radius - (CHIP_BORDER_WIDTH * 0.5)));
     chipBg.endFill();
+    drawChipOuterRing(chipBg, centerX, centerY, radius);
     sprite.tint = 0xFFFFFF;
     sprite.alpha = 1;
     return;
@@ -67,6 +81,7 @@ export function stylePaletteSprite(sprite, actor, conditionId, activeStatuses = 
     chipBg.beginFill(CHIP_INACTIVE_FILL, 0.9);
     chipBg.drawCircle(centerX, centerY, Math.max(1, radius - (CHIP_BORDER_WIDTH * 0.5)));
     chipBg.endFill();
+    drawChipOuterRing(chipBg, centerX, centerY, radius);
     sprite.tint = STATUS_PALETTE_INACTIVE_TINT;
     sprite.alpha = STATUS_PALETTE_INACTIVE_ALPHA;
     return;
@@ -88,6 +103,7 @@ export function stylePaletteSprite(sprite, actor, conditionId, activeStatuses = 
   chipBg.beginFill(activeFill, activeFillAlpha);
   chipBg.drawCircle(centerX, centerY, Math.max(1, radius - (CHIP_BORDER_WIDTH * 0.5)));
   chipBg.endFill();
+  drawChipOuterRing(chipBg, centerX, centerY, radius);
   if (isAbilityActive) {
     chipBg.lineStyle({
       width: 1,
