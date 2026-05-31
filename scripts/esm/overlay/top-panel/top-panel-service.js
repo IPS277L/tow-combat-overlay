@@ -23,6 +23,7 @@ import {
   applyTopPanelHoveredCardHighlight,
   clearLinkedTopPanelHover,
   hasPendingControlPanelTargetPick,
+  focusTokenFromTopPanel,
   openTokenSheetFromTopPanel,
   resolvePendingControlPanelTargetPick,
   selectTokenFromTopPanel,
@@ -174,6 +175,20 @@ function bindTopPanelElementEvents(topPanelElement) {
       liveState.lastCardClickAt = 0;
       openTokenSheetFromTopPanel(tokenId);
     }
+  });
+
+  topPanelElement.addEventListener('auxclick', async (event) => {
+    if (event.button !== 1) return;
+    const portrait =
+      event.target instanceof Element
+        ? event.target.closest('.tow-combat-overlay-top-panel__portrait')
+        : null;
+    if (!(portrait instanceof HTMLElement)) return;
+    event.preventDefault();
+    const tokenId = String(portrait.dataset.tokenId ?? '').trim();
+    if (!tokenId) return;
+    selectTokenFromTopPanel(tokenId, event);
+    await focusTokenFromTopPanel(tokenId);
   });
 
   const onPortraitHoverStateShow = (event) => {

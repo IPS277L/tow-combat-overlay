@@ -1,5 +1,9 @@
 import { PANEL_STATE_KEY } from '../panel/shared/panel-constants.js';
-import { TOP_PANEL_ID } from './top-panel-constants.js';
+import {
+  TOP_PANEL_FOCUS_ANIMATION_MS,
+  TOP_PANEL_FOCUS_ZOOM_SCALE,
+  TOP_PANEL_ID
+} from './top-panel-constants.js';
 import { getTopPanelState } from './top-panel-shared.js';
 
 export function selectTokenFromTopPanel(tokenId, event) {
@@ -37,6 +41,37 @@ export function openTokenSheetFromTopPanel(tokenId) {
   }
 
   return false;
+}
+
+export async function focusTokenFromTopPanel(tokenId) {
+  const canvasRef = globalThis?.canvas ?? null;
+  if (!canvasRef || canvasRef.ready !== true || !canvasRef.scene) return false;
+
+  const token = canvasRef.tokens?.get?.(String(tokenId ?? '').trim()) ?? null;
+  if (!token || token.destroyed) return false;
+  const center = typeof token.center === 'object' && token.center ? token.center : null;
+  const centerX = Number(center?.x ?? NaN);
+  const centerY = Number(center?.y ?? NaN);
+  if (!Number.isFinite(centerX) || !Number.isFinite(centerY)) return false;
+
+  const currentScale = Number(canvasRef.stage?.scale?.x ?? 1);
+  const targetScale = Math.max(
+    TOP_PANEL_FOCUS_ZOOM_SCALE,
+    Number.isFinite(currentScale) && currentScale > 0 ? currentScale : 1
+  );
+  if (typeof canvasRef.animatePan !== 'function') return false;
+  try {
+    await canvasRef.animatePan({
+      x: centerX,
+      y: centerY,
+      scale: targetScale,
+      duration: TOP_PANEL_FOCUS_ANIMATION_MS
+    });
+    return true;
+  } catch (error) {
+    console.warn('[tow-combat-overlay] Failed to focus token from top panel.', error);
+    return false;
+  }
 }
 
 export function applyTopPanelHoveredCardHighlight(panelElement, tokenId = '') {
